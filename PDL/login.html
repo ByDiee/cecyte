@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Register</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2b1055, #7597de);
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            width: 300px;
+            text-align: center;
+        }
+        .container h2 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            outline: none;
+            color: #fff;
+            border-radius: 5px;
+        }
+        .container button {
+            background: #2196f3;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .container button:hover {
+            background: #1769aa;
+        }
+        .container a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            margin-top: 10px;
+        }
+        .container a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Email ID" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <label>
+            <input type="checkbox" id="remember"> Remember me
+        </label>
+        <button onclick="login()">LOGIN</button>
+        <a href="registro.html" onclick="toggleForm()">Register</a>
+    </div>
+
+    <div class="container" style="display:none;">
+        <h2>Register</h2>
+        <input type="text" id="reg-num" placeholder="Numero de control" required>
+        <input type="password" id="reg-password" placeholder="Password" required>
+        <button onclick="register()">REGISTER</button>
+        <a href="registro.html" onclick="toggleForm()">Login</a>
+    </div>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+            authDomain: "pdlista-61c4d.firebaseapp.com",
+            projectId: "pdlista-61c4d",
+            storageBucket: "pdlista-61c4d.appspot.com",
+            messagingSenderId: "449596760167",
+            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+            measurementId: "G-BDXFNR25C0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+
+        // Toggle between Login and Register forms
+        function toggleForm() {
+            document.querySelectorAll('.container').forEach(container => {
+                container.style.display = container.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+
+        // Login function
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then(userCredential => {
+                    alert('Login successful');
+                    // Redirect to user profile or handle attendance
+                })
+                .catch(error => {
+                    alert(`Login failed: ${error.message}`);
+                });
+        }
+
+        // Register function
+        function register() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(userCredential => {
+                    alert('Registration successful');
+                    // Optionally, log the user in automatically after registration
+                })
+                .catch(error => {
+                    alert(`Registration failed: ${error.message}`);
+                });
+        }
+    </script>
+</body>
+</html>

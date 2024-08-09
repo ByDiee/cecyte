@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2b1055, #7597de);
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            width: 300px;
+            text-align: center;
+        }
+        .container h2 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            outline: none;
+            color: #fff;
+            border-radius: 5px;
+        }
+        .container button {
+            background: #2196f3;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .container button:hover {
+            background: #1769aa;
+        }
+        .container .auth-options img {
+            width: 35px;
+            margin: 15px;
+            cursor: pointer;
+        }
+        .container a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            margin-top: 10px;
+        }
+        .container a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Register</h2>
+        <input type="text" id="full-name" placeholder="Full Name" required>
+        <input type="email" id="reg-email" placeholder="Email ID" required>
+        <input type="password" id="reg-password" placeholder="Password" required>
+        <button onclick="register()">REGISTER</button>
+        <div class="auth-options">
+            <p style="color: white; margin: 15px 0;">or register with</p>
+            <img src="email_logo.png" alt="Email Sign-Up" onclick="registerWithEmail()">
+            <img src="google_logo.png" alt="Google Sign-Up" onclick="registerWithGoogle()">
+        </div>
+        <a href="login.html">Already have an account? Login</a>
+    </div>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+            authDomain: "pdlista-61c4d.firebaseapp.com",
+            projectId: "pdlista-61c4d",
+            storageBucket: "pdlista-61c4d.appspot.com",
+            messagingSenderId: "449596760167",
+            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+            measurementId: "G-BDXFNR25C0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
+
+        // Register function
+        async function register() {
+            const fullName = document.getElementById('full-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                // Save additional user data to Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    fullName: fullName,
+                    email: email
+                });
+                alert('Registration successful');
+                window.location.href = "login.html"; // Redirect to login page
+            } catch (error) {
+                alert(`Registration failed: ${error.message}`);
+            }
+        }
+
+        // Register with Google
+        async function registerWithGoogle() {
+            const provider = new GoogleAuthProvider();
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                // Save additional user data to Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    fullName: user.displayName,
+                    email: user.email
+                });
+                alert('Registration successful with Google');
+                window.location.href = "login.html"; // Redirect to login page
+            } catch (error) {
+                alert(`Google registration failed: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
