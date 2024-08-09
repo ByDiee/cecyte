@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Firebase</title>
+    <style>
+        /* Estilos para el formulario */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Formulario Firebase</h1>
+    <form id="myForm">
+        <input type="text" id="name" placeholder="Nombre" required>
+        <input type="email" id="email" placeholder="Correo electrónico" required>
+        <button type="submit">Enviar</button>
+    </form>
+    <script type="module">
+      // Importa las funciones necesarias del SDK
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+      import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+      // Configuración de tu app en Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+        authDomain: "pdlista-61c4d.firebaseapp.com",
+        projectId: "pdlista-61c4d",
+        storageBucket: "pdlista-61c4d.appspot.com",
+        messagingSenderId: "449596760167",
+        appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+        measurementId: "G-BDXFNR25C0"
+      };
+
+      // Inicializa Firebase
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+
+      // Maneja el envío del formulario
+      document.getElementById('myForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const newEntry = ref(database, 'entries/' + Date.now());
+        set(newEntry, {
+          name: name,
+          email: email
+        }).then(() => {
+          alert('Datos enviados con éxito!');
+          document.getElementById('myForm').reset();
+        }).catch((error) => {
+          console.error('Error al enviar los datos: ', error);
+        });
+      });
+    </script>
+</body>
+</html>
