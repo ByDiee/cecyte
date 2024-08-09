@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register / Login</title>
+    <title>Login</title>
     <style>
         body {
             display: flex;
@@ -53,11 +53,11 @@
 </head>
 <body>
     <div class="form-container">
-        <h2>Register</h2>
+        <h2>Login</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
-        <button id="registerBtn">Register</button>
-        <p>Or sign up with:</p>
+        <button id="loginBtn">Login</button>
+        <p>Or sign in with:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
     </div>
 
@@ -67,7 +67,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
-        // Tu configuración de Firebase
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
             authDomain: "pdlista-61c4d.firebaseapp.com",
@@ -79,44 +79,76 @@
             databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
 
-        // Inicializa Firebase
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // Registro con Email y Contraseña
-        document.getElementById('registerBtn').addEventListener('click', () => {
+        // Login with Email and Password
+        document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            auth.createUserWithEmailAndPassword(email, password)
+            auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
-                    // Guardar la información del usuario en la base de datos
-                    database.ref('users/' + user.uid).set({
-                        email: user.email
-                    });
-                    alert('Usuario registrado exitosamente');
+                    // Check user role
+                    database.ref('users/' + user.uid).once('value')
+                        .then((snapshot) => {
+                            const userData = snapshot.val();
+                            if (userData) {
+                                // Redirect based on role (set role in Firebase later)
+                                const role = userData.role; // Assume 'role' will be set later
+                                if (role === 'admin') {
+                                    window.location.href = 'pagina1.html';
+                                } else if (role === 'student') {
+                                    window.location.href = 'pagina2.html';
+                                } else {
+                                    alert('Role not assigned yet');
+                                }
+                            } else {
+                                alert('User not found in database');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error retrieving user data:', error.message);
+                        });
                 })
                 .catch((error) => {
-                    console.error('Error en el registro:', error.message);
+                    console.error('Login error:', error.message);
                 });
         });
 
-        // Registro e Inicio de Sesión con Google
+        // Login with Google
         document.getElementById('googleSignInBtn').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
-                    // Guardar la información del usuario en la base de datos
-                    database.ref('users/' + user.uid).set({
-                        email: user.email
-                    });
-                    alert('Inicio de sesión con Google exitoso');
+                    // Check user role
+                    database.ref('users/' + user.uid).once('value')
+                        .then((snapshot) => {
+                            const userData = snapshot.val();
+                            if (userData) {
+                                // Redirect based on role (set role in Firebase later)
+                                const role = userData.role; // Assume 'role' will be set later
+                                if (role === 'admin') {
+                                    window.location.href = 'pagina1.html';
+                                } else if (role === 'student') {
+                                    window.location.href = 'pagina2.html';
+                                } else {
+                                    alert('Role not assigned yet');
+                                }
+                            } else {
+                                alert('User not found in database');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error retrieving user data:', error.message);
+                        });
                 })
                 .catch((error) => {
-                    console.error('Error en la autenticación de Google:', error.message);
+                    console.error('Google authentication error:', error.message);
                 });
         });
     </script>

@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Register / Login</title>
     <style>
-        /* Estilo similar al que enviaste */
         body {
             display: flex;
             justify-content: center;
@@ -14,7 +13,7 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             font-family: Arial, sans-serif;
         }
-        .login-container {
+        .form-container {
             background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 15px;
@@ -22,32 +21,74 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
             width: 300px;
         }
-        .login-container h2 {
+        .form-container h2 {
             margin-bottom: 20px;
             color: #fff;
         }
-        .login-container img {
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+        }
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            background-color: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+        .form-container img {
             width: 40px;
             cursor: pointer;
         }
-        .login-container p {
+        .form-container p {
             color: #fff;
+        }
+        .password-requirements {
+            text-align: left;
+            color: #fff;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .password-requirements li {
+            margin-bottom: 5px;
+        }
+        .password-requirements .fulfilled {
+            color: #4caf50;
+        }
+        .password-requirements .unfulfilled {
+            color: #f44336;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Sign In</h2>
-        <img src="google_logo.png" alt="Google Sign-In" id="googleSignInBtn">
-        <p>Sign in with Google</p>
+    <div class="form-container">
+        <h2>Register</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password" oninput="validatePassword()">
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" oninput="validatePassword()">
+        <button id="registerBtn">Register</button>
+        <p>Or sign up with:</p>
+        <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
+        <ul class="password-requirements">
+            <li id="length" class="unfulfilled">At least 8 characters</li>
+            <li id="number" class="unfulfilled">At least 1 number</li>
+            <li id="uppercase" class="unfulfilled">At least 1 uppercase letter</li>
+        </ul>
     </div>
 
     <!-- Firebase scripts -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-    <script type="module">
-        // Tu configuración de Firebase
+    <script>
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
             authDomain: "pdlista-61c4d.firebaseapp.com",
@@ -55,24 +96,96 @@
             storageBucket: "pdlista-61c4d.appspot.com",
             messagingSenderId: "449596760167",
             appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0"
+            measurementId: "G-BDXFNR25C0",
+            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
 
-        // Inicializa Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const database = firebase.database();
 
-        // Manejar el botón de Google Sign-In
+        // Validate password strength
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            const length = document.getElementById('length');
+            const number = document.getElementById('number');
+            const uppercase = document.getElementById('uppercase');
+
+            // Password length
+            if (password.length >= 8) {
+                length.classList.remove('unfulfilled');
+                length.classList.add('fulfilled');
+            } else {
+                length.classList.remove('fulfilled');
+                length.classList.add('unfulfilled');
+            }
+
+            // Contains at least one number
+            if (/\d/.test(password)) {
+                number.classList.remove('unfulfilled');
+                number.classList.add('fulfilled');
+            } else {
+                number.classList.remove('fulfilled');
+                number.classList.add('unfulfilled');
+            }
+
+            // Contains at least one uppercase letter
+            if (/[A-Z]/.test(password)) {
+                uppercase.classList.remove('unfulfilled');
+                uppercase.classList.add('fulfilled');
+            } else {
+                uppercase.classList.remove('fulfilled');
+                uppercase.classList.add('unfulfilled');
+            }
+        }
+
+        document.getElementById('registerBtn').addEventListener('click', () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (document.querySelectorAll('.unfulfilled').length === 0) {
+        if (password === confirmPassword) {
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    // Guardar la información del usuario en la base de datos con rol predeterminado
+                    database.ref('users/' + user.uid).set({
+                        email: user.email,
+                        role: 'student' // Asignar rol predeterminado como estudiante
+                    });
+                    alert('Usuario registrado exitosamente');
+                })
+                .catch((error) => {
+                    console.error('Error en el registro:', error.message);
+                });
+        } else {
+            alert('Las contraseñas no coinciden. Inténtalo de nuevo.');
+            document.getElementById('password').value = '';
+            document.getElementById('confirmPassword').value = '';
+            validatePassword();
+        }
+    } else {
+        alert('Por favor, cumple con todos los requisitos de la contraseña');
+    }
+});
+
+        // Registration with Google
         document.getElementById('googleSignInBtn').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider)
                 .then((result) => {
-                    // El usuario está autenticado
-                    console.log('Usuario autenticado:', result.user);
-                    // Redirigir o manejar la autenticación exitosa
+                    const user = result.user;
+                    // Save user info to the database
+                    database.ref('users/' + user.uid).set({
+                        email: user.email,
+                        role: 'student'
+                    });
+                    alert('Google sign-in successful');
                 })
                 .catch((error) => {
-                    console.error('Error de autenticación:', error);
+                    console.error('Google authentication error:', error.message);
                 });
         });
     </script>
