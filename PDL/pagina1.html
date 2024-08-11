@@ -6,66 +6,88 @@
     <title>Teacher Dashboard</title>
     <style>
         body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: white;
             font-family: Arial, sans-serif;
+            background-color: #ffffff;
             color: #333;
-        }
-        .container {
+            margin: 0;
+            padding: 0;
             text-align: center;
         }
-        h1 {
-            color: green;
-        }
-        .buttons {
-            margin-top: 20px;
-        }
-        .buttons button {
-            background-color: #4CAF50;
+        .header {
+            background-color: #4caf50;
             color: white;
-            border: none;
-            padding: 15px 30px;
-            margin: 10px;
-            border-radius: 5px;
-            cursor: pointer;
+            padding: 20px;
+            text-align: center;
         }
-        .buttons button:hover {
-            background-color: #45a049;
+        .content {
+            padding: 20px;
         }
-        .schedule {
-            margin-top: 20px;
-            background-color: #ffebcd;
+        .schedule-table {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        .schedule-table th, .schedule-table td {
+            border: 1px solid #ccc;
             padding: 10px;
+            text-align: center;
+        }
+        .schedule-table th {
+            background-color: #f2f2f2;
+        }
+        .buttons-container {
+            margin: 20px 0;
+        }
+        .buttons-container button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
             border-radius: 5px;
-            width: 300px;
-            text-align: left;
+        }
+        .buttons-container button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome, Teacher!</h1>
-        <p id="welcomeMessage"></p>
-        <div class="buttons">
-            <button onclick="generateQRCode()">Generate QR Code</button>
-            <button onclick="editProfile()">Edit Profile</button>
-            <button onclick="viewAttendance()">View Attendance</button>
-        </div>
-        <div class="schedule">
-            <h2>Your Schedule</h2>
-            <ul>
-                <!-- Aquí puedes agregar dinámicamente el horario del maestro -->
-                <li>Monday - 9:00 AM to 10:00 AM</li>
-                <li>Wednesday - 11:00 AM to 12:00 PM</li>
-            </ul>
-        </div>
+    <div class="header">
+        <h1>Welcome, Teacher</h1>
     </div>
 
-    <!-- Firebase scripts -->
+    <div class="content">
+        <div class="buttons-container">
+            <button id="generateQRBtn">Generate QR Code</button>
+            <button id="editProfileBtn">Edit Profile</button>
+            <button id="viewAttendanceBtn">View Attendance</button>
+        </div>
+
+        <h2>Your Schedule</h2>
+        <table class="schedule-table">
+            <tr>
+                <th>Time</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+            </tr>
+            <!-- Repeat this row for each hour from 7 AM to 6 PM -->
+            <tr>
+                <td>7:00 - 8:00</td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+            </tr>
+            <!-- Add more rows as needed -->
+        </table>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -87,32 +109,37 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
-        // Check if the user is authenticated
+        // Check if user is logged in
         auth.onAuthStateChanged(user => {
             if (user) {
-                // User is signed in, show their details
-                document.getElementById('welcomeMessage').textContent = `Hello, ${user.email}!`;
+                console.log('User is logged in:', user);
             } else {
-                // No user is signed in, redirect to login page
+                // Redirect to login if not logged in
                 window.location.href = 'login.html';
             }
         });
 
-        // Placeholder functions for buttons
-        function generateQRCode() {
-            // Implement QR code generation logic here
-            alert("Generate QR Code clicked!");
-        }
+        // Logout when the page is unloaded
+        window.addEventListener('beforeunload', () => {
+            auth.signOut().then(() => {
+                console.log('User signed out');
+            }).catch(error => {
+                console.error('Sign-out error:', error);
+            });
+        });
 
-        function editProfile() {
-            // Implement profile editing logic here
-            alert("Edit Profile clicked!");
-        }
+        // Button functionalities
+        document.getElementById('generateQRBtn').addEventListener('click', () => {
+            // Code for generating QR
+        });
 
-        function viewAttendance() {
-            // Implement attendance viewing logic here
-            alert("View Attendance clicked!");
-        }
+        document.getElementById('editProfileBtn').addEventListener('click', () => {
+            window.location.href = 'edit_profile.html';
+        });
+
+        document.getElementById('viewAttendanceBtn').addEventListener('click', () => {
+            window.location.href = 'attendance.html';
+        });
     </script>
 </body>
 </html>
