@@ -8,86 +8,113 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
-            color: #333;
             margin: 0;
             padding: 0;
-            text-align: center;
         }
-        .header {
-            background-color: #4caf50;
+        header {
+            background-color: #28a745; /* Green color for header */
             color: white;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
         }
-        .content {
+        nav {
+            background-color: #ff851b; /* Orange color for navigation */
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        main {
             padding: 20px;
+        }
+        .welcome {
+            text-align: center;
+            margin-bottom: 20px;
         }
         .schedule-table {
             width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
             border-collapse: collapse;
         }
         .schedule-table th, .schedule-table td {
-            border: 1px solid #ccc;
-            padding: 10px;
+            border: 1px solid #cccccc;
+            padding: 8px;
             text-align: center;
         }
         .schedule-table th {
             background-color: #f2f2f2;
         }
-        .buttons-container {
-            margin: 20px 0;
-        }
-        .buttons-container button {
-            margin: 0 10px;
-            padding: 10px 20px;
-            border: none;
-            background-color: #4caf50;
-            color: white;
-            cursor: pointer;
+        .edit-form {
+            display: none;
+            border: 1px solid #cccccc;
+            padding: 10px;
             border-radius: 5px;
-        }
-        .buttons-container button:hover {
-            background-color: #45a049;
+            background-color: #f9f9f9;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Welcome, Teacher</h1>
-    </div>
-
-    <div class="content">
-        <div class="buttons-container">
-            <button id="generateQRBtn">Generate QR Code</button>
-            <button id="editProfileBtn">Edit Profile</button>
-            <button id="viewAttendanceBtn">View Attendance</button>
+    <header>
+        <h1>Welcome, Teacher!</h1>
+    </header>
+    <nav>
+        <a href="#" id="generateQRBtn">Generate QR Code</a>
+        <a href="#" id="editProfileBtn">Edit Profile</a>
+        <a href="#" id="viewAttendanceBtn">View Attendance</a>
+    </nav>
+    <main>
+        <div class="welcome">
+            <h2>Welcome to your Dashboard</h2>
+            <p>Manage your classes and attendance efficiently.</p>
         </div>
+        
+        <!-- Schedule Table -->
+        <div class="schedule">
+            <h3>Your Schedule</h3>
+            <table class="schedule-table" id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JavaScript will populate this section -->
+                </tbody>
+            </table>
+            <button id="editScheduleBtn">Edit Schedule</button>
+        </div>
+        
+        <!-- Edit Schedule Form -->
+        <div class="edit-form" id="editForm">
+            <h3>Edit Schedule</h3>
+            <form id="scheduleForm">
+                <label for="day">Day:</label>
+                <select id="day" name="day">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                </select><br>
+                <label for="time">Time:</label>
+                <input type="text" id="time" name="time" placeholder="e.g., 09:00 AM" required><br>
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" name="subject" required><br>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </main>
 
-        <h2>Your Schedule</h2>
-        <table class="schedule-table">
-            <tr>
-                <th>Time</th>
-                <th>Monday</th>
-                <th>Tuesday</th>
-                <th>Wednesday</th>
-                <th>Thursday</th>
-                <th>Friday</th>
-            </tr>
-            <!-- Repeat this row for each hour from 7 AM to 6 PM -->
-            <tr>
-                <td>7:00 - 8:00</td>
-                <td contenteditable="true"></td>
-                <td contenteditable="true"></td>
-                <td contenteditable="true"></td>
-                <td contenteditable="true"></td>
-                <td contenteditable="true"></td>
-            </tr>
-            <!-- Add more rows as needed -->
-        </table>
-    </div>
-
+    <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -95,51 +122,89 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id",
+            databaseURL: "your-database-url"
         };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const database = firebase.database();
 
-        // Check if user is logged in
+        // Check if the user is logged in
         auth.onAuthStateChanged(user => {
-            if (user) {
-                console.log('User is logged in:', user);
-            } else {
-                // Redirect to login if not logged in
+            if (!user) {
                 window.location.href = 'login.html';
             }
         });
 
-        // Logout when the page is unloaded
-        window.addEventListener('beforeunload', () => {
-            auth.signOut().then(() => {
-                console.log('User signed out');
-            }).catch(error => {
-                console.error('Sign-out error:', error);
+        // Switch to edit mode
+        document.getElementById('editScheduleBtn').addEventListener('click', () => {
+            document.getElementById('editForm').style.display = 'block';
+        });
+
+        // Handle form submission
+        document.getElementById('scheduleForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const day = document.getElementById('day').value;
+            const time = document.getElementById('time').value;
+            const subject = document.getElementById('subject').value;
+
+            // Save to Firebase
+            const userId = 'currentUserId'; // Replace with actual user ID
+            const scheduleRef = database.ref(`users/${userId}/schedule/${day}/${time}`);
+            scheduleRef.set(subject)
+                .then(() => {
+                    alert('Schedule updated successfully!');
+                    document.getElementById('editForm').style.display = 'none';
+                    loadSchedule(); // Reload the schedule
+                })
+                .catch(error => {
+                    console.error('Error updating schedule:', error);
+                });
+        });
+
+        // Load and display the schedule
+        function loadSchedule() {
+            const userId = 'currentUserId'; // Replace with actual user ID
+            const scheduleRef = database.ref(`users/${userId}/schedule`);
+
+            scheduleRef.once('value').then(snapshot => {
+                const schedule = snapshot.val();
+                const scheduleTable = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+                
+                // Clear existing rows
+                scheduleTable.innerHTML = '';
+
+                for (let hour = 7; hour <= 18; hour++) {
+                    const hourString = `${hour}:00`;
+                    const row = document.createElement('tr');
+                    
+                    // Time Cell
+                    const timeCell = document.createElement('td');
+                    timeCell.textContent = hourString;
+                    row.appendChild(timeCell);
+
+                    // Day Cells
+                    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach(day => {
+                        const cell = document.createElement('td');
+                        cell.textContent = schedule && schedule[day] && schedule[day][hourString] ? schedule[day][hourString] : '';
+                        row.appendChild(cell);
+                    });
+
+                    scheduleTable.appendChild(row);
+                }
             });
-        });
+        }
 
-        // Button functionalities
-        document.getElementById('generateQRBtn').addEventListener('click', () => {
-            // Code for generating QR
-        });
-
-        document.getElementById('editProfileBtn').addEventListener('click', () => {
-            window.location.href = 'edit_profile.html';
-        });
-
-        document.getElementById('viewAttendanceBtn').addEventListener('click', () => {
-            window.location.href = 'attendance.html';
-        });
+        // Load the schedule on page load
+        window.onload = loadSchedule;
     </script>
 </body>
 </html>
