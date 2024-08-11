@@ -52,8 +52,43 @@
             border: 1px solid #cccccc;
             padding: 10px;
             border-radius: 5px;
-            background-color: #f9f9f9;
+            background-color: #e9f8f4; /* Subtle green */
             margin-top: 20px;
+        }
+        .edit-form label {
+            display: block;
+            margin-top: 10px;
+        }
+        .edit-form input, .edit-form select {
+            display: block;
+            margin-top: 5px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .edit-form button {
+            background-color: #28a745; /* Subtle green for the button */
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .edit-form button:hover {
+            background-color: #218838; /* Darker green on hover */
+        }
+        #editScheduleBtn {
+            background-color: #ff851b; /* Orange for the edit button */
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #editScheduleBtn:hover {
+            background-color: #e67e22; /* Darker orange on hover */
         }
     </style>
 </head>
@@ -122,13 +157,14 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-auth-domain",
-            projectId: "your-project-id",
-            storageBucket: "your-storage-bucket",
-            messagingSenderId: "your-messaging-sender-id",
-            appId: "your-app-id",
-            databaseURL: "your-database-url"
+            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+            authDomain: "pdlista-61c4d.firebaseapp.com",
+            projectId: "pdlista-61c4d",
+            storageBucket: "pdlista-61c4d.appspot.com",
+            messagingSenderId: "449596760167",
+            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+            measurementId: "G-BDXFNR25C0",
+            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
 
         // Initialize Firebase
