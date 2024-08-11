@@ -141,35 +141,36 @@
         }
 
         document.getElementById('registerBtn').addEventListener('click', () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
 
-    if (document.querySelectorAll('.unfulfilled').length === 0) {
-        if (password === confirmPassword) {
-            auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    // Guardar la información del usuario en la base de datos con rol predeterminado
-                    database.ref('users/' + user.uid).set({
-                        email: user.email,
-                        role: 'student' // Asignar rol predeterminado como estudiante
-                    });
-                    alert('Usuario registrado exitosamente');
-                })
-                .catch((error) => {
-                    console.error('Error en el registro:', error.message);
-                });
-        } else {
-            alert('Las contraseñas no coinciden. Inténtalo de nuevo.');
-            document.getElementById('password').value = '';
-            document.getElementById('confirmPassword').value = '';
-            validatePassword();
-        }
-    } else {
-        alert('Por favor, cumple con todos los requisitos de la contraseña');
-    }
-});
+            if (document.querySelectorAll('.unfulfilled').length === 0) {
+                if (password === confirmPassword) {
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .then((userCredential) => {
+                            const user = userCredential.user;
+                            // Save user information in the database with default role
+                            database.ref('users/' + user.uid).set({
+                                email: user.email,
+                                role: 'student' // Default role as student
+                            });
+                            alert('User registered successfully');
+                            window.location.href = 'login.html'; // Redirect to login page
+                        })
+                        .catch((error) => {
+                            console.error('Registration error:', error.message);
+                        });
+                } else {
+                    alert('Passwords do not match. Please try again.');
+                    document.getElementById('password').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    validatePassword();
+                }
+            } else {
+                alert('Please meet all password requirements');
+            }
+        });
 
         // Registration with Google
         document.getElementById('googleSignInBtn').addEventListener('click', () => {
@@ -183,6 +184,7 @@
                         role: 'student'
                     });
                     alert('Google sign-in successful');
+                    window.location.href = 'login.html'; // Redirect to login page
                 })
                 .catch((error) => {
                     console.error('Google authentication error:', error.message);
