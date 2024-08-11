@@ -1,8 +1,143 @@
-<html><body style="background-color:#ff0000">
-    <h1>HOLA YA SIRVE APACHE2</h1>
-    <select>
-<option>100</option>
-<option>90</option>
-</select>
-<img class="floating_element" src="kjcl.jpg" alt="kuromi" style="width:184px; height:146px;">
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #28a745; /* Verde para el header */
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        nav {
+            background-color: #ff851b; /* Naranja para la navegación */
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        main {
+            padding: 20px;
+        }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .schedule-table th, .schedule-table td {
+            border: 1px solid #cccccc;
+            padding: 8px;
+            text-align: center;
+        }
+        .schedule-table th {
+            background-color: #f2f2f2;
+        }
+        .edit-form, .attendance-list {
+            border: 1px solid #cccccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Student Dashboard</h1>
+    </header>
+    <nav>
+        <a href="#" id="editProfileBtn">Edit Profile</a>
+        <a href="#" id="viewAttendanceBtn">View Attendance</a>
+    </nav>
+    <main>
+        <!-- Schedule Table -->
+        <div class="schedule">
+            <h3>Your Schedule</h3>
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JavaScript will populate this section -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Edit Profile Form -->
+        <div class="edit-form" id="editForm" style="display: none;">
+            <h3>Edit Profile</h3>
+            <!-- Add form fields for editing profile -->
+        </div>
+
+        <!-- Attendance List -->
+        <div class="attendance-list" id="attendanceList" style="display: none;">
+            <h3>Attendance Record</h3>
+            <!-- Add attendance details here -->
+        </div>
+    </main>
+
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+            authDomain: "pdlista-61c4d.firebaseapp.com",
+            projectId: "pdlista-61c4d",
+            storageBucket: "pdlista-61c4d.appspot.com",
+            messagingSenderId: "449596760167",
+            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+            measurementId: "G-BDXFNR25C0",
+            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Check if the user is logged in
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Handle Edit Profile Button
+        document.getElementById('editProfileBtn').addEventListener('click', () => {
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('attendanceList').style.display = 'none';
+        });
+
+        // Handle View Attendance Button
+        document.getElementById('viewAttendanceBtn').addEventListener('click', () => {
+            document.getElementById('attendanceList').style.display = 'block';
+            document.getElementById('editForm').style.display = 'none';
+        });
+        
+        // Load Schedule and Attendance using Firebase
+        // Add JavaScript code to populate schedule and attendance details from Firebase
+    </script>
+</body>
+</html>
