@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil del Alumno</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #28a745; /* Verde para el encabezado */
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .profile-form {
+            border: 1px solid #cccccc;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .profile-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .profile-form input, .profile-form select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+        }
+        .profile-form button {
+            background-color: #ff851b; /* Naranja para el botón */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .profile-form button:hover {
+            background-color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Perfil del Alumno</h1>
+    </header>
+    <main>
+        <form class="profile-form" id="studentProfileForm">
+            <label for="firstName">Nombre:</label>
+            <input type="text" id="firstName" name="firstName" required>
+
+            <label for="lastNameP">Apellido Paterno:</label>
+            <input type="text" id="lastNameP" name="lastNameP" required>
+
+            <label for="lastNameM">Apellido Materno:</label>
+            <input type="text" id="lastNameM" name="lastNameM" required>
+
+            <label for="enrollment">Matrícula:</label>
+            <input type="text" id="enrollment" name="enrollment" required>
+
+            <label for="semester">Semestre:</label>
+            <select id="semester" name="semester" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+
+            <label for="group">Grupo:</label>
+            <input type="text" id="group" name="group" required>
+
+            <label for="career">Carrera:</label>
+            <input type="text" id="career" name="career" required>
+
+            <button type="submit">Guardar Cambios</button>
+        </form>
+    </main>
+
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id",
+            databaseURL: "your-database-url"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Fetch and display student profile data
+        function loadStudentProfile() {
+            const userId = auth.currentUser.uid;
+            const profileRef = database.ref(`users/${userId}`);
+
+            profileRef.once('value').then(snapshot => {
+                const profileData = snapshot.val();
+                document.getElementById('firstName').value = profileData.firstName || '';
+                document.getElementById('lastNameP').value = profileData.lastNameP || '';
+                document.getElementById('lastNameM').value = profileData.lastNameM || '';
+                document.getElementById('enrollment').value = profileData.enrollment || '';
+                document.getElementById('semester').value = profileData.semester || '';
+                document.getElementById('group').value = profileData.group || '';
+                document.getElementById('career').value = profileData.career || '';
+            });
+        }
+
+        // Save the updated profile data
+        document.getElementById('studentProfileForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const userId = auth.currentUser.uid;
+            const profileRef = database.ref(`users/${userId}`);
+            const profileData = {
+                firstName: document.getElementById('firstName').value,
+                lastNameP: document.getElementById('lastNameP').value,
+                lastNameM: document.getElementById('lastNameM').value,
+                enrollment: document.getElementById('enrollment').value,
+                semester: document.getElementById('semester').value,
+                group: document.getElementById('group').value,
+                career: document.getElementById('career').value,
+            };
+
+            profileRef.update(profileData)
+                .then(() => {
+                    alert('Perfil actualizado correctamente.');
+                })
+                .catch(error => {
+                    console.error('Error al actualizar el perfil:', error);
+                });
+        });
+
+        // Load the profile data on page load
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loadStudentProfile();
+            } else {
+                window.location.href = 'login.html'; // Redirect to login if not logged in
+            }
+        });
+    </script>
+</body>
+</html>
