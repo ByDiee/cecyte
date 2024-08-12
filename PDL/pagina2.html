@@ -75,7 +75,7 @@
                         <th>Friday</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="scheduleBody">
                     <!-- JavaScript will populate this section -->
                 </tbody>
             </table>
@@ -121,14 +121,16 @@
         auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = 'login.html';
+            } else {
+                loadStudentProfile();
             }
         });
 
         // Handle Edit Profile Button
         document.getElementById('editProfileBtn').addEventListener('click', () => {
-            window.location.href = 'perfilalu.html';
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('attendanceList').style.display = 'none';
         });
-
 
         // Handle View Attendance Button
         document.getElementById('viewAttendanceBtn').addEventListener('click', () => {
@@ -136,8 +138,48 @@
             document.getElementById('editForm').style.display = 'none';
         });
         
-        // Load Schedule and Attendance using Firebase
-        // Add JavaScript code to populate schedule and attendance details from Firebase
+        // Load student profile data and schedule
+        function loadStudentProfile() {
+            const userId = auth.currentUser.uid;
+            const profileRef = database.ref(`users/${userId}`);
+
+            profileRef.once('value').then(snapshot => {
+                const profileData = snapshot.val();
+                const semester = profileData.semester;
+                const group = profileData.group;
+
+                // Update the career field and schedule
+                updateSchedule(semester, group);
+            });
+        }
+
+        // Update the schedule table based on semester and group
+        function updateSchedule(semester, group) {
+            const scheduleRef = database.ref(`classSchedules/semester${semester}/schedules/${group}`);
+            scheduleRef.once('value').then(snapshot => {
+                const scheduleData = snapshot.val();
+
+                const scheduleBody = document.getElementById('scheduleBody');
+                scheduleBody.innerHTML = ''; // Clear existing schedule
+
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                for (const time in scheduleData) {
+                    const row = document.createElement('tr');
+                    
+                    const timeCell = document.createElement('td');
+                    timeCell.textContent = time;
+                    row.appendChild(timeCell);
+
+                    for (const day of days) {
+                        const cell = document.createElement('td');
+                        cell.textContent = scheduleData[day] && scheduleData[day][time] ? scheduleData[day][time] : '';
+                        row.appendChild(cell);
+                    }
+                    
+                    scheduleBody.appendChild(row);
+                }
+            });
+        }
     </script>
 </body>
 </html>
