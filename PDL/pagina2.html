@@ -153,38 +153,41 @@
         }
 
         // Update the schedule table based on semester and group
-        function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/semester${semester}/${group}`);
-            scheduleRef.once('value').then(snapshot => {
-                const scheduleData = snapshot.val();
+    function updateSchedule(semester, group) {
+    const scheduleRef = database.ref(`classSchedules/semester${semester}/${group}`);
+    scheduleRef.once('value').then(snapshot => {
+        const scheduleData = snapshot.val();
 
-                const scheduleBody = document.getElementById('scheduleBody');
-                scheduleBody.innerHTML = ''; // Clear existing schedule
+        const scheduleBody = document.getElementById('scheduleBody');
+        scheduleBody.innerHTML = ''; // Clear existing schedule
 
-                if (scheduleData) {
-                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                    const hours = ['0900', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700'];
+        if (scheduleData) {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const hours = ['0900', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700'];
 
-                    for (const hour of hours) {
-                        const row = document.createElement('tr');
+            for (const hour of hours) {
+                const row = document.createElement('tr');
 
-                        const timeCell = document.createElement('td');
-                        timeCell.textContent = hour;
-                        row.appendChild(timeCell);
+                const timeCell = document.createElement('td');
+                timeCell.textContent = hour;
+                row.appendChild(timeCell);
 
-                        for (const day of days) {
-                            const cell = document.createElement('td');
-                            cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
-                            row.appendChild(cell);
-                        }
-
-                        scheduleBody.appendChild(row);
-                    }
-                } else {
-                    scheduleBody.innerHTML = '<tr><td colspan="6">No schedule available</td></tr>';
+                for (const day of days) {
+                    const cell = document.createElement('td');
+                    // Accede a los datos usando el día y la hora
+                    cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
+                    row.appendChild(cell);
                 }
-            });
+
+                scheduleBody.appendChild(row);
+            }
+        } else {
+            scheduleBody.innerHTML = '<tr><td colspan="6">No schedule available</td></tr>';
         }
+    }).catch(error => {
+        console.error('Error fetching schedule data:', error);
+    });
+}
     </script>
 </body>
 </html>
