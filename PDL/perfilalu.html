@@ -82,7 +82,14 @@
             </select>
 
             <label for="group">Grupo:</label>
-            <input type="text" id="group" name="group" required>
+            <select id="group" name="group" required>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+            </select>
 
             <label for="career">Carrera:</label>
             <input type="text" id="career" name="career" readonly> <!-- Campo solo lectura -->
@@ -99,12 +106,12 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id",
             databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
 
@@ -113,11 +120,20 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
+        // Mapping of groups to careers
+        const careerMapping = {
+            'A': 'Programacion',
+            'B': 'Ingeniería Industrial',
+            'C': 'Arquitectura',
+            'D': 'Diseño Gráfico',
+            'E': 'Contaduría',
+            'F': 'Administración de Empresas'
+        };
+
         // Fetch and display student profile data
         function loadStudentProfile() {
             const userId = auth.currentUser.uid;
             const profileRef = database.ref(`users/${userId}`);
-            const scheduleRef = database.ref(`classSchedules/semester${document.getElementById('semester').value}/group${document.getElementById('group').value}`);
 
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
@@ -127,17 +143,14 @@
                 document.getElementById('enrollment').value = profileData.enrollment || '';
                 document.getElementById('semester').value = profileData.semester || '';
                 document.getElementById('group').value = profileData.group || '';
-                updateCareerField(profileData.semester, profileData.group);
+                updateCareerField(profileData.group || '');
             });
         }
 
-        // Update the career field based on semester and group
-        function updateCareerField(semester, group) {
-            const careerRef = database.ref(`classSchedules/semester${semester}/groups/group${group}`);
-            careerRef.once('value').then(snapshot => {
-                const career = snapshot.val();
-                document.getElementById('career').value = career || '';
-            });
+        // Update the career field based on group
+        function updateCareerField(group) {
+            const career = careerMapping[group] || '';
+            document.getElementById('career').value = career;
         }
 
         // Save the updated profile data
@@ -173,17 +186,10 @@
             }
         });
 
-        // Update the career field when semester or group changes
-        document.getElementById('semester').addEventListener('change', function() {
-            const semester = this.value;
-            const group = document.getElementById('group').value;
-            updateCareerField(semester, group);
-        });
-
+        // Update the career field when group changes
         document.getElementById('group').addEventListener('change', function() {
-            const semester = document.getElementById('semester').value;
             const group = this.value;
-            updateCareerField(semester, group);
+            updateCareerField(group);
         });
     </script>
 </body>
