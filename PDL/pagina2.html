@@ -147,7 +147,7 @@
                 const semester = profileData.semester;
                 const group = profileData.group;
 
-                // Update the career field and schedule
+                // Update the schedule
                 updateSchedule(semester, group);
             });
         }
@@ -161,21 +161,27 @@
                 const scheduleBody = document.getElementById('scheduleBody');
                 scheduleBody.innerHTML = ''; // Clear existing schedule
 
-                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                for (const time in scheduleData) {
-                    const row = document.createElement('tr');
-                    
-                    const timeCell = document.createElement('td');
-                    timeCell.textContent = time;
-                    row.appendChild(timeCell);
+                if (scheduleData) {
+                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                    const hours = ['0900', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700'];
 
-                    for (const day of days) {
-                        const cell = document.createElement('td');
-                        cell.textContent = scheduleData[day] && scheduleData[day][time] ? scheduleData[day][time] : '';
-                        row.appendChild(cell);
+                    for (const hour of hours) {
+                        const row = document.createElement('tr');
+
+                        const timeCell = document.createElement('td');
+                        timeCell.textContent = hour;
+                        row.appendChild(timeCell);
+
+                        for (const day of days) {
+                            const cell = document.createElement('td');
+                            cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
+                            row.appendChild(cell);
+                        }
+
+                        scheduleBody.appendChild(row);
                     }
-                    
-                    scheduleBody.appendChild(row);
+                } else {
+                    scheduleBody.innerHTML = '<tr><td colspan="6">No schedule available</td></tr>';
                 }
             });
         }
