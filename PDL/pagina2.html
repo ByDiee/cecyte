@@ -154,7 +154,7 @@
 
         // Update the schedule table based on semester and group
         function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/semester${semester}/schedules/${group}`);
+            const scheduleRef = database.ref(`classSchedules/semester${semester}/${group}`);
             scheduleRef.once('value').then(snapshot => {
                 const scheduleData = snapshot.val();
 
