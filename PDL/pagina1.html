@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,13 +12,13 @@
             padding: 0;
         }
         header {
-            background-color: #28a745; /* Green color for header */
+            background-color: #28a745;
             color: white;
             padding: 15px;
             text-align: center;
         }
         nav {
-            background-color: #ff851b; /* Orange color for navigation */
+            background-color: #ff851b;
             padding: 10px;
             display: flex;
             justify-content: space-around;
@@ -52,100 +52,71 @@
             border: 1px solid #cccccc;
             padding: 10px;
             border-radius: 5px;
-            background-color: #e9f8f4; /* Subtle green */
+            background-color: #f9f9f9;
             margin-top: 20px;
-        }
-        .edit-form label {
-            display: block;
-            margin-top: 10px;
-        }
-        .edit-form input, .edit-form select {
-            display: block;
-            margin-top: 5px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 100%;
-        }
-        .edit-form button {
-            background-color: #28a745; /* Subtle green for the button */
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .edit-form button:hover {
-            background-color: #218838; /* Darker green on hover */
-        }
-        #editScheduleBtn {
-            background-color: #ff851b; /* Orange for the edit button */
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #editScheduleBtn:hover {
-            background-color: #e67e22; /* Darker orange on hover */
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Welcome, Teacher!</h1>
+        <h1>Bienvenido</h1>
     </header>
     <nav>
-        <a href="#" id="generateQRBtn">Generate QR Code</a>
-        <a href="#" id="editProfileBtn">Edit Profile</a>
-        <a href="#" id="viewAttendanceBtn">View Attendance</a>
+        <a href="#" id="generateQRBtn">Generar QR</a>
+        <a href="#" id="editProfileBtn">Editar Perfil</a>
+        <a href="#" id="viewAttendanceBtn">Ver Asistencias</a>
     </nav>
     <main>
         <div class="welcome">
-            <h2>Welcome to your Dashboard</h2>
-            <p>Manage your classes and attendance efficiently.</p>
+            <h2>Bienvenido a tu Dashboard</h2>
+            <p>Gestiona tus clases y asistencias de manera eficiente.</p>
         </div>
         
-        <!-- Schedule Table -->
+        <!-- Tabla de Horario -->
         <div class="schedule">
-            <h3>Your Schedule</h3>
+            <h3>Tu Horario</h3>
             <table class="schedule-table" id="scheduleTable">
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Monday</th>
-                        <th>Tuesday</th>
-                        <th>Wednesday</th>
-                        <th>Thursday</th>
-                        <th>Friday</th>
+                        <th>Hora</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- JavaScript will populate this section -->
+                    <!-- JavaScript poblará esta sección -->
                 </tbody>
             </table>
-            <button id="editScheduleBtn">Edit Schedule</button>
+            <button id="editScheduleBtn">Editar Horario</button>
         </div>
         
-        <!-- Edit Schedule Form -->
+        <!-- Formulario de Edición de Horario -->
         <div class="edit-form" id="editForm">
-            <h3>Edit Schedule</h3>
+            <h3>Editar Horario</h3>
             <form id="scheduleForm">
-                <label for="day">Day:</label>
+                <label for="day">Día:</label>
                 <select id="day" name="day">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
                 </select><br>
-                <label for="time">Time:</label>
-                <input type="text" id="time" name="time" placeholder="e.g., 09:00 AM" required><br>
-                <label for="subject">Subject:</label>
-                <input type="text" id="subject" name="subject" required><br>
-                <button type="submit">Save Changes</button>
+                
+                <label for="time">Hora:</label>
+                <input type="time" id="time" name="time" required><br>
+                
+                <label for="subject">Materia:</label>
+                <select id="subject" name="subject">
+                    <option value="">Selecciona una materia</option>
+                </select><br>
+                
+                <button type="submit">Guardar Cambios</button>
             </form>
+            <button id="acceptScheduleBtn">Aceptar Horario</button>
         </div>
     </main>
 
@@ -155,36 +126,59 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
-        // Firebase configuration
+        // Configuración Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id",
+            databaseURL: "your-database-url"
         };
 
-        // Initialize Firebase
+        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // Check if the user is logged in
+        // Revisar si el usuario está logueado
         auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = 'login.html';
             }
         });
 
-        // Switch to edit mode
+        // Cambiar a modo de edición
         document.getElementById('editScheduleBtn').addEventListener('click', () => {
             document.getElementById('editForm').style.display = 'block';
         });
 
-        // Handle form submission
+        // Cargar materias desde Firebase basadas en el grupo y semestre
+        function loadAvailableSubjects(semestre, grupo, day, time) {
+            const subjectsRef = database.ref(`materias/${semestre}/${grupo}/${day}/${time}`);
+            subjectsRef.once('value', snapshot => {
+                const subjectsDropdown = document.getElementById('subject');
+                subjectsDropdown.innerHTML = '';  // Limpiar opciones previas
+                snapshot.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject.key;
+                    option.textContent = subject.val();
+                    subjectsDropdown.appendChild(option);
+                });
+            });
+        }
+
+        // Llenar el formulario de edición con materias válidas
+        document.getElementById('time').addEventListener('change', function() {
+            const day = document.getElementById('day').value;
+            const time = document.getElementById('time').value;
+            const semestre = "semestreEjemplo";  // Reemplazar por la variable del semestre real
+            const grupo = "grupoEjemplo";  // Reemplazar por la variable del grupo real
+            loadAvailableSubjects(semestre, grupo, day, time);
+        });
+
+        // Manejar el envío del formulario
         document.getElementById('scheduleForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
@@ -192,43 +186,43 @@
             const time = document.getElementById('time').value;
             const subject = document.getElementById('subject').value;
 
-            // Save to Firebase
-            const userId = 'currentUserId'; // Replace with actual user ID
+            // Guardar en Firebase
+            const userId = 'currentUserId'; // Reemplazar con el ID de usuario actual
             const scheduleRef = database.ref(`users/${userId}/schedule/${day}/${time}`);
             scheduleRef.set(subject)
                 .then(() => {
-                    alert('Schedule updated successfully!');
+                    alert('¡Horario actualizado exitosamente!');
                     document.getElementById('editForm').style.display = 'none';
-                    loadSchedule(); // Reload the schedule
+                    loadSchedule(); // Recargar el horario
                 })
                 .catch(error => {
-                    console.error('Error updating schedule:', error);
+                    console.error('Error al actualizar el horario:', error);
                 });
         });
 
-        // Load and display the schedule
+        // Cargar el horario desde Firebase
         function loadSchedule() {
-            const userId = 'currentUserId'; // Replace with actual user ID
+            const userId = 'currentUserId'; // Reemplazar con el ID de usuario actual
             const scheduleRef = database.ref(`users/${userId}/schedule`);
 
             scheduleRef.once('value').then(snapshot => {
                 const schedule = snapshot.val();
                 const scheduleTable = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
                 
-                // Clear existing rows
+                // Limpiar filas existentes
                 scheduleTable.innerHTML = '';
 
                 for (let hour = 7; hour <= 18; hour++) {
                     const hourString = `${hour}:00`;
                     const row = document.createElement('tr');
                     
-                    // Time Cell
+                    // Celda de Hora
                     const timeCell = document.createElement('td');
                     timeCell.textContent = hourString;
                     row.appendChild(timeCell);
 
-                    // Day Cells
-                    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach(day => {
+                    // Celdas de Día
+                    ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].forEach(day => {
                         const cell = document.createElement('td');
                         cell.textContent = schedule && schedule[day] && schedule[day][hourString] ? schedule[day][hourString] : '';
                         row.appendChild(cell);
@@ -239,8 +233,8 @@
             });
         }
 
-        // Load the schedule on page load
-        window.onload = loadSchedule;
+        // Inicializar la carga del horario
+        loadSchedule();
     </script>
 </body>
 </html>
