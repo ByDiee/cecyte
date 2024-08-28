@@ -97,28 +97,6 @@
         <div class="edit-form" id="editForm">
             <h3>Editar Horario</h3>
             <form id="scheduleForm">
-                <label for="semestre">Semestre:</label>
-                <select id="semestre" name="semestre">
-                    <option value="">Selecciona un semestre</option>
-                    <option value="1">Semestre 1</option>
-                    <option value="2">Semestre 2</option>
-                    <option value="3">Semestre 3</option>
-                    <option value="4">Semestre 4</option>
-                    <option value="5">Semestre 5</option>
-                    <option value="6">Semestre 6</option>
-                </select><br>
-
-                <label for="grupo">Grupo:</label>
-                <select id="grupo" name="grupo">
-                    <option value="">Selecciona un grupo</option>
-                    <option value="A">Grupo A</option>
-                    <option value="B">Grupo B</option>
-                    <option value="C">Grupo C</option>
-                    <option value="D">Grupo D</option>
-                    <option value="E">Grupo E</option>
-                    <option value="F">Grupo F</option>
-                </select><br>
-
                 <label for="day">Día:</label>
                 <select id="day" name="day">
                     <option value="Lunes">Lunes</option>
@@ -147,73 +125,118 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
-        // Configuración Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-        };
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuración Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+                authDomain: "pdlista-61c4d.firebaseapp.com",
+                projectId: "pdlista-61c4d",
+                storageBucket: "pdlista-61c4d.appspot.com",
+                messagingSenderId: "449596760167",
+                appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+                measurementId: "G-BDXFNR25C0",
+                databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+            };
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const database = firebase.database();
 
-        // Cargar materias según semestre, grupo, día y hora
-        function loadAvailableSubjects(semestre, grupo, day, time) {
-            const subjectsRef = database.ref(`materias/${semestre}/${grupo}/${day}/${time}`);
-            subjectsRef.once('value', snapshot => {
-                const subjectsDropdown = document.getElementById('subject');
-                subjectsDropdown.innerHTML = '';  // Limpiar opciones previas
-                snapshot.forEach(subject => {
-                    const option = document.createElement('option');
-                    option.value = subject.key;
-                    option.textContent = subject.val();
-                    subjectsDropdown.appendChild(option);
-                });
-            });
-        }
-
-        // Escuchar cambios en la selección de semestre, grupo, día y hora
-        ['semestre', 'grupo', 'day', 'time'].forEach(id => {
-            document.getElementById(id).addEventListener('change', () => {
-                const semestre = document.getElementById('semestre').value;
-                const grupo = document.getElementById('grupo').value;
-                const day = document.getElementById('day').value;
-                const time = document.getElementById('time').value;
-                
-                if (semestre && grupo && day && time) {
-                    loadAvailableSubjects(semestre, grupo, day, time);
+            // Revisar si el usuario está logueado
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'login.html';
                 }
             });
-        });
 
-        // Guardar el horario
-        document.getElementById('scheduleForm').addEventListener('submit', (event) => {
-            event.preventDefault();
+            // Cambiar a modo de edición
+            document.getElementById('editScheduleBtn').addEventListener('click', () => {
+                document.getElementById('editForm').style.display = 'block';
+            });
 
-            const semestre = document.getElementById('semestre').value;
-            const grupo = document.getElementById('grupo').value;
-            const day = document.getElementById('day').value;
-            const time = document.getElementById('time').value;
-            const subject = document.getElementById('subject').value;
-
-            // Guardar en Firebase (adaptar al ID de usuario)
-            const userId = 'currentUserId';  // Reemplazar con el ID real
-            const scheduleRef = database.ref(`users/${userId}/schedule/${day}/${time}`);
-            scheduleRef.set(subject)
-                .then(() => {
-                    alert('¡Horario actualizado exitosamente!');
-                    document.getElementById('editForm').style.display = 'none';
-                    loadSchedule();  // Recargar el horario
-                })
-                .catch(error => {
-                    console.error('Error al actualizar el horario:', error);
+            // Cargar materias desde Firebase basadas en el grupo y semestre
+            function loadAvailableSubjects(semestre, grupo, day, time) {
+                const subjectsRef = database.ref(`materias/${semestre}/${grupo}/${day}/${time}`);
+                subjectsRef.once('value', snapshot => {
+                    const subjectsDropdown = document.getElementById('subject');
+                    subjectsDropdown.innerHTML = '';  // Limpiar opciones previas
+                    snapshot.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.key;
+                        option.textContent = subject.val();
+                        subjectsDropdown.appendChild(option);
+                    });
                 });
+            }
+
+            // Llenar el formulario de edición con materias válidas
+            document.getElementById('time').addEventListener('change', function() {
+                const day = document.getElementById('day').value;
+                const time = document.getElementById('time').value;
+                const semestre = "semestreEjemplo";  // Reemplazar por la variable del semestre real
+                const grupo = "grupoEjemplo";  // Reemplazar por la variable del grupo real
+                loadAvailableSubjects(semestre, grupo, day, time);
+            });
+
+            // Manejar el envío del formulario
+            document.getElementById('scheduleForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const day = document.getElementById('day').value;
+                const time = document.getElementById('time').value;
+                const subject = document.getElementById('subject').value;
+
+                // Guardar en Firebase
+                const userId = 'currentUserId'; // Reemplazar con el ID de usuario actual
+                const scheduleRef = database.ref(`users/${userId}/schedule/${day}/${time}`);
+                scheduleRef.set(subject)
+                    .then(() => {
+                        alert('¡Horario actualizado exitosamente!');
+                        document.getElementById('editForm').style.display = 'none';
+                        loadSchedule(); // Recargar el horario
+                    })
+                    .catch(error => {
+                        console.error('Error al actualizar el horario:', error);
+                    });
+            });
+
+            // Cargar el horario desde Firebase
+            function loadSchedule() {
+                const userId = 'currentUserId'; // Reemplazar con el ID de usuario actual
+                const scheduleRef = database.ref(`users/${userId}/schedule`);
+
+                scheduleRef.once('value').then(snapshot => {
+                    const schedule = snapshot.val();
+                    const scheduleTable = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+                    
+                    // Limpiar filas existentes
+                    scheduleTable.innerHTML = '';
+
+                    for (let hour = 7; hour <= 18; hour++) {
+                        const hourString = `${hour}:00`;
+                        const row = document.createElement('tr');
+                        
+                        // Celda de la hora
+                        const hourCell = document.createElement('td');
+                        hourCell.textContent = hourString;
+                        row.appendChild(hourCell);
+
+                        // Celdas de los días
+                        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                        days.forEach(day => {
+                            const cell = document.createElement('td');
+                            const subject = schedule?.[day]?.[hourString] || '';
+                            cell.textContent = subject;
+                            row.appendChild(cell);
+                        });
+
+                        scheduleTable.appendChild(row);
+                    }
+                });
+            }
+
+            loadSchedule();
         });
     </script>
 </body>
