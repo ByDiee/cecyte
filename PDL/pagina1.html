@@ -107,7 +107,20 @@
                 </select><br>
                 
                 <label for="time">Hora:</label>
-                <input type="time" id="time" name="time" required><br>
+                <select id="time" name="time">
+                    <option value="0700">07:00</option>
+                    <option value="0745">07:45</option>
+                    <option value="0830">08:30</option>
+                    <option value="0915">09:15</option>
+                    <option value="1000">10:00</option>
+                    <option value="1030">10:30</option>
+                    <option value="1115">11:15</option>
+                    <option value="1200">12:00</option>
+                    <option value="1245">12:45</option>
+                    <option value="1330">13:30</option>
+                    <option value="1415">14:15</option>
+                    <option value="1500">15:00</option>
+                </select><br>
                 
                 <label for="subject">Materia:</label>
                 <select id="subject" name="subject">
@@ -157,7 +170,7 @@
 
             // Cargar materias desde Firebase basadas en el grupo y semestre
             function loadAvailableSubjects(semestre, grupo, day, time) {
-                const subjectsRef = database.ref(`materias/${semestre}/${grupo}/${day}/${time}`);
+                const subjectsRef = database.ref(`classSchedules/${semestre}/${grupo}/${day}/${time}`);
                 subjectsRef.once('value', snapshot => {
                     const subjectsDropdown = document.getElementById('subject');
                     subjectsDropdown.innerHTML = '';  // Limpiar opciones previas
@@ -213,22 +226,24 @@
                     // Limpiar filas existentes
                     scheduleTable.innerHTML = '';
 
+                    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
                     for (let hour = 7; hour <= 18; hour++) {
                         const hourString = `${hour}:00`;
                         const row = document.createElement('tr');
                         
                         // Celda de la hora
-                        const hourCell = document.createElement('td');
-                        hourCell.textContent = hourString;
-                        row.appendChild(hourCell);
+                        const timeCell = document.createElement('td');
+                        timeCell.textContent = hourString;
+                        row.appendChild(timeCell);
 
                         // Celdas de los días
-                        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
                         days.forEach(day => {
-                            const cell = document.createElement('td');
-                            const subject = schedule?.[day]?.[hourString] || '';
-                            cell.textContent = subject;
-                            row.appendChild(cell);
+                            const dayCell = document.createElement('td');
+                            const timeKey = hourString.replace(':', '') + '00';
+                            if (schedule && schedule[day] && schedule[day][timeKey]) {
+                                dayCell.textContent = schedule[day][timeKey];
+                            }
+                            row.appendChild(dayCell);
                         });
 
                         scheduleTable.appendChild(row);
@@ -236,7 +251,7 @@
                 });
             }
 
-            loadSchedule();
+            loadSchedule(); // Cargar horario al iniciar
         });
     </script>
 </body>
