@@ -6,30 +6,39 @@
     <title>Teacher Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f6f9;
             margin: 0;
             padding: 0;
         }
         header {
             background-color: #28a745;
             color: white;
-            padding: 15px;
+            padding: 20px;
             text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         nav {
             background-color: #ff851b;
-            padding: 10px;
+            padding: 15px;
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
+            gap: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         nav a {
             color: white;
             text-decoration: none;
             font-weight: bold;
+            transition: color 0.3s ease;
+        }
+        nav a:hover {
+            color: #ffd699;
         }
         main {
             padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
         }
         .welcome {
             text-align: center;
@@ -38,22 +47,62 @@
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .schedule-table th, .schedule-table td {
-            border: 1px solid #cccccc;
-            padding: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
             text-align: center;
         }
         .schedule-table th {
             background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+        .schedule-table td {
+            background-color: #fff;
+            transition: background-color 0.3s ease;
+        }
+        .schedule-table td:hover {
+            background-color: #f9f9f9;
         }
         .edit-form {
             display: none;
-            border: 1px solid #cccccc;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             margin-top: 20px;
+        }
+        .edit-form h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .edit-form label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        .edit-form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .edit-form button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .edit-form button:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -104,7 +153,7 @@
                     <option value="Miércoles">Miércoles</option>
                     <option value="Jueves">Jueves</option>
                     <option value="Viernes">Viernes</option>
-                </select><br>
+                </select>
                 
                 <label for="time">Hora:</label>
                 <select id="time" name="time">
@@ -120,12 +169,12 @@
                     <option value="1330">13:30</option>
                     <option value="1415">14:15</option>
                     <option value="1500">15:00</option>
-                </select><br>
+                </select>
                 
                 <label for="subject">Materia:</label>
                 <select id="subject" name="subject">
                     <option value="">Selecciona una materia</option>
-                </select><br>
+                </select>
                 
                 <button type="submit">Guardar Cambios</button>
             </form>
@@ -139,7 +188,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Configuración Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
                 authDomain: "pdlista-61c4d.firebaseapp.com",
@@ -151,29 +199,25 @@
                 databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
             };
 
-            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
             const database = firebase.database();
 
-            // Revisar si el usuario está logueado
             auth.onAuthStateChanged(user => {
                 if (!user) {
                     window.location.href = 'login.html';
                 }
             });
 
-            // Cambiar a modo de edición
             document.getElementById('editScheduleBtn').addEventListener('click', () => {
                 document.getElementById('editForm').style.display = 'block';
             });
 
-            // Cargar materias desde Firebase basadas en el grupo y semestre
             function loadAvailableSubjects(semestre, grupo, day, time) {
                 const subjectsRef = database.ref(`classSchedules/${semestre}/${grupo}/${day}/${time}`);
                 subjectsRef.once('value', snapshot => {
                     const subjectsDropdown = document.getElementById('subject');
-                    subjectsDropdown.innerHTML = '';  // Limpiar opciones previas
+                    subjectsDropdown.innerHTML = '<option value="">Selecciona una materia</option>';
                     snapshot.forEach(subject => {
                         const option = document.createElement('option');
                         option.value = subject.key;
@@ -183,16 +227,14 @@
                 });
             }
 
-            // Llenar el formulario de edición con materias válidas
             document.getElementById('time').addEventListener('change', function() {
                 const day = document.getElementById('day').value;
                 const time = document.getElementById('time').value;
-                const semestre = "semestreEjemplo";  // Reemplazar por la variable del semestre real
-                const grupo = "grupoEjemplo";  // Reemplazar por la variable del grupo real
+                const semestre = "semestreEjemplo";  
+                const grupo = "grupoEjemplo";  
                 loadAvailableSubjects(semestre, grupo, day, time);
             });
 
-            // Manejar el envío del formulario
             document.getElementById('scheduleForm').addEventListener('submit', (event) => {
                 event.preventDefault();
 
@@ -200,30 +242,27 @@
                 const time = document.getElementById('time').value;
                 const subject = document.getElementById('subject').value;
 
-                // Guardar en Firebase
-                const userId = 'currentUserId'; // Reemplazar con el ID de usuario actual
+                const userId = 'currentUserId'; 
                 const scheduleRef = database.ref(`users/${userId}/schedule/${day}/${time}`);
                 scheduleRef.set(subject)
                     .then(() => {
                         alert('¡Horario actualizado exitosamente!');
                         document.getElementById('editForm').style.display = 'none';
-                        loadSchedule(); // Recargar el horario
+                        loadSchedule(); 
                     })
                     .catch(error => {
                         console.error('Error al actualizar el horario:', error);
                     });
             });
 
-            // Cargar el horario desde Firebase
             function loadSchedule() {
-                const userId = 'currentUserId'; // Reemplazar con el ID de usuario actual
+                const userId = 'currentUserId'; 
                 const scheduleRef = database.ref(`users/${userId}/schedule`);
 
                 scheduleRef.once('value').then(snapshot => {
                     const schedule = snapshot.val();
                     const scheduleTable = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
                     
-                    // Limpiar filas existentes
                     scheduleTable.innerHTML = '';
 
                     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
@@ -231,12 +270,10 @@
                         const hourString = `${hour}:00`;
                         const row = document.createElement('tr');
                         
-                        // Celda de la hora
                         const timeCell = document.createElement('td');
                         timeCell.textContent = hourString;
                         row.appendChild(timeCell);
 
-                        // Celdas de los días
                         days.forEach(day => {
                             const dayCell = document.createElement('td');
                             const timeKey = hourString.replace(':', '') + '00';
@@ -251,7 +288,7 @@
                 });
             }
 
-            loadSchedule(); // Cargar horario al iniciar
+            loadSchedule();
         });
     </script>
 </body>
