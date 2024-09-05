@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard</title>
+    <title>Tablero</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,13 +12,13 @@
             padding: 0;
         }
         header {
-            background-color: #28a745; /* Verde para el header */
+            background-color: #28a745;
             color: white;
             padding: 15px;
             text-align: center;
         }
         nav {
-            background-color: #ff851b; /* Naranja para la navegación */
+            background-color: #ff851b;
             padding: 10px;
             display: flex;
             justify-content: space-around;
@@ -54,29 +54,28 @@
 </head>
 <body>
     <header>
-        <h1>Student Dashboard</h1>
+        <h1>Tablero del Alumno</h1>
     </header>
     <nav>
-        <a href="#" id="editProfileBtn">Edit Profile</a>
-        <a href="#" id="viewAttendanceBtn">View Attendance</a>
+        <a href="#" id="editProfileBtn">Editar Perfil</a>
+        <a href="#" id="viewAttendanceBtn">Registro de Asistencias</a>
     </nav>
     <main>
         <!-- Schedule Table -->
         <div class="schedule">
-            <h3>Your Schedule</h3>
+            <h3>Horario</h3>
             <table class="schedule-table">
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Monday</th>
-                        <th>Tuesday</th>
-                        <th>Wednesday</th>
-                        <th>Thursday</th>
-                        <th>Friday</th>
+                        <th>Hora</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miercoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
                     </tr>
                 </thead>
                 <tbody id="scheduleBody">
-                    <!-- JavaScript will populate this section -->
                 </tbody>
             </table>
         </div>
@@ -148,51 +147,54 @@
                     const semester = profileData.semester;
                     const group = profileData.group;
 
-                    // Update the schedule
+                    // Actualiza el horario
                     updateSchedule(semester, group);
                 } else {
-                    console.error('Profile data not found');
+                    console.error('No se ha encontrado horario');
                 }
             }).catch(error => {
-                console.error('Error loading profile data:', error);
+                console.error('Error cargando datos del perfil:', error);
             });
         }
 
-        // Update the schedule table based on semester and group
-        function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
-            scheduleRef.once('value').then(snapshot => {
-                const scheduleData = snapshot.val();
+// Actualiza el horario con la información de la BD
+function updateSchedule(semester, group) {
+    const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
+    scheduleRef.once('value').then(snapshot => {
+        const scheduleData = snapshot.val();
 
-                const scheduleBody = document.getElementById('scheduleBody');
-                scheduleBody.innerHTML = ''; // Clear existing schedule
+        const scheduleBody = document.getElementById('scheduleBody');
+        scheduleBody.innerHTML = '';
 
-                if (scheduleData) {
-                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                    const hours = ['0900', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700'];
+        // Poner horario en modulos
+        if (scheduleData) {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const hours = ['0700', '0745', '0830', '0915', '1000', '1045', '1130', '1215', '1300'];
 
-                    for (const hour of hours) {
-                        const row = document.createElement('tr');
+            for (const hour of hours) {
+                const row = document.createElement('tr');
 
-                        const timeCell = document.createElement('td');
-                        timeCell.textContent = hour;
-                        row.appendChild(timeCell);
+                // Formatear la hora agregando dos puntos
+                const formattedHour = `${hour.slice(0, 2)}:${hour.slice(2)}`;
+                const timeCell = document.createElement('td');
+                timeCell.textContent = formattedHour;
+                row.appendChild(timeCell);
 
-                        for (const day of days) {
-                            const cell = document.createElement('td');
-                            cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
-                            row.appendChild(cell);
-                        }
-
-                        scheduleBody.appendChild(row);
-                    }
-                } else {
-                    scheduleBody.innerHTML = '<tr><td colspan="6">No schedule available</td></tr>';
+                for (const day of days) {
+                    const cell = document.createElement('td');
+                    cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
+                    row.appendChild(cell);
                 }
-            }).catch(error => {
-                console.error('Error loading schedule data:', error);
-            });
+
+                scheduleBody.appendChild(row);
+            }
+        } else {
+            scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario</td></tr>';
         }
+    }).catch(error => {
+        console.error('Error cargando datos del perfil:', error);
+    });
+}
     </script>
 </body>
 </html>
