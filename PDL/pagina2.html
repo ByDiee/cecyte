@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero</title>
+    <title>Tablero del Alumno</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,21 +34,29 @@
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .schedule-table th, .schedule-table td {
-            border: 1px solid #cccccc;
-            padding: 8px;
+            border: 1px solid #dddddd;
+            padding: 10px;
             text-align: center;
         }
         .schedule-table th {
             background-color: #f2f2f2;
+            font-weight: bold;
         }
-        .edit-form, .attendance-list {
-            border: 1px solid #cccccc;
-            padding: 10px;
-            border-radius: 5px;
+        .schedule-table td {
+            background-color: #ffffff;
+        }
+        .schedule-table tr:nth-child(odd) td {
             background-color: #f9f9f9;
-            margin-top: 20px;
+        }
+        .schedule-table td.highlight {
+            background-color: rgba(255, 99, 132, 0.3); /* Rojo claro */
+        }
+        .schedule-table td.current {
+            background-color: rgba(75, 192, 192, 0.5); /* Verde claro */
         }
     </style>
 </head>
@@ -80,17 +88,6 @@
                 </tbody>
             </table>
         </div>
-        
-        <!-- Edit Profile Form -->
-        <div class="edit-form" id="editForm" style="display: none;">
-            <h3>Edit Profile</h3>
-            <!-- Add form fields for editing profile -->
-        </div>
-        <!-- Attendance List -->
-        <div class="attendance-list" id="attendanceList" style="display: none;">
-            <h3>Attendance Record</h3>
-            <!-- Add attendance details here -->
-        </div>
     </main>
     <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -112,7 +109,15 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
-        // Check if the user is logged in
+
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+        const currentMinute = currentTime.getMinutes();
+
+        // Obtener el día de la semana
+        const daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const currentDay = daysOfWeek[currentTime.getDay()]; // "Lunes", "Martes", etc.
+
         auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = 'login.html';
@@ -120,17 +125,7 @@
                 loadStudentProfile();
             }
         });
-        // Handle Edit Profile Button
-        document.getElementById('editProfileBtn').addEventListener('click', () => {
-            window.location.href = 'perfilalu.html';
-        });
-        // Handle View Attendance Button
-        document.getElementById('viewAttendanceBtn').addEventListener('click', () => {
-            document.getElementById('attendanceList').style.display = 'block';
-            document.getElementById('editForm').style.display = 'none';
-        });
-        
-        // Load student profile data and schedule
+
         function loadStudentProfile() {
             const userId = auth.currentUser.uid;
             const profileRef = database.ref(`users/${userId}`);
@@ -139,7 +134,7 @@
                 if (profileData) {
                     const semester = profileData.semester;
                     const group = profileData.group;
-                    // Actualiza el horario
+                    // Actualizar el horario
                     updateSchedule(semester, group);
                 } else {
                     console.error('No se ha encontrado horario');
@@ -148,7 +143,7 @@
                 console.error('Error cargando datos del perfil:', error);
             });
         }
-        // Actualiza el horario con la información de la BD
+
         function updateSchedule(semester, group) {
             const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
             scheduleRef.once('value').then(snapshot => {
@@ -156,21 +151,44 @@
                 const scheduleBody = document.getElementById('scheduleBody');
                 scheduleBody.innerHTML = '';
 
-                // Poner horario en módulos
                 if (scheduleData) {
-                    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
-                    const hours = ['0700', '0745', '0830', '0915', '1000', '1030', '1115', '1200', '1245', '1330', '1415'];
+                    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                    const hours = [
+                        { start: '0700', end: '0745' },
+                        { start: '0745', end: '0830' },
+                        { start: '0830', end: '0915' },
+                        { start: '0915', end: '1000' },
+                        { start: '1000', end: '1030' }, // Marcar en rojo
+                        { start: '1030', end: '1115' },
+                        { start: '1115', end: '1200' },
+                        { start: '1200', end: '1245' },
+                        { start: '1245', end: '1330' },
+                        { start: '1330', end: '1415' }
+                    ];
 
                     for (const hour of hours) {
                         const row = document.createElement('tr');
-                        // Formatear la hora agregando dos puntos
-                        const formattedHour = `${hour.slice(0, 2)}:${hour.slice(2)}`;
+                        const formattedHour = `${hour.start.slice(0, 2)}:${hour.start.slice(2)} - ${hour.end.slice(0, 2)}:${hour.end.slice(2)}`;
                         const timeCell = document.createElement('td');
                         timeCell.textContent = formattedHour;
                         row.appendChild(timeCell);
+
                         for (const day of days) {
                             const cell = document.createElement('td');
-                            cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
+                            const classInfo = scheduleData[day] && scheduleData[day][hour.start] ? scheduleData[day][hour.start] : '';
+                            cell.textContent = classInfo;
+                            
+                            // Marcar en rojo el intervalo de 10:00 - 10:30
+                            if (hour.start === '1000' && hour.end === '1030') {
+                                cell.classList.add('highlight');
+                            }
+
+                            // Marcar la clase actual en verde
+                            const currentHourString = `${currentHour.toString().padStart(2, '0')}${currentMinute.toString().padStart(2, '0')}`;
+                            if (currentDay === day && currentHourString >= hour.start && currentHourString < hour.end) {
+                                cell.classList.add('current');
+                            }
+
                             row.appendChild(cell);
                         }
                         scheduleBody.appendChild(row);
