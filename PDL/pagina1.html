@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Dashboard</title>
+    <title>Tablero del Profesor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -70,7 +70,7 @@
 </head>
 <body>
     <header>
-        <h1>Bienvenido</h1>
+        <h1>Bienvenido </h1>
     </header>
     <nav>
         <a href="#" id="generateQRBtn">Generar QR</a>
@@ -110,6 +110,7 @@
             <form id="scheduleForm">
                 <label for="semestre">Semestre:</label>
                 <select id="semestre" name="semestre">
+                    <option value="">Selecciona un semestre</option>
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -120,6 +121,7 @@
                 
                 <label for="grupo">Grupo:</label>
                 <select id="grupo" name="grupo">
+                    <option value="">Selecciona un grupo</option>
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="C">C</option>
@@ -130,6 +132,7 @@
 
                 <label for="day">Día:</label>
                 <select id="day" name="day">
+                    <option value="">Selecciona un día</option>
                     <option value="Lunes">Lunes</option>
                     <option value="Martes">Martes</option>
                     <option value="Miércoles">Miércoles</option>
@@ -139,6 +142,7 @@
                 
                 <label for="time">Hora:</label>
                 <select id="time" name="time">
+                    <option value="">Selecciona una hora</option>
                     <option value="0700">07:00</option>
                     <option value="0745">07:45</option>
                     <option value="0830">08:30</option>
@@ -160,6 +164,7 @@
                 
                 <button type="submit">Guardar Cambios</button>
             </form>
+            <p id="noSubjectsMessage" style="display:none; color:red;">No hay materia disponible</p>
         </div>
     </main>
 
@@ -169,93 +174,107 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configuración Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-        };
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración Firebase
+    const firebaseConfig = {
+        apiKey: "API_KEY",
+        authDomain: "project.firebaseapp.com",
+        projectId: "project-id",
+        storageBucket: "project.appspot.com",
+        messagingSenderId: "messaging-id",
+        appId: "app-id",
+        measurementId: "measurement-id",
+        databaseURL: "https://project-default-rtdb.firebaseio.com/"
+    };
 
-            // Inicializar Firebase
-            firebase.initializeApp(firebaseConfig);
-            const auth = firebase.auth();
-            const database = firebase.database();
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
 
-            // Revisar si el usuario está logueado
-            auth.onAuthStateChanged(user => {
-                if (!user) {
-                    window.location.href = 'login.html';
-                }
+    // Revisar si el usuario está logueado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = 'login.html';
+        } else {
+            const userId = user.uid;
+            const userRef = database.ref(`users/${userId}`);
+            userRef.once('value', snapshot => {
+                const semestre = snapshot.val().semester;
+                const grupo = snapshot.val().group;
+                populateSchedule(semestre, grupo);
             });
+        }
+    });
 
-            // Cambiar a modo de edición
-            document.getElementById('editScheduleBtn').addEventListener('click', () => {
-                document.getElementById('editForm').style.display = 'block';
+    // Mostrar horario vacío al principio
+    function populateSchedule(semestre, grupo) {
+        const scheduleTableBody = document.querySelector('#scheduleTable tbody');
+        scheduleTableBody.innerHTML = ''; // Limpiar tabla
+
+        const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+        const timeSlots = ['0700', '0745', '0830', '0915', '1000', '1030', '1115', '1200', '1245', '1330', '1415', '1500'];
+
+        daysOfWeek.forEach(day => {
+            const row = document.createElement('tr');
+            const dayCell = document.createElement('th');
+            dayCell.textContent = day;
+            row.appendChild(dayCell);
+
+            timeSlots.forEach(time => {
+                const cell = document.createElement('td');
+                cell.textContent = ''; // Iniciar vacío
+                row.appendChild(cell);
             });
-
-            // Cargar materias disponibles según el filtro de semestre, grupo, día y hora
-            function loadAvailableSubjects(semestre, grupo, day, time) {
-                const subjectsRef = database.ref(`classSchedules/semester${semestre}/group${grupo}/${day}/${time}`);
-                subjectsRef.once('value', snapshot => {
-                    const subjectsDropdown = document.getElementById('subject');
-                    subjectsDropdown.innerHTML = '<option value="">Selecciona una materia</option>';
-                    snapshot.forEach(subject => {
-                        const option = document.createElement('option');
-                        option.value = subject.val();
-                        option.textContent = subject.val();
-                        subjectsDropdown.appendChild(option);
-                    });
-                });
-            }
-
-            function filterSubjects() {
-                const semestre = document.getElementById('semestre').value;
-                const grupo = document.getElementById('grupo').value;
-                const day = document.getElementById('day').value;
-                const time = document.getElementById('time').value;
-
-                if (semestre && grupo && day && time) {
-                    loadAvailableSubjects(semestre, grupo, day, time);
-                }
-            }
-
-            document.getElementById('day').addEventListener('change', filterSubjects);
-            document.getElementById('time').addEventListener('change', filterSubjects);
-            document.getElementById('semestre').addEventListener('change', filterSubjects);
-            document.getElementById('grupo').addEventListener('change', filterSubjects);
-
-            // Manejar el envío del formulario
-            document.getElementById('scheduleForm').addEventListener('submit', (event) => {
-                event.preventDefault();
-
-                const day = document.getElementById('day').value;
-                const time = document.getElementById('time').value;
-                const subject = document.getElementById('subject').value;
-
-                if (!subject) {
-                    alert('Por favor selecciona una materia.');
-                    return;
-                }
-
-                const user = auth.currentUser;
-                if (user) {
-                    const userId = user.uid;
-                    database.ref(`users/${userId}/classSchedule/${day}/${time}`).set(subject)
-                        .then(() => {
-                            alert('Horario actualizado exitosamente.');
-                        })
-                        .catch((error) => {
-                            console.error('Error al actualizar el horario:', error);
-                        });
-                }
-            });
+            scheduleTableBody.appendChild(row);
         });
+    }
+
+    // Mostrar y ocultar formulario de edición
+    document.getElementById('editScheduleBtn').addEventListener('click', () => {
+        document.getElementById('editForm').style.display = 'block';
+    });
+
+    // Manejar selección dinámica de materias
+    document.getElementById('semestre').addEventListener('change', updateSubjects);
+    document.getElementById('grupo').addEventListener('change', updateSubjects);
+
+    function updateSubjects() {
+        const semestre = document.getElementById('semestre').value;
+        const grupo = document.getElementById('grupo').value;
+        const subjectSelect = document.getElementById('subject');
+        const noSubjectsMessage = document.getElementById('noSubjectsMessage');
+        
+        if (semestre && grupo) {
+            const subjectsRef = database.ref(`subjects/${semestre}/${grupo}`);
+            subjectsRef.once('value', snapshot => {
+                subjectSelect.innerHTML = '<option value="">Selecciona una materia</option>'; // Resetear opciones
+                noSubjectsMessage.style.display = 'none';
+
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const subject = childSnapshot.val();
+                        const option = document.createElement('option');
+                        option.value = subject.id; // Asegúrate de que el valor sea correcto
+                        option.textContent = subject.name; // Asegúrate de que el nombre sea correcto
+                        subjectSelect.appendChild(option);
+                    });
+
+                    if (!subjectSelect.hasChildNodes()) {
+                        noSubjectsMessage.style.display = 'block';
+                    }
+                } else {
+                    noSubjectsMessage.style.display = 'block';
+                }
+            }).catch(error => {
+                console.error('Error al obtener materias:', error);
+            });
+        } else {
+            subjectSelect.innerHTML = '<option value="">Selecciona una materia</option>';
+            noSubjectsMessage.style.display = 'none';
+        }
+    }
+});
     </script>
 </body>
 </html>
