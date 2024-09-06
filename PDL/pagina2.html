@@ -70,13 +70,12 @@
                         <th>Hora</th>
                         <th>Lunes</th>
                         <th>Martes</th>
-                        <th>Miércoles</th>
+                        <th>Miercoles</th>
                         <th>Jueves</th>
                         <th>Viernes</th>
                     </tr>
                 </thead>
                 <tbody id="scheduleBody">
-                    <!-- Schedule will be populated here -->
                 </tbody>
             </table>
         </div>
@@ -158,44 +157,44 @@
             });
         }
 
-        // Actualiza el horario con la información de la BD
-        function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
-            scheduleRef.once('value').then(snapshot => {
-                const scheduleData = snapshot.val();
+// Actualiza el horario con la información de la BD
+function updateSchedule(semester, group) {
+    const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
+    scheduleRef.once('value').then(snapshot => {
+        const scheduleData = snapshot.val();
 
-                const scheduleBody = document.getElementById('scheduleBody');
-                scheduleBody.innerHTML = '';
+        const scheduleBody = document.getElementById('scheduleBody');
+        scheduleBody.innerHTML = '';
 
-                // Poner horario en módulos
-                if (scheduleData) {
-                    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
-                    const hours = ['0700', '0745', '0830', '0915', '1000', '1045', '1130', '1215', '1300'];
+        // Poner horario en modulos
+        if (scheduleData) {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const hours = ['0700', '0745', '0830', '0915', '1000', '1030', '1115', '1200', '1245', '1330', '1415'];
 
-                    for (const hour of hours) {
-                        const row = document.createElement('tr');
+            for (const hour of hours) {
+                const row = document.createElement('tr');
 
-                        // Formatear la hora agregando dos puntos
-                        const formattedHour = `${hour.slice(0, 2)}:${hour.slice(2)}`;
-                        const timeCell = document.createElement('td');
-                        timeCell.textContent = formattedHour;
-                        row.appendChild(timeCell);
+                // Formatear la hora agregando dos puntos
+                const formattedHour = `${hour.slice(0, 2)}:${hour.slice(2)}`;
+                const timeCell = document.createElement('td');
+                timeCell.textContent = formattedHour;
+                row.appendChild(timeCell);
 
-                        for (const day of days) {
-                            const cell = document.createElement('td');
-                            cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
-                            row.appendChild(cell);
-                        }
-
-                        scheduleBody.appendChild(row);
-                    }
-                } else {
-                    scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
+                for (const day of days) {
+                    const cell = document.createElement('td');
+                    cell.textContent = scheduleData[day] && scheduleData[day][hour] ? scheduleData[day][hour] : '';
+                    row.appendChild(cell);
                 }
-            }).catch(error => {
-                console.error('Error cargando datos del horario:', error);
-            });
+
+                scheduleBody.appendChild(row);
+            }
+        } else {
+            scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario</td></tr>';
         }
+    }).catch(error => {
+        console.error('Error cargando datos del perfil:', error);
+    });
+}
     </script>
 </body>
 </html>
