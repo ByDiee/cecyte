@@ -66,7 +66,7 @@
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
         <button id="loginBtn">Login</button>
-        <p>Or sign in with:</p>
+        <p>O inicia sesión con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
         <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
     </div>
@@ -108,7 +108,7 @@
                             const userData = snapshot.val();
                             if (userData) {
                                 // Redirect based on role (set role in Firebase later)
-                                const role = userData.role; // Assume 'role' will be set later
+                                const role = userData.role;
                                 if (role === 'admin') {
                                     window.location.href = 'pagina1.html';
                                 } else if (role === 'student') {
@@ -140,8 +140,8 @@
                         .then((snapshot) => {
                             const userData = snapshot.val();
                             if (userData) {
-                                // Redirect based on role (set role in Firebase later)
-                                const role = userData.role; // Assume 'role' will be set later
+                                // Redirige segun su rol (alumno o maestro)
+                                const role = userData.role;
                                 if (role === 'admin') {
                                     window.location.href = 'pagina1.html';
                                 } else if (role === 'student') {

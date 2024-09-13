@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register / Login</title>
+    <title>Registro</title>
     <style>
         body {
             display: flex;
@@ -62,23 +62,23 @@
             color: #4caf50;
         }
         .password-requirements .unfulfilled {
-            color: #f44336;
+            color: #852019;
         }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <h2>Register</h2>
+        <h2>Registro</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password" oninput="validatePassword()">
         <input type="password" id="confirmPassword" placeholder="Confirm Password" oninput="validatePassword()">
-        <button id="registerBtn">Register</button>
-        <p>Or sign up with:</p>
+        <button id="registerBtn">Registro</button>
+        <p>O regístrate con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
         <ul class="password-requirements">
-            <li id="length" class="unfulfilled">At least 8 characters</li>
-            <li id="number" class="unfulfilled">At least 1 number</li>
-            <li id="uppercase" class="unfulfilled">At least 1 uppercase letter</li>
+            <li id="length" class="unfulfilled">La contraseña debe contener al menos 8 caracteres</li>
+            <li id="number" class="unfulfilled">La contraseña debe contener al menos 1 número</li>
+            <li id="uppercase" class="unfulfilled">La contraseña debe contener al menos 1 letra mayúscula</li>
         </ul>
     </div>
 
@@ -150,25 +150,25 @@
                     auth.createUserWithEmailAndPassword(email, password)
                         .then((userCredential) => {
                             const user = userCredential.user;
-                            // Save user information in the database with default role
+
                             database.ref('users/' + user.uid).set({
                                 email: user.email,
-                                role: 'student' // Default role as student
+                                role: 'student'
                             });
                             alert('User registered successfully');
-                            window.location.href = 'login.html'; // Redirect to login page
+                            window.location.href = 'login.html';
                         })
                         .catch((error) => {
                             console.error('Registration error:', error.message);
                         });
                 } else {
-                    alert('Passwords do not match. Please try again.');
+                    alert('Las contraseñas no coinciden.');
                     document.getElementById('password').value = '';
                     document.getElementById('confirmPassword').value = '';
                     validatePassword();
                 }
             } else {
-                alert('Please meet all password requirements');
+                alert('Por favor, llena todos los campos. ');
             }
         });
 

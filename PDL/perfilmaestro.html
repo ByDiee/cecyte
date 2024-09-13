@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil del Alumno</title>
+    <title>Perfil del Maestro</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,10 +55,10 @@
 </head>
 <body>
     <header>
-        <h1>Perfil del Alumno</h1>
+        <h1>Perfil del Maestro</h1>
     </header>
     <main>
-        <form class="profile-form" id="studentProfileForm">
+        <form class="profile-form" id="teacherProfileForm">
             <label for="firstName">Nombre:</label>
             <input type="text" id="firstName" name="firstName" required>
 
@@ -67,32 +67,6 @@
 
             <label for="lastNameM">Apellido Materno:</label>
             <input type="text" id="lastNameM" name="lastNameM" required>
-
-            <label for="enrollment">Matrícula:</label>
-            <input type="text" id="enrollment" name="enrollment" required>
-
-            <label for="semester">Semestre:</label>
-            <select id="semester" name="semester" required>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-            </select>
-
-            <label for="group">Grupo:</label>
-            <select id="group" name="group" required>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-            </select>
-
-            <label for="career">Carrera:</label>
-            <input type="text" id="career" name="career" readonly>
 
             <button type="submit">Guardar Cambios</button>
         </form>
@@ -118,41 +92,21 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // Pone la carrera segun el grupo seleccionado
-        const careerMapping = {
-            'A': 'Programacion',
-            'B': 'Programacion',
-            'C': 'Definir',
-            'D': 'Definir',
-            'E': 'Definir',
-            'F': 'Programacion'
-        };
-
-        // Guardar y mostrar datos del estudiante
-        function loadStudentProfile() {
+        // Carga la información del perfil del maestro
+        function loadTeacherProfile() {
             const userId = auth.currentUser.uid;
             const profileRef = database.ref(`users/${userId}`);
 
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
                 document.getElementById('firstName').value = profileData.firstName || '';
-                document.getElementById('lastNameP').value = profileData.lastNameP || '';  
+                document.getElementById('lastNameP').value = profileData.lastNameP || '';
                 document.getElementById('lastNameM').value = profileData.lastNameM || '';
-                document.getElementById('enrollment').value = profileData.enrollment || '';
-                document.getElementById('semester').value = profileData.semester || '';
-                document.getElementById('group').value = profileData.group || '';
-                updateCareerField(profileData.group || '');
             });
         }
 
-        // Actualizar especialidad (carrera) en base al grupo
-        function updateCareerField(group) {
-            const career = careerMapping[group] || '';
-            document.getElementById('career').value = career;
-        }
-
-        // Guarda la informacion actualizada
-        document.getElementById('studentProfileForm').addEventListener('submit', (event) => {
+        // Guarda la información actualizada
+        document.getElementById('teacherProfileForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
             const userId = auth.currentUser.uid;
@@ -160,10 +114,7 @@
             const profileData = {
                 firstName: document.getElementById('firstName').value,
                 lastNameP: document.getElementById('lastNameP').value,
-                lastNameM: document.getElementById('lastNameM').value,
-                enrollment: document.getElementById('enrollment').value,
-                semester: document.getElementById('semester').value,
-                group: document.getElementById('group').value
+                lastNameM: document.getElementById('lastNameM').value
             };
 
             profileRef.update(profileData)
@@ -175,19 +126,13 @@
                 });
         });
 
-        // Carga la informacion desde Firebase
+        // Carga la información desde Firebase
         auth.onAuthStateChanged(user => {
             if (user) {
-                loadStudentProfile();
+                loadTeacherProfile();
             } else {
                 window.location.href = 'login.html';
             }
-        });
-
-        // Actualiza la carrera si el grupo cambia
-        document.getElementById('group').addEventListener('change', function() {
-            const group = this.value;
-            updateCareerField(group);
         });
     </script>
 </body>

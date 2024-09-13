@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materias Disponibles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .subject-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .subject-list li {
+            padding: 8px;
+            border-bottom: 1px solid #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Materias Disponibles</h1>
+    </header>
+    <main>
+        <ul class="subject-list" id="subjectList">
+            <!-- Aquí se mostrarán las materias -->
+        </ul>
+    </main>
+
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuración Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+                authDomain: "pdlista-61c4d.firebaseapp.com",
+                projectId: "pdlista-61c4d",
+                storageBucket: "pdlista-61c4d.appspot.com",
+                messagingSenderId: "449596760167",
+                appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+                measurementId: "G-BDXFNR25C0",
+                databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+            };
+
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
+            const subjectList = document.getElementById('subjectList');
+
+            // Función para cargar todas las materias
+            function loadAllSubjects() {
+                database.ref('classSchedules').once('value').then(snapshot => {
+                    const data = snapshot.val();
+
+                    if (data) {
+                        for (const semester in data) {
+                            for (const group in data[semester]) {
+                                for (const day in data[semester][group]) {
+                                    for (const time in data[semester][group][day]) {
+                                        const subject = data[semester][group][day][time];
+                                        const listItem = document.createElement('li');
+                                        listItem.textContent = `Semestre: ${semester}, Grupo: ${group}, Día: ${day}, Hora: ${time}, Materia: ${subject}`;
+                                        subjectList.appendChild(listItem);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        subjectList.innerHTML = '<li>No hay materias disponibles</li>';
+                    }
+                }).catch(error => {
+                    console.error('Error al cargar materias:', error);
+                    subjectList.innerHTML = '<li>Error al cargar las materias</li>';
+                });
+            }
+
+            // Cargar todas las materias al cargar la página
+            loadAllSubjects();
+        });
+    </script>
+</body>
+</html>
