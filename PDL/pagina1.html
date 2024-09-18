@@ -149,37 +149,48 @@ document.addEventListener('DOMContentLoaded', function() {
             // Redirige al login solo si no hay usuario autenticado
             window.location.href = 'login.html';
         } else {
-            // Si el usuario está autenticado, obtenemos las materias
-            fetchAllSubjects();
+            // Si el usuario está autenticado, obtenemos el horario del profesor
+            fetchSchedule(user.uid);
         }
     });
 
-    // Obtener todas las materias y poblar el select de materias
-    function fetchAllSubjects() {
-        const subjectsRef = database.ref('subjects');
-        const subjectSelect = document.getElementById('subject');
+    // Obtener el horario del profesor y poblar la tabla
+    function fetchSchedule(userId) {
+        const scheduleRef = database.ref(`users/${userId}/horario`);
+        scheduleRef.once('value').then(snapshot => {
+            const schedule = snapshot.val();
+            const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+            
+            // Limpiar la tabla antes de llenarla
+            scheduleTableBody.innerHTML = '';
 
-        subjectsRef.once('value', snapshot => {
-            if (snapshot.exists()) {
-                const allSubjects = snapshot.val();
+            // Horas posibles
+            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
-                for (const semester in allSubjects) {
-                    for (const group in allSubjects[semester]) {
-                        for (const subjectKey in allSubjects[semester][group]) {
-                            const subject = allSubjects[semester][group][subjectKey];
+            // Crear las filas para cada hora
+            for (const time of times) {
+                const row = document.createElement('tr');
+                const timeCell = document.createElement('th');
+                timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                row.appendChild(timeCell);
 
-                            const option = document.createElement('option');
-                            option.value = subjectKey;
-                            option.textContent = `${subject.name} (Semestre ${semester} - Grupo ${group})`;
-                            subjectSelect.appendChild(option);
-                        }
+                // Crear las celdas para cada día
+                for (const day of days) {
+                    const cell = document.createElement('td');
+                    const subject = schedule && schedule[day] && schedule[day][time];
+                    if (subject) {
+                        cell.textContent = subject;
+                    } else {
+                        cell.textContent = '';
                     }
+                    row.appendChild(cell);
                 }
-            } else {
-                const option = document.createElement('option');
-                option.textContent = "No hay materias disponibles";
-                subjectSelect.appendChild(option);
+
+                scheduleTableBody.appendChild(row);
             }
+        }).catch(error => {
+            console.error('Error al obtener el horario:', error);
         });
     }
 
