@@ -147,7 +147,7 @@
                 const userId = firebase.auth().currentUser.uid; // Obtener el ID del usuario logueado
 
                 // Referencia al campo de horarios del usuario
-                const scheduleRef = database.ref(`/users/${currentUserId}`);
+                const scheduleRef = database.ref(`/users/`+userId);
 
                 // Crear un nuevo campo 'horario' si no existe
                 scheduleRef.once('value').then(snapshot => {
