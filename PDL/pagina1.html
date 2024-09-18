@@ -210,7 +210,7 @@
                                 deleteBtn.addEventListener('click', () => {
                                     // Al hacer clic en el botón de eliminar, eliminamos todas las instancias de la materia
                                     if (confirm(`¿Estás seguro de que quieres eliminar todas las materias "${subject}" del horario?`)) {
-                                        deleteSubjectFromSchedule(userId, subject);
+                                        deleteAllInstancesOfSubject(userId, subject);
                                     }
                                 });
                                 cell.appendChild(deleteBtn);
@@ -227,8 +227,8 @@
                 });
             }
 
-            // Eliminar todas las materias que coincidan con el nombre seleccionado del horario del profesor
-            function deleteSubjectFromSchedule(userId, subjectToDelete) {
+            // Eliminar todas las instancias de la materia seleccionada del horario del profesor
+            function deleteAllInstancesOfSubject(userId, subjectToDelete) {
                 const scheduleRef = database.ref(`users/${userId}/horario`);
                 scheduleRef.once('value').then(snapshot => {
                     const schedule = snapshot.val();
@@ -236,10 +236,12 @@
 
                     // Recorremos todos los días y horas para encontrar y eliminar las materias que coinciden
                     for (const day in schedule) {
+                        updates[day] = {};
                         for (const time in schedule[day]) {
                             if (schedule[day][time] === subjectToDelete) {
-                                if (!updates[day]) updates[day] = {};
                                 updates[day][time] = null;
+                            } else {
+                                updates[day][time] = schedule[day][time]; // Mantener materias que no coinciden
                             }
                         }
                     }
