@@ -48,15 +48,18 @@
         }
         .schedule-table td {
             background-color: #ffffff;
+            color: #000000; /* Color de texto por defecto */
         }
         .schedule-table tr:nth-child(odd) td {
             background-color: #f9f9f9;
         }
         .schedule-table td.highlight {
-            background-color: rgba(255, 99, 132, 0.3); /* Rojo claro */
+            background-color: #ffcccc; /* Rojo claro para el recreo */
+            color: #ff0000; /* Rojo para el texto del recreo */
         }
         .schedule-table td.current {
-            background-color: rgba(75, 192, 192, 0.5); /* Verde claro */
+            background-color: #c3f9c3; /* Verde claro para la materia actual */
+            color: #14c614; /* Verde oscuro para el texto de la materia actual */
         }
     </style>
 </head>
@@ -113,10 +116,12 @@
         const currentTime = new Date();
         const currentHour = currentTime.getHours();
         const currentMinute = currentTime.getMinutes();
-
+        const currentHourString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+        
         // Obtener el día de la semana
         const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-        const currentDay = daysOfWeek[currentTime.getDay()]; // "Lunes", "Martes", etc.
+        const currentDayIndex = (currentTime.getDay() + 6) % 7; // Ajustar el índice
+        const currentDay = daysOfWeek[currentDayIndex];
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -154,51 +159,69 @@
                 if (scheduleData) {
                     const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
                     const hours = [
-                        { start: '0700', end: '0745' },
-                        { start: '0745', end: '0830' },
-                        { start: '0830', end: '0915' },
-                        { start: '0915', end: '1000' },
-                        { start: '1000', end: '1030' }, // Marcar en rojo
-                        { start: '1030', end: '1115' },
-                        { start: '1115', end: '1200' },
-                        { start: '1200', end: '1245' },
-                        { start: '1245', end: '1330' },
-                        { start: '1330', end: '1415' }
+                        { start: '07:00', end: '07:45' },
+                        { start: '07:45', end: '08:30' },
+                        { start: '08:30', end: '09:15' },
+                        { start: '09:15', end: '10:00' },
+                        { start: '10:00', end: '10:30' }, // Marcar en rojo
+                        { start: '10:30', end: '11:15' },
+                        { start: '11:15', end: '12:00' },
+                        { start: '12:00', end: '12:45' },
+                        { start: '12:45', end: '13:30' },
+                        { start: '13:30', end: '14:15' }
                     ];
 
                     for (const hour of hours) {
                         const row = document.createElement('tr');
-                        const formattedHour = `${hour.start.slice(0, 2)}:${hour.start.slice(2)} - ${hour.end.slice(0, 2)}:${hour.end.slice(2)}`;
+                        const formattedHour = `${hour.start} - ${hour.end}`;
                         const timeCell = document.createElement('td');
                         timeCell.textContent = formattedHour;
                         row.appendChild(timeCell);
 
                         for (const day of days) {
                             const cell = document.createElement('td');
-                            const classInfo = scheduleData[day] && scheduleData[day][hour.start] ? scheduleData[day][hour.start] : '';
+                            const classInfo = scheduleData[day] && scheduleData[day][hour.start.replace(':', '')] ? scheduleData[day][hour.start.replace(':', '')] : '';
                             cell.textContent = classInfo;
-                            
-                            // Marcar en rojo el intervalo de 10:00 - 10:30 (receso)
-                            if (hour.start === '1000' && hour.end === '1030') {
-                                cell.classList.add('highlight');
-                            }
 
-                            // Marcar la clase actual en verde
-                            const currentHourString = `${currentHour.toString().padStart(2, '0')}${currentMinute.toString().padStart(2, '0')}`;
-                            if (currentDay === day && currentHourString >= hour.start && currentHourString < hour.end) {
-                                cell.classList.add('current');
+                            // Marcar en rojo el intervalo de 10:00 - 10:30 (receso)
+                            if (hour.start === '10:00' && hour.end === '10:30') {
+                                cell.classList.add('highlight');
                             }
 
                             row.appendChild(cell);
                         }
                         scheduleBody.appendChild(row);
                     }
+
+                    // Resaltar la celda correspondiente a la hora actual y el día actual
+                    highlightCurrentTimeCell(currentDay, currentHourString);
                 } else {
                     scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
                 }
             }).catch(error => {
                 console.error('Error cargando datos del horario:', error);
             });
+        }
+
+        function highlightCurrentTimeCell(day, currentTime) {
+            const rows = document.querySelectorAll('.schedule-table tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const timeCell = cells[0].textContent.trim();
+                const [start, end] = timeCell.split(' - ');
+
+                if (isTimeInRange(currentTime, start, end)) {
+                    const dayIndex = daysOfWeek.indexOf(day) + 1; // Obtener el índice de la columna del día
+                    const targetCell = cells[dayIndex];
+                    if (targetCell) {
+                        targetCell.classList.add('current');
+                    }
+                }
+            });
+        }
+
+        function isTimeInRange(currentTime, startTime, endTime) {
+            return currentTime >= startTime && currentTime <= endTime;
         }
     </script>
 </body>

@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const database = firebase.database();
 
     // Revisar si el usuario está logueado
-    auth.onAuthStateChanged(user => {
+    firebase.auth().onAuthStateChanged((user) => {
         if (!user) {
             // Redirige al login solo si no hay usuario autenticado
             window.location.href = 'login.html';
