@@ -113,6 +113,17 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
+            // Revisar si el usuario está logueado
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            // Redirige al login solo si no hay usuario autenticado
+            window.location.href = 'login.html';
+        } else {
+            // Si el usuario está autenticado, obtenemos el horario del profesor
+            fetchSchedule(user.uid);
+        }
+    });
+
         const currentTime = new Date();
         const currentHour = currentTime.getHours();
         const currentMinute = currentTime.getMinutes();

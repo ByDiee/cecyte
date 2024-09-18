@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero del Profesor</title>
     <style>
+        /* Agrega aquí el CSS mencionado arriba */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
@@ -43,6 +44,7 @@
             border: 1px solid #cccccc;
             padding: 8px;
             text-align: center;
+            position: relative; /* Necesario para el botón de eliminar */
         }
         .schedule-table th {
             background-color: #f2f2f2;
@@ -65,6 +67,25 @@
         }
         #editScheduleBtn:hover {
             background-color: #0056b3;
+        }
+        .delete-btn {
+            display: none;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
+        }
+        .schedule-table td:hover .delete-btn {
+            display: block;
         }
     </style>
 </head>
@@ -125,80 +146,102 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Configuración Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-        authDomain: "pdlista-61c4d.firebaseapp.com",
-        projectId: "pdlista-61c4d",
-        storageBucket: "pdlista-61c4d.appspot.com",
-        messagingSenderId: "449596760167",
-        appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-        measurementId: "G-BDXFNR25C0",
-        databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-    };
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuración Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+                authDomain: "pdlista-61c4d.firebaseapp.com",
+                projectId: "pdlista-61c4d",
+                storageBucket: "pdlista-61c4d.appspot.com",
+                messagingSenderId: "449596760167",
+                appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+                measurementId: "G-BDXFNR25C0",
+                databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+            };
 
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const database = firebase.database();
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const database = firebase.database();
 
-    // Revisar si el usuario está logueado
-    firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            // Redirige al login solo si no hay usuario autenticado
-            window.location.href = 'login.html';
-        } else {
-            // Si el usuario está autenticado, obtenemos el horario del profesor
-            fetchSchedule(user.uid);
-        }
-    });
-
-    // Obtener el horario del profesor y poblar la tabla
-    function fetchSchedule(userId) {
-        const scheduleRef = database.ref(`users/${userId}/horario`);
-        scheduleRef.once('value').then(snapshot => {
-            const schedule = snapshot.val();
-            const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
-            
-            // Limpiar la tabla antes de llenarla
-            scheduleTableBody.innerHTML = '';
-
-            // Horas posibles
-            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-
-            // Crear las filas para cada hora
-            for (const time of times) {
-                const row = document.createElement('tr');
-                const timeCell = document.createElement('th');
-                timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                row.appendChild(timeCell);
-
-                // Crear las celdas para cada día
-                for (const day of days) {
-                    const cell = document.createElement('td');
-                    const subject = schedule && schedule[day] && schedule[day][time];
-                    if (subject) {
-                        cell.textContent = subject;
-                    } else {
-                        cell.textContent = '';
-                    }
-                    row.appendChild(cell);
+            // Revisar si el usuario está logueado
+            firebase.auth().onAuthStateChanged((user) => {
+                if (!user) {
+                    // Redirige al login solo si no hay usuario autenticado
+                    window.location.href = 'login.html';
+                } else {
+                    // Si el usuario está autenticado, obtenemos el horario del profesor
+                    fetchSchedule(user.uid);
                 }
+            });
 
-                scheduleTableBody.appendChild(row);
+            // Obtener el horario del profesor y poblar la tabla
+            function fetchSchedule(userId) {
+                const scheduleRef = database.ref(`users/${userId}/horario`);
+                scheduleRef.once('value').then(snapshot => {
+                    const schedule = snapshot.val();
+                    const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+                    
+                    // Limpiar la tabla antes de llenarla
+                    scheduleTableBody.innerHTML = '';
+
+                    // Horas posibles
+                    const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+                    const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+
+                    // Crear las filas para cada hora
+                    for (const time of times) {
+                        const row = document.createElement('tr');
+                        const timeCell = document.createElement('th');
+                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                        row.appendChild(timeCell);
+
+                        // Crear las celdas para cada día
+                        for (const day of days) {
+                            const cell = document.createElement('td');
+                            const subject = schedule && schedule[day] && schedule[day][time];
+                            if (subject) {
+                                cell.textContent = subject;
+
+                                // Crear el botón de eliminar
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.textContent = 'X';
+                                deleteBtn.classList.add('delete-btn');
+                                deleteBtn.addEventListener('click', () => {
+                                    if (confirm(`¿Estás seguro de que quieres eliminar la materia ${subject} del horario?`)) {
+                                        deleteSubjectFromSchedule(userId, day, time);
+                                    }
+                                });
+                                cell.appendChild(deleteBtn);
+                            } else {
+                                cell.textContent = '';
+                            }
+                            row.appendChild(cell);
+                        }
+
+                        scheduleTableBody.appendChild(row);
+                    }
+                }).catch(error => {
+                    console.error('Error al obtener el horario:', error);
+                });
             }
-        }).catch(error => {
-            console.error('Error al obtener el horario:', error);
-        });
-    }
 
-    // Redirigir al hacer clic en "Editar Horario"
-    document.getElementById('editScheduleBtn').addEventListener('click', () => {
-        window.location.href = 'horario.html';
-    });
-});
+            // Eliminar la materia del horario del profesor
+            function deleteSubjectFromSchedule(userId, day, time) {
+                const scheduleRef = database.ref(`users/${userId}/horario/${day}/${time}`);
+                scheduleRef.remove().then(() => {
+                    alert('Materia eliminada con éxito');
+                    window.location.reload(); // Recargar la página para actualizar el horario
+                }).catch(error => {
+                    console.error('Error al eliminar la materia:', error);
+                });
+            }
+
+            // Redirigir al hacer clic en "Editar Horario"
+            document.getElementById('editScheduleBtn').addEventListener('click', () => {
+                window.location.href = 'horario.html';
+            });
+        });
     </script>
 </body>
 </html>
