@@ -99,121 +99,84 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+            apiKey: "API_KEY",
             authDomain: "pdlista-61c4d.firebaseapp.com",
+            databaseURL: "https://pdlista-61c4d.firebaseio.com",
             projectId: "pdlista-61c4d",
             storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID"
         };
+
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const database = firebase.database();
 
-        firebase.auth().onAuthStateChanged((user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-            } else {
-                loadStudentProfile();
-            }
-        });
+        // Function to load the user's schedule
+        function loadSchedule() {
+            // Get the current user ID
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    const userId = user.uid;
 
-        function loadStudentProfile() {
-            const userId = auth.currentUser.uid;
-            const profileRef = database.ref(`users/${userId}`);
-            profileRef.once('value').then(snapshot => {
-                const profileData = snapshot.val();
-                if (profileData) {
-                    const semester = profileData.Semestre;
-                    const group = profileData.Grupo;
-                    updateSchedule(semester, group);
+                    // Retrieve the student's data (semestre and grupo)
+                    database.ref('users/' + userId).once('value').then((snapshot) => {
+                        const studentData = snapshot.val();
+                        const semestre = studentData.Semestre;
+                        const grupo = studentData.Grupo;
+
+                        // Retrieve the schedule for the student's semester and group
+                        const scheduleRef = database.ref(`classSchedules/${semestre}/${grupo}`);
+                        scheduleRef.once('value').then((snapshot) => {
+                            const scheduleData = snapshot.val();
+                            renderSchedule(scheduleData);
+                        });
+                    });
                 } else {
-                    console.error('No se ha encontrado horario');
+                    // No user is signed in
+                    console.log("No user is signed in.");
                 }
-            }).catch(error => {
-                console.error('Error cargando datos del perfil:', error);
             });
         }
 
-        function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/Semestre${semester}/Grupo${group}`);
-            scheduleRef.once('value').then(snapshot => {
-                const scheduleData = snapshot.val();
-                const scheduleBody = document.getElementById('scheduleBody');
-                scheduleBody.innerHTML = '';
+        // Function to render the schedule in the table
+        function renderSchedule(schedule) {
+            const scheduleBody = document.getElementById('scheduleBody');
+            scheduleBody.innerHTML = ''; // Clear any existing schedule
 
-                if (scheduleData) {
-                    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
-                    const hours = [
-                        { start: '07:00', end: '07:45' },
-                        { start: '07:45', end: '08:30' },
-                        { start: '08:30', end: '09:15' },
-                        { start: '09:15', end: '10:00' },
-                        { start: '10:00', end: '10:30' },  // Highlighted break time
-                        { start: '10:30', end: '11:15' },
-                        { start: '11:15', end: '12:00' },
-                        { start: '12:00', end: '12:45' },
-                        { start: '12:45', end: '13:30' },
-                        { start: '13:30', end: '14:15' }
-                    ];
+            // Define the schedule times
+            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
-                    for (const hour of hours) {
-                        const row = document.createElement('tr');
-                        const formattedHour = `${hour.start} - ${hour.end}`;
-                        const timeCell = document.createElement('td');
-                        timeCell.textContent = formattedHour;
-                        row.appendChild(timeCell);
+            // Loop through each time slot
+            times.forEach(time => {
+                const row = document.createElement('tr');
 
-                        for (const day of days) {
-                            const cell = document.createElement('td');
-                            const classInfo = scheduleData[day] && scheduleData[day][hour.start.replace(':', '')] ? scheduleData[day][hour.start.replace(':', '')] : '';
-                            cell.textContent = classInfo;
+                // First cell for the time
+                const timeCell = document.createElement('td');
+                timeCell.textContent = time;
+                row.appendChild(timeCell);
 
-                            if (hour.start === '10:00' && hour.end === '10:30') {
-                                cell.classList.add('highlight');  // Highlight break
-                            }
-
-                            row.appendChild(cell);
-                        }
-                        scheduleBody.appendChild(row);
+                // Create cells for each day
+                days.forEach(day => {
+                    const dayCell = document.createElement('td');
+                    if (schedule && schedule[day] && schedule[day][time]) {
+                        dayCell.textContent = schedule[day][time]; // Subject for that time slot
+                    } else {
+                        dayCell.textContent = ''; // Empty if no class
                     }
+                    row.appendChild(dayCell);
+                });
 
-                    // Highlight current time cell
-                    const currentDay = new Date().toLocaleString('es-ES', { weekday: 'long' });
-                    const currentHourString = new Date().toTimeString().slice(0, 5);  // Get current time in "HH:MM" format
-                    highlightCurrentTimeCell(currentDay, currentHourString);
-                } else {
-                    scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
-                }
-            }).catch(error => {
-                console.error('Error cargando datos del horario:', error);
+                // Append the row to the table body
+                scheduleBody.appendChild(row);
             });
         }
 
-        function highlightCurrentTimeCell(day, currentTime) {
-            const daysOfWeek = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
-            const rows = document.querySelectorAll('.schedule-table tbody tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                const timeCell = cells[0].textContent.trim();
-                const [start, end] = timeCell.split(' - ');
-
-                if (isTimeInRange(currentTime, start, end)) {
-                    const dayIndex = daysOfWeek.indexOf(day) + 1;
-                    const targetCell = cells[dayIndex];
-                    if (targetCell) {
-                        targetCell.classList.add('current');
-                    }
-                }
-            });
-        }
-
-        function isTimeInRange(currentTime, startTime, endTime) {
-            return currentTime >= startTime && currentTime <= endTime;
-        }
+        // Load the schedule when the page loads
+        window.onload = function() {
+            loadSchedule();
+        };
     </script>
 </body>
 </html>
