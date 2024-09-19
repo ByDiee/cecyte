@@ -71,8 +71,8 @@
             <label for="enrollment">Matrícula:</label>
             <input type="text" id="enrollment" name="enrollment" required>
 
-            <label for="semester">Semestre:</label>
-            <select id="semester" name="semester" required>
+            <label for="Semestre">Semestre:</label>
+            <select id="Semestre" name="Semestre" required>
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -81,8 +81,8 @@
                 <option value="6">6</option>
             </select>
 
-            <label for="group">Grupo:</label>
-            <select id="group" name="group" required>
+            <label for="Grupo">Grupo:</label>
+            <select id="Grupo" name="Grupo" required>
                 <option value="A">A</option>
                 <option value="B">B</option>
                 <option value="C">C</option>
@@ -118,18 +118,7 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-            // Revisar si el usuario está logueado
-    firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            // Redirige al login solo si no hay usuario autenticado
-            window.location.href = 'login.html';
-        } else {
-            // Si el usuario está autenticado, obtenemos el horario del profesor
-            fetchSchedule(user.uid);
-        }
-    });
-
-        // Pone la carrera segun el grupo seleccionado
+        // Mapeo de carrera según el grupo seleccionado
         const careerMapping = {
             'A': 'Programacion',
             'B': 'Programacion',
@@ -139,7 +128,7 @@
             'F': 'Programacion'
         };
 
-        // Guardar y mostrar datos del estudiante
+        // Cargar el perfil del estudiante
         function loadStudentProfile() {
             const userId = auth.currentUser.uid;
             const profileRef = database.ref(`users/${userId}`);
@@ -150,19 +139,19 @@
                 document.getElementById('lastNameP').value = profileData.lastNameP || '';  
                 document.getElementById('lastNameM').value = profileData.lastNameM || '';
                 document.getElementById('enrollment').value = profileData.enrollment || '';
-                document.getElementById('semester').value = profileData.semester || '';
-                document.getElementById('group').value = profileData.group || '';
-                updateCareerField(profileData.group || '');
+                document.getElementById('Semestre').value = profileData.Semestre || '';
+                document.getElementById('Grupo').value = profileData.Grupo || '';
+                updateCareerField(profileData.Grupo || '');
             });
         }
 
-        // Actualizar especialidad (carrera) en base al grupo
+        // Actualizar la carrera según el grupo
         function updateCareerField(group) {
             const career = careerMapping[group] || '';
             document.getElementById('career').value = career;
         }
 
-        // Guarda la informacion actualizada
+        // Guardar la información actualizada
         document.getElementById('studentProfileForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
@@ -173,8 +162,8 @@
                 lastNameP: document.getElementById('lastNameP').value,
                 lastNameM: document.getElementById('lastNameM').value,
                 enrollment: document.getElementById('enrollment').value,
-                semester: document.getElementById('semester').value,
-                group: document.getElementById('group').value
+                Semestre: document.getElementById('Semestre').value,
+                Grupo: document.getElementById('Grupo').value
             };
 
             profileRef.update(profileData)
@@ -186,7 +175,7 @@
                 });
         });
 
-        // Carga la informacion desde Firebase
+        // Cargar la información desde Firebase
         auth.onAuthStateChanged(user => {
             if (user) {
                 loadStudentProfile();
@@ -195,8 +184,8 @@
             }
         });
 
-        // Actualiza la carrera si el grupo cambia
-        document.getElementById('group').addEventListener('change', function() {
+        // Actualizar carrera si el grupo cambia
+        document.getElementById('Grupo').addEventListener('change', function() {
             const group = this.value;
             updateCareerField(group);
         });
