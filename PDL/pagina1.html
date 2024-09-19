@@ -48,18 +48,18 @@
         }
         .schedule-table td {
             background-color: #ffffff;
-            color: #000000; /* Color de texto por defecto */
+            color: #000000;
         }
         .schedule-table tr:nth-child(odd) td {
             background-color: #f9f9f9;
         }
         .schedule-table td.highlight {
-            background-color: #ffcccc; /* Rojo claro para el recreo */
-            color: #ff0000; /* Rojo para el texto del recreo */
+            background-color: #ffcccc;
+            color: #ff0000;
         }
         .schedule-table td.current {
-            background-color: #c3f9c3; /* Verde claro para la materia actual */
-            color: #14c614; /* Verde oscuro para el texto de la materia actual */
+            background-color: #c3f9c3;
+            color: #14c614;
         }
     </style>
 </head>
@@ -72,7 +72,7 @@
         <a href="#" id="viewAttendanceBtn">Registro de Asistencias</a>
     </nav>
     <main>
-        <!-- Tabla del horario -->
+        <!-- Schedule Table -->
         <div class="schedule">
             <h3>Horario</h3>
             <table class="schedule-table">
@@ -87,7 +87,7 @@
                     </tr>
                 </thead>
                 <tbody id="scheduleBody">
-                    <!-- El horario se cargará aquí -->
+                    <!-- Schedule will be populated here -->
                 </tbody>
             </table>
         </div>
@@ -97,7 +97,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script>
-        // Configuración de Firebase
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
             authDomain: "pdlista-61c4d.firebaseapp.com",
@@ -108,6 +108,7 @@
             measurementId: "G-BDXFNR25C0",
             databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
@@ -126,9 +127,10 @@
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
                 if (profileData) {
-                    const semestre = profileData.Semestre;
-                    const grupo = profileData.Grupo;
-                    updateSchedule(semestre, grupo);
+                    // Cambiar a "Semestre" y "Grupo"
+                    const semester = profileData.Semestre;
+                    const group = profileData.Grupo;
+                    updateSchedule(semester, group);
                 } else {
                     console.error('No se ha encontrado horario');
                 }
@@ -137,21 +139,22 @@
             });
         }
 
-        function updateSchedule(semestre, grupo) {
-            const scheduleRef = database.ref(`classSchedules/Semestre${semestre}/Grupo${grupo}`);
+        function updateSchedule(semester, group) {
+            // Cambiar la ruta para "Semestre" y "Grupo"
+            const scheduleRef = database.ref(`classSchedules/Semestre${semester}/Grupo${group}`);
             scheduleRef.once('value').then(snapshot => {
                 const scheduleData = snapshot.val();
                 const scheduleBody = document.getElementById('scheduleBody');
                 scheduleBody.innerHTML = '';
 
                 if (scheduleData) {
-                    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
                     const hours = [
                         { start: '07:00', end: '07:45' },
                         { start: '07:45', end: '08:30' },
                         { start: '08:30', end: '09:15' },
                         { start: '09:15', end: '10:00' },
-                        { start: '10:00', end: '10:30' }, // Marcar en rojo
+                        { start: '10:00', end: '10:30' },
                         { start: '10:30', end: '11:15' },
                         { start: '11:15', end: '12:00' },
                         { start: '12:00', end: '12:45' },
@@ -188,15 +191,6 @@
                 console.error('Error cargando datos del horario:', error);
             });
         }
-
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-        const currentMinute = currentTime.getMinutes();
-        const currentHourString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-        
-        const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-        const currentDayIndex = (currentTime.getDay() + 6) % 7;
-        const currentDay = daysOfWeek[currentDayIndex];
 
         function highlightCurrentTimeCell(day, currentTime) {
             const rows = document.querySelectorAll('.schedule-table tbody tr');
