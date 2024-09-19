@@ -54,12 +54,12 @@
             background-color: #f9f9f9;
         }
         .schedule-table td.highlight {
-            background-color: #ffcccc;
-            color: #ff0000;
+            background-color: #ffcccc; 
+            color: #ff0000; 
         }
         .schedule-table td.current {
-            background-color: #c3f9c3;
-            color: #14c614;
+            background-color: #c3f9c3; 
+            color: #14c614; 
         }
     </style>
 </head>
@@ -72,7 +72,6 @@
         <a href="#" id="viewAttendanceBtn">Registro de Asistencias</a>
     </nav>
     <main>
-        <!-- Schedule Table -->
         <div class="schedule">
             <h3>Horario</h3>
             <table class="schedule-table">
@@ -92,12 +91,10 @@
             </table>
         </div>
     </main>
-    <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script>
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
             authDomain: "pdlista-61c4d.firebaseapp.com",
@@ -108,31 +105,29 @@
             measurementId: "G-BDXFNR25C0",
             databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
 
-        firebase.auth().onAuthStateChanged((user) => {
+        auth.onAuthStateChanged(user => {
             if (!user) {
-                // If no user is signed in, redirect to login page
                 window.location.href = 'login.html';
             } else {
-                // Load student profile when authenticated
-                loadStudentProfile(user.uid);
+                loadStudentProfile();
             }
         });
 
-        function loadStudentProfile(userId) {
+        function loadStudentProfile() {
+            const userId = auth.currentUser.uid;
             const profileRef = database.ref(`users/${userId}`);
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
                 if (profileData) {
-                    const semester = profileData.Semestre;
-                    const group = profileData.Grupo;
+                    const semester = profileData.Semestre;  // Cambiado para obtener 'Semestre'
+                    const group = profileData.Grupo;        // Cambiado para obtener 'Grupo'
                     updateSchedule(semester, group);
                 } else {
-                    console.error('No se ha encontrado el perfil del estudiante');
+                    console.error('No se ha encontrado horario');
                 }
             }).catch(error => {
                 console.error('Error cargando datos del perfil:', error);
@@ -140,7 +135,7 @@
         }
 
         function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
+            const scheduleRef = database.ref(`classSchedules/${semester}/${group}`);
             scheduleRef.once('value').then(snapshot => {
                 const scheduleData = snapshot.val();
                 const scheduleBody = document.getElementById('scheduleBody');
@@ -149,32 +144,31 @@
                 if (scheduleData) {
                     const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
                     const hours = [
-                        { start: '07:00', end: '07:45' },
-                        { start: '07:45', end: '08:30' },
-                        { start: '08:30', end: '09:15' },
-                        { start: '09:15', end: '10:00' },
-                        { start: '10:00', end: '10:30' },  // Highlighted break time
-                        { start: '10:30', end: '11:15' },
-                        { start: '11:15', end: '12:00' },
-                        { start: '12:00', end: '12:45' },
-                        { start: '12:45', end: '13:30' },
-                        { start: '13:30', end: '14:15' }
+                        { start: '0700', end: '0745' },
+                        { start: '0745', end: '0830' },
+                        { start: '0830', end: '0915' },
+                        { start: '0915', end: '1000' },
+                        { start: '1000', end: '1030' }, // Receso
+                        { start: '1030', end: '1115' },
+                        { start: '1115', end: '1200' },
+                        { start: '1200', end: '1245' },
+                        { start: '1245', end: '1330' },
+                        { start: '1330', end: '1415' }
                     ];
 
                     for (const hour of hours) {
                         const row = document.createElement('tr');
-                        const formattedHour = `${hour.start} - ${hour.end}`;
                         const timeCell = document.createElement('td');
-                        timeCell.textContent = formattedHour;
+                        timeCell.textContent = `${hour.start.slice(0, 2)}:${hour.start.slice(2)} - ${hour.end.slice(0, 2)}:${hour.end.slice(2)}`;
                         row.appendChild(timeCell);
 
                         for (const day of days) {
                             const cell = document.createElement('td');
-                            const classInfo = scheduleData[day] && scheduleData[day][hour.start.replace(':', '')] ? scheduleData[day][hour.start.replace(':', '')] : '';
+                            const classInfo = scheduleData[day] && scheduleData[day][hour.start] ? scheduleData[day][hour.start] : '';
                             cell.textContent = classInfo;
 
-                            if (hour.start === '10:00' && hour.end === '10:30') {
-                                cell.classList.add('highlight');  // Highlight break
+                            if (hour.start === '1000' && hour.end === '1030') {
+                                cell.classList.add('highlight');
                             }
 
                             row.appendChild(cell);
@@ -182,10 +176,7 @@
                         scheduleBody.appendChild(row);
                     }
 
-                    // Highlight current time cell
-                    const currentDay = new Date().toLocaleString('es-ES', { weekday: 'long' });
-                    const currentHourString = new Date().toTimeString().slice(0, 5);  // Get current time in "HH:MM" format
-                    highlightCurrentTimeCell(currentDay, currentHourString);
+                    highlightCurrentTimeCell();
                 } else {
                     scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
                 }
@@ -194,26 +185,23 @@
             });
         }
 
-        function highlightCurrentTimeCell(day, currentTime) {
-            const daysOfWeek = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
+        function highlightCurrentTimeCell() {
+            const currentTime = new Date();
+            const currentHour = currentTime.getHours().toString().padStart(2, '0') + currentTime.getMinutes().toString().padStart(2, '0');
+            const currentDayIndex = (currentTime.getDay() + 6) % 7;
+            const currentDay = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'][currentDayIndex];
+
             const rows = document.querySelectorAll('.schedule-table tbody tr');
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 const timeCell = cells[0].textContent.trim();
-                const [start, end] = timeCell.split(' - ');
+                const [startTime, endTime] = timeCell.split(' - ').map(t => t.replace(':', ''));
 
-                if (isTimeInRange(currentTime, start, end)) {
-                    const dayIndex = daysOfWeek.indexOf(day) + 1;
-                    const targetCell = cells[dayIndex];
-                    if (targetCell) {
-                        targetCell.classList.add('current');
-                    }
+                if (currentHour >= startTime && currentHour < endTime) {
+                    const dayIndex = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].indexOf(currentDay);
+                    cells[dayIndex + 1].classList.add('current'); // +1 porque el primer <td> es la hora
                 }
             });
-        }
-
-        function isTimeInRange(currentTime, startTime, endTime) {
-            return currentTime >= startTime && currentTime <= endTime;
         }
     </script>
 </body>
