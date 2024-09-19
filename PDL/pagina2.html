@@ -127,7 +127,6 @@
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
                 if (profileData) {
-                    // Cambiar a "Semestre" y "Grupo"
                     const semester = profileData.Semestre;
                     const group = profileData.Grupo;
                     updateSchedule(semester, group);
@@ -140,7 +139,6 @@
         }
 
         function updateSchedule(semester, group) {
-            // Cambiar la ruta para "Semestre" y "Grupo"
             const scheduleRef = database.ref(`classSchedules/Semestre${semester}/Grupo${group}`);
             scheduleRef.once('value').then(snapshot => {
                 const scheduleData = snapshot.val();
