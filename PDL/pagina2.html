@@ -152,7 +152,7 @@
                         { start: '07:45', end: '08:30' },
                         { start: '08:30', end: '09:15' },
                         { start: '09:15', end: '10:00' },
-                        { start: '10:00', end: '10:30' },
+                        { start: '10:00', end: '10:30' },  // Highlighted break time
                         { start: '10:30', end: '11:15' },
                         { start: '11:15', end: '12:00' },
                         { start: '12:00', end: '12:45' },
@@ -173,7 +173,7 @@
                             cell.textContent = classInfo;
 
                             if (hour.start === '10:00' && hour.end === '10:30') {
-                                cell.classList.add('highlight');
+                                cell.classList.add('highlight');  // Highlight break
                             }
 
                             row.appendChild(cell);
@@ -181,6 +181,9 @@
                         scheduleBody.appendChild(row);
                     }
 
+                    // Highlight current time cell
+                    const currentDay = new Date().toLocaleString('es-ES', { weekday: 'long' });
+                    const currentHourString = new Date().toTimeString().slice(0, 5);  // Get current time in "HH:MM" format
                     highlightCurrentTimeCell(currentDay, currentHourString);
                 } else {
                     scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
@@ -191,6 +194,7 @@
         }
 
         function highlightCurrentTimeCell(day, currentTime) {
+            const daysOfWeek = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
             const rows = document.querySelectorAll('.schedule-table tbody tr');
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
