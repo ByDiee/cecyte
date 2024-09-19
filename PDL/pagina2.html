@@ -48,18 +48,18 @@
         }
         .schedule-table td {
             background-color: #ffffff;
-            color: #000000; /* Color de texto por defecto */
+            color: #000000;
         }
         .schedule-table tr:nth-child(odd) td {
             background-color: #f9f9f9;
         }
         .schedule-table td.highlight {
-            background-color: #ffcccc; /* Rojo claro para el recreo */
-            color: #ff0000; /* Rojo para el texto del recreo */
+            background-color: #ffcccc;
+            color: #ff0000;
         }
         .schedule-table td.current {
-            background-color: #c3f9c3; /* Verde claro para la materia actual */
-            color: #14c614; /* Verde oscuro para el texto de la materia actual */
+            background-color: #c3f9c3;
+            color: #14c614;
         }
     </style>
 </head>
@@ -113,28 +113,7 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-            // Revisar si el usuario está logueado
-    firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            // Redirige al login solo si no hay usuario autenticado
-            window.location.href = 'login.html';
-        } else {
-            // Si el usuario está autenticado, obtenemos el horario del profesor
-            fetchSchedule(user.uid);
-        }
-    });
-
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-        const currentMinute = currentTime.getMinutes();
-        const currentHourString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-        
-        // Obtener el día de la semana
-        const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-        const currentDayIndex = (currentTime.getDay() + 6) % 7; // Ajustar el índice
-        const currentDay = daysOfWeek[currentDayIndex];
-
-        auth.onAuthStateChanged(user => {
+        firebase.auth().onAuthStateChanged((user) => {
             if (!user) {
                 window.location.href = 'login.html';
             } else {
@@ -148,9 +127,9 @@
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
                 if (profileData) {
-                    const semester = profileData.semester;
-                    const group = profileData.group;
-                    // Actualizar el horario
+                    // Cambiar a "Semestre" y "Grupo"
+                    const semester = profileData.Semestre;
+                    const group = profileData.Grupo;
                     updateSchedule(semester, group);
                 } else {
                     console.error('No se ha encontrado horario');
@@ -161,7 +140,8 @@
         }
 
         function updateSchedule(semester, group) {
-            const scheduleRef = database.ref(`classSchedules/semester${semester}/group${group}`);
+            // Cambiar la ruta para "Semestre" y "Grupo"
+            const scheduleRef = database.ref(`classSchedules/Semestre${semester}/Grupo${group}`);
             scheduleRef.once('value').then(snapshot => {
                 const scheduleData = snapshot.val();
                 const scheduleBody = document.getElementById('scheduleBody');
@@ -174,7 +154,7 @@
                         { start: '07:45', end: '08:30' },
                         { start: '08:30', end: '09:15' },
                         { start: '09:15', end: '10:00' },
-                        { start: '10:00', end: '10:30' }, // Marcar en rojo
+                        { start: '10:00', end: '10:30' },
                         { start: '10:30', end: '11:15' },
                         { start: '11:15', end: '12:00' },
                         { start: '12:00', end: '12:45' },
@@ -194,7 +174,6 @@
                             const classInfo = scheduleData[day] && scheduleData[day][hour.start.replace(':', '')] ? scheduleData[day][hour.start.replace(':', '')] : '';
                             cell.textContent = classInfo;
 
-                            // Marcar en rojo el intervalo de 10:00 - 10:30 (receso)
                             if (hour.start === '10:00' && hour.end === '10:30') {
                                 cell.classList.add('highlight');
                             }
@@ -204,7 +183,6 @@
                         scheduleBody.appendChild(row);
                     }
 
-                    // Resaltar la celda correspondiente a la hora actual y el día actual
                     highlightCurrentTimeCell(currentDay, currentHourString);
                 } else {
                     scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
@@ -222,7 +200,7 @@
                 const [start, end] = timeCell.split(' - ');
 
                 if (isTimeInRange(currentTime, start, end)) {
-                    const dayIndex = daysOfWeek.indexOf(day) + 1; // Obtener el índice de la columna del día
+                    const dayIndex = daysOfWeek.indexOf(day) + 1;
                     const targetCell = cells[dayIndex];
                     if (targetCell) {
                         targetCell.classList.add('current');
