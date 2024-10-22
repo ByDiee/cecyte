@@ -262,6 +262,21 @@
                 window.location.href = 'horario.html';
             });
         });
+
+                    // Cierre de sesión automático después de 1 hora
+                    setTimeout(() => {
+                auth.signOut().then(() => {
+                    alert("Has sido desconectado debido a inactividad.");
+                    window.location.href = 'login.html';
+                }).catch(error => {
+                    console.error("Error al cerrar sesión:", error);
+                });
+            }, 3600000); // 1 hora en milisegundos
+
+            // Cierre de sesión al cerrar la ventana
+            window.addEventListener('beforeunload', () => {
+                auth.signOut();
+            });
     </script>
 </body>
 </html>
