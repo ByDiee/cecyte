@@ -166,7 +166,7 @@
             // Revisar si el usuario está logueado
             auth.onAuthStateChanged(user => {
                 if (!user) {
-                    window.location.href = 'login.html';
+                    window.location.href = 'login.html'; // Redirigir a login si no está autenticado
                 } else {
                     fetchSchedule(user.uid);
                 }
@@ -233,12 +233,9 @@
 
                     // Recorremos todos los días y horas para encontrar y eliminar las materias que coinciden
                     for (const day in schedule) {
-                        updates[day] = {};
                         for (const time in schedule[day]) {
                             if (schedule[day][time] === subjectToDelete) {
-                                updates[day][time] = null;
-                            } else {
-                                updates[day][time] = schedule[day][time];
+                                updates[`${day}/${time}`] = null; // Marca la materia para eliminar
                             }
                         }
                     }
@@ -275,6 +272,13 @@
 
             // Iniciar el temporizador de inactividad
             setInterval(startTimer, 1000); // Comprueba cada segundo
+
+            // Cerrar sesión al cerrar la ventana
+            window.addEventListener('beforeunload', (event) => {
+                auth.signOut().then(() => {
+                    console.log('Sesión cerrada.');
+                });
+            });
 
             // Manejo del formulario de edición
             document.getElementById('editScheduleBtn').addEventListener('click', () => {
