@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero del Profesor</title>
     <style>
-        /* Estilos de la página */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
@@ -167,10 +166,8 @@
             // Revisar si el usuario está logueado
             auth.onAuthStateChanged(user => {
                 if (!user) {
-                    console.warn("No se encontró usuario autenticado, redirigiendo al login.");
                     window.location.href = 'login.html';
                 } else {
-                    console.log("Usuario autenticado, cargando contenido seguro...");
                     fetchSchedule(user.uid);
                 }
             });
@@ -234,38 +231,82 @@
                     const schedule = snapshot.val();
                     const updates = {};
 
-                    // Recorremos todos los días y horas para encontrar y eliminar la materia
+                    // Recorremos todos los días y horas para encontrar y eliminar las materias que coinciden
                     for (const day in schedule) {
+                        updates[day] = {};
                         for (const time in schedule[day]) {
                             if (schedule[day][time] === subjectToDelete) {
-                                updates[`${day}/${time}`] = null;  // Para eliminar la materia
+                                updates[day][time] = null;
+                            } else {
+                                updates[day][time] = schedule[day][time];
                             }
                         }
                     }
 
-                    // Aplicar los cambios en Firebase
+                    // Actualizamos la base de datos
                     scheduleRef.update(updates).then(() => {
-                        console.log(`Todas las instancias de "${subjectToDelete}" eliminadas.`);
-                        fetchSchedule(userId); // Actualizar la tabla
+                        fetchSchedule(userId); // Refrescamos la tabla
                     }).catch(error => {
-                        console.error("Error al eliminar la materia:", error);
+                        console.error('Error al eliminar la materia:', error);
                     });
-                }).catch(error => {
-                    console.error("Error al acceder al horario:", error);
                 });
             }
 
-            // Cierre de sesión después de 1 hora
-            setTimeout(() => {
-                auth.signOut().then(() => {
-                    console.log('Sesión cerrada automáticamente después de 1 hora.');
-                    window.location.href = 'login.html';
-                });
-            }, 60 * 60 * 1000);
+            // Manejar la inactividad del usuario
+            let inactivityTime = 0;
+            const resetTimer = () => {
+                inactivityTime = 0;
+            };
 
-            // Cierre de sesión al cerrar la ventana
-            window.addEventListener('beforeunload', () => {
-                auth.signOut().then(() => console.log('Sesión cerrada al cerrar la ventana.'));
+            const startTimer = () => {
+                inactivityTime++;
+                if (inactivityTime > 59) { // 1 hora
+                    auth.signOut().then(() => {
+                        alert('Has sido desconectado por inactividad.');
+                        window.location.href = 'login.html';
+                    });
+                }
+            };
+
+            // Monitorear eventos de actividad del usuario
+            window.onload = resetTimer;
+            window.onmousemove = resetTimer;
+            window.onkeypress = resetTimer;
+
+            // Iniciar el temporizador de inactividad
+            setInterval(startTimer, 1000); // Comprueba cada segundo
+
+            // Manejo del formulario de edición
+            document.getElementById('editScheduleBtn').addEventListener('click', () => {
+                const editForm = document.getElementById('editForm');
+                editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
+            });
+
+            document.getElementById('scheduleForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const subject = document.getElementById('subject').value;
+
+                // Guardar la materia en el horario (puedes agregar lógica para seleccionar día y hora aquí)
+                // Ejemplo para guardar en lunes a las 0700
+                const userId = auth.currentUser.uid; // Obtiene el ID del usuario logueado
+                const scheduleRef = database.ref(`users/${userId}/horario/Lunes/0700`);
+
+                scheduleRef.set(subject).then(() => {
+                    fetchSchedule(userId); // Refrescar el horario después de agregar la materia
+                    document.getElementById('editForm').style.display = 'none'; // Ocultar el formulario
+                }).catch(error => {
+                    console.error('Error al guardar la materia:', error);
+                });
+            });
+
+            // Cargar las materias disponibles en el formulario
+            const subjects = ["Matemáticas I", "Matemáticas II", "Programación I", "Programación II"];
+            const subjectSelect = document.getElementById('subject');
+            subjects.forEach(sub => {
+                const option = document.createElement('option');
+                option.value = sub;
+                option.textContent = sub;
+                subjectSelect.appendChild(option);
             });
         });
     </script>
