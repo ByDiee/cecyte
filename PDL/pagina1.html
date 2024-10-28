@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero del Profesor</title>
     <style>
+        /* Estilos de la página */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
@@ -164,17 +165,15 @@
             const database = firebase.database();
 
             // Revisar si el usuario está logueado
-            window.onload = () => {
-    firebase.auth().signOut().then(() => {
-        firebase.auth().onAuthStateChanged(user => {
-            if (!user) {
-                window.location.href = 'login.html';
-            } else {
-                fetchSchedule(user.uid);
-            }
-        });
-    });
-};
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    console.warn("No se encontró usuario autenticado, redirigiendo al login.");
+                    window.location.href = 'login.html';
+                } else {
+                    console.log("Usuario autenticado, cargando contenido seguro...");
+                    fetchSchedule(user.uid);
+                }
+            });
 
             // Obtener el horario del profesor y poblar la tabla
             function fetchSchedule(userId) {
@@ -235,50 +234,40 @@
                     const schedule = snapshot.val();
                     const updates = {};
 
-                    // Recorremos todos los días y horas para encontrar y eliminar las materias que coinciden
+                    // Recorremos todos los días y horas para encontrar y eliminar la materia
                     for (const day in schedule) {
-                        updates[day] = {};
                         for (const time in schedule[day]) {
                             if (schedule[day][time] === subjectToDelete) {
-                                updates[day][time] = null;
-                            } else {
-                                updates[day][time] = schedule[day][time]; // Mantener materias que no coinciden
+                                updates[`${day}/${time}`] = null;  // Para eliminar la materia
                             }
                         }
                     }
 
-                    // Actualizamos la base de datos
+                    // Aplicar los cambios en Firebase
                     scheduleRef.update(updates).then(() => {
-                        alert('Materia eliminada con éxito');
-                        window.location.reload(); // Recargar la página para actualizar el horario
+                        console.log(`Todas las instancias de "${subjectToDelete}" eliminadas.`);
+                        fetchSchedule(userId); // Actualizar la tabla
                     }).catch(error => {
-                        console.error('Error al eliminar la materia:', error);
+                        console.error("Error al eliminar la materia:", error);
                     });
                 }).catch(error => {
-                    console.error('Error al obtener el horario:', error);
+                    console.error("Error al acceder al horario:", error);
                 });
             }
 
-            // Redirigir al hacer clic en "Editar Horario"
-            document.getElementById('editScheduleBtn').addEventListener('click', () => {
-                window.location.href = 'horario.html';
-            });
-        });
-
-                    // Cierre de sesión automático después de 1 hora
-                    setTimeout(() => {
+            // Cierre de sesión después de 1 hora
+            setTimeout(() => {
                 auth.signOut().then(() => {
-                    alert("Has sido desconectado debido a inactividad.");
+                    console.log('Sesión cerrada automáticamente después de 1 hora.');
                     window.location.href = 'login.html';
-                }).catch(error => {
-                    console.error("Error al cerrar sesión:", error);
                 });
-            }, 3600000); // 1 hora en milisegundos
+            }, 60 * 60 * 1000);
 
             // Cierre de sesión al cerrar la ventana
             window.addEventListener('beforeunload', () => {
-                auth.signOut();
+                auth.signOut().then(() => console.log('Sesión cerrada al cerrar la ventana.'));
             });
+        });
     </script>
 </body>
 </html>
