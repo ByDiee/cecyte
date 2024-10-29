@@ -163,13 +163,27 @@
             const auth = firebase.auth();
             const database = firebase.database();
 
+        // Validar sesión y redirigir si no está autenticado
+        document.addEventListener('DOMContentLoaded', () => {
             auth.onAuthStateChanged(user => {
-                if (!user) {
-                    window.location.href = 'login.html';
+                if (user && sessionStorage.getItem("isLoggedIn") === "true") {
+                    // Usuario autenticado, cargar el contenido
+                    console.log("Usuario autenticado");
+                    // Aquí puedes cargar las materias o datos necesarios
                 } else {
-                    fetchSchedule(user.uid);
+                    // No hay usuario en sesión o falta sessionStorage, redirigir al login
+                    sessionStorage.removeItem("isLoggedIn");
+                    window.location.href = 'login.html';
                 }
             });
+        });
+
+        // Establecer sesión en sessionStorage después de iniciar sesión
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                sessionStorage.setItem("isLoggedIn", "true");
+            }
+        });
 
             // Obtener el horario del profesor y poblar la tabla
             function fetchSchedule(userId) {
@@ -270,10 +284,10 @@
                 });
             }, 3600000); // 1 hora en milisegundos
 
-            // Cerrar sesión solo al cerrar la ventana
-            window.addEventListener('beforeunload', (event) => {
-                auth.signOut().catch(error => console.error("Error al cerrar sesión:", error));
-            });
+        // Cerrar sesión al cerrar la ventana
+        window.addEventListener('beforeunload', () => {
+            sessionStorage.removeItem("isLoggedIn");
+        });
     </script>
 </body>
 </html>
