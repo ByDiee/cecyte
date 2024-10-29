@@ -164,24 +164,13 @@
             const database = firebase.database();
 
         // Validar sesión y redirigir si no está autenticado
-        document.addEventListener('DOMContentLoaded', () => {
-            auth.onAuthStateChanged(user => {
-                if (user && sessionStorage.getItem("isLoggedIn") === "true") {
-                    // Usuario autenticado, cargar el contenido
-                    console.log("Usuario autenticado");
-                    // Aquí puedes cargar las materias o datos necesarios
-                } else {
-                    // No hay usuario en sesión o falta sessionStorage, redirigir al login
-                    sessionStorage.removeItem("isLoggedIn");
-                    window.location.href = 'login.html';
-                }
-            });
-        });
-
-        // Establecer sesión en sessionStorage después de iniciar sesión
         auth.onAuthStateChanged(user => {
             if (user) {
-                sessionStorage.setItem("isLoggedIn", "true");
+                console.log("Usuario autenticado: ", user.uid);
+                // Cargar datos adicionales o actualizar el estado del tablero aquí
+            } else {
+                console.log("No hay usuario autenticado, redirigiendo a login...");
+                window.location.href = 'login.html';
             }
         });
 
@@ -274,19 +263,12 @@
             });
         });
 
-            // Cierre de sesión automático después de 1 hora de inactividad
-            setTimeout(() => {
-                auth.signOut().then(() => {
-                    alert("Has sido desconectado debido a inactividad.");
-                    window.location.href = 'login.html';
-                }).catch(error => {
-                    console.error("Error al cerrar sesión:", error);
-                });
-            }, 3600000); // 1 hora en milisegundos
-
-        // Cerrar sesión al cerrar la ventana
         window.addEventListener('beforeunload', () => {
-            sessionStorage.removeItem("isLoggedIn");
+            auth.signOut().then(() => {
+                console.log("Sesión cerrada al cerrar la ventana");
+            }).catch(error => {
+                console.error("Error al cerrar sesión: ", error);
+            });
         });
     </script>
 </body>
