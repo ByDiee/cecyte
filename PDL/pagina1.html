@@ -158,118 +158,102 @@
                 databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
             };
 
-            // Inicializar Firebase
-            firebase.initializeApp(firebaseConfig);
-            const auth = firebase.auth();
-            const database = firebase.database();
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
 
-        // Validar sesión y redirigir si no está autenticado
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                console.log("Usuario autenticado: ", user.uid);
-                // Cargar datos adicionales o actualizar el estado del tablero aquí
-            } else {
-                console.log("No hay usuario autenticado, redirigiendo a login...");
-                window.location.href = 'login.html';
-            }
-        });
+    // Validar sesión y redirigir si no está autenticado
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log("Usuario autenticado: ", user.uid);
+            fetchSchedule(user.uid);  // Obtener el horario solo si el usuario está autenticado
+        } else {
+            console.log("No hay usuario autenticado, redirigiendo a login...");
+            alert("Redirigiendo a inicio de sesión");
+            window.location.href = 'login.html';
+        }
+    });
 
-            // Obtener el horario del profesor y poblar la tabla
-            function fetchSchedule(userId) {
-                const scheduleRef = database.ref(`users/${userId}/horario`);
-                scheduleRef.once('value').then(snapshot => {
-                    const schedule = snapshot.val();
-                    const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
-                    
-                    // Limpiar la tabla antes de llenarla
-                    scheduleTableBody.innerHTML = '';
+    // Función para obtener el horario del profesor y poblar la tabla
+    function fetchSchedule(userId) {
+        const scheduleRef = database.ref(`users/${userId}/horario`);
+        scheduleRef.once('value').then(snapshot => {
+            const schedule = snapshot.val();
+            const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+            scheduleTableBody.innerHTML = '';  // Limpiar la tabla antes de llenarla
 
-                    // Horas posibles
-                    const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
-                    // Crear las filas para cada hora
-                    for (const time of times) {
-                        const row = document.createElement('tr');
-                        const timeCell = document.createElement('th');
-                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                        row.appendChild(timeCell);
+            // Crear las filas para cada hora
+            for (const time of times) {
+                const row = document.createElement('tr');
+                const timeCell = document.createElement('th');
+                timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                row.appendChild(timeCell);
 
-                        // Crear las celdas para cada día
-                        for (const day of days) {
-                            const cell = document.createElement('td');
-                            const subject = schedule && schedule[day] && schedule[day][time];
-                            if (subject) {
-                                cell.textContent = subject;
+                // Crear las celdas para cada día
+                for (const day of days) {
+                    const cell = document.createElement('td');
+                    const subject = schedule && schedule[day] && schedule[day][time];
+                    if (subject) {
+                        cell.textContent = subject;
 
-                                // Crear el botón de eliminar
-                                const deleteBtn = document.createElement('button');
-                                deleteBtn.textContent = 'X';
-                                deleteBtn.classList.add('delete-btn');
-                                deleteBtn.addEventListener('click', () => {
-                                    // Al hacer clic en el botón de eliminar, eliminamos todas las instancias de la materia
-                                    if (confirm(`¿Estás seguro de que quieres eliminar todas las materias "${subject}" del horario?`)) {
-                                        deleteAllInstancesOfSubject(userId, subject);
-                                    }
-                                });
-                                cell.appendChild(deleteBtn);
-                            } else {
-                                cell.textContent = '';
+                        // Botón de eliminar
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'X';
+                        deleteBtn.classList.add('delete-btn');
+                        deleteBtn.addEventListener('click', () => {
+                            if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
+                                deleteAllInstancesOfSubject(userId, subject);
                             }
-                            row.appendChild(cell);
-                        }
-
-                        scheduleTableBody.appendChild(row);
+                        });
+                        cell.appendChild(deleteBtn);
                     }
-                }).catch(error => {
-                    console.error('Error al obtener el horario:', error);
-                });
+                    row.appendChild(cell);
+                }
+
+                scheduleTableBody.appendChild(row);
             }
-
-            // Eliminar todas las instancias de la materia seleccionada del horario del profesor
-            function deleteAllInstancesOfSubject(userId, subjectToDelete) {
-                const scheduleRef = database.ref(`users/${userId}/horario`);
-                scheduleRef.once('value').then(snapshot => {
-                    const schedule = snapshot.val();
-                    const updates = {};
-
-                    // Recorremos todos los días y horas para encontrar y eliminar las materias que coinciden
-                    for (const day in schedule) {
-                        updates[day] = {};
-                        for (const time in schedule[day]) {
-                            if (schedule[day][time] === subjectToDelete) {
-                                updates[day][time] = null;
-                            } else {
-                                updates[day][time] = schedule[day][time]; // Mantener materias que no coinciden
-                            }
-                        }
-                    }
-
-                    // Actualizamos la base de datos
-                    scheduleRef.update(updates).then(() => {
-                        alert('Materia eliminada con éxito');
-                        window.location.reload(); // Recargar la página para actualizar el horario
-                    }).catch(error => {
-                        console.error('Error al eliminar la materia:', error);
-                    });
-                }).catch(error => {
-                    console.error('Error al obtener el horario:', error);
-                });
-            }
-
-            // Redirigir al hacer clic en "Editar Horario"
-            document.getElementById('editScheduleBtn').addEventListener('click', () => {
-                window.location.href = 'horario.html';
-            });
+        }).catch(error => {
+            console.error('Error al obtener el horario:', error);
         });
+    }
 
-        window.addEventListener('beforeunload', () => {
-            auth.signOut().then(() => {
-                console.log("Sesión cerrada al cerrar la ventana");
+    // Eliminar todas las instancias de la materia seleccionada del horario
+    function deleteAllInstancesOfSubject(userId, subjectToDelete) {
+        const scheduleRef = database.ref(`users/${userId}/horario`);
+        scheduleRef.once('value').then(snapshot => {
+            const schedule = snapshot.val();
+            const updates = {};
+
+            // Recorremos todos los días y horas para eliminar materias
+            for (const day in schedule) {
+                updates[day] = {};
+                for (const time in schedule[day]) {
+                    if (schedule[day][time] === subjectToDelete) {
+                        updates[day][time] = null;
+                    } else {
+                        updates[day][time] = schedule[day][time];
+                    }
+                }
+            }
+
+            scheduleRef.update(updates).then(() => {
+                alert('Materia eliminada con éxito');
+                window.location.reload();
             }).catch(error => {
-                console.error("Error al cerrar sesión: ", error);
+                console.error('Error al eliminar la materia:', error);
             });
+        }).catch(error => {
+            console.error('Error al obtener el horario:', error);
         });
-    </script>
-</body>
-</html>
+    }
+
+    // Editar horario al hacer clic en el botón
+    document.getElementById('editScheduleBtn').addEventListener('click', () => {
+        window.location.href = 'horario.html';
+    });
+});
+</script>
