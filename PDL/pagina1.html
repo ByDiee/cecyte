@@ -163,18 +163,13 @@
             const auth = firebase.auth();
             const database = firebase.database();
 
-            // Revisar si el usuario está logueado
-            window.onload = () => {
-    firebase.auth().signOut().then(() => {
-        firebase.auth().onAuthStateChanged(user => {
-            if (!user) {
-                window.location.href = 'login.html';
-            } else {
-                fetchSchedule(user.uid);
-            }
-        });
-    });
-};
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                } else {
+                    fetchSchedule(user.uid);
+                }
+            });
 
             // Obtener el horario del profesor y poblar la tabla
             function fetchSchedule(userId) {
@@ -265,8 +260,8 @@
             });
         });
 
-                    // Cierre de sesión automático después de 1 hora
-                    setTimeout(() => {
+            // Cierre de sesión automático después de 1 hora de inactividad
+            setTimeout(() => {
                 auth.signOut().then(() => {
                     alert("Has sido desconectado debido a inactividad.");
                     window.location.href = 'login.html';
@@ -275,9 +270,9 @@
                 });
             }, 3600000); // 1 hora en milisegundos
 
-            // Cierre de sesión al cerrar la ventana
-            window.addEventListener('beforeunload', () => {
-                auth.signOut();
+            // Cerrar sesión solo al cerrar la ventana
+            window.addEventListener('beforeunload', (event) => {
+                auth.signOut().catch(error => console.error("Error al cerrar sesión:", error));
             });
     </script>
 </body>
