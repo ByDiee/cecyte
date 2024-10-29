@@ -164,13 +164,17 @@
             const database = firebase.database();
 
             // Revisar si el usuario está logueado
-            auth.onAuthStateChanged(user => {
-                if (!user) {
-                    window.location.href = 'login.html'; // Redirigir a login si no está autenticado
-                } else {
-                    fetchSchedule(user.uid);
-                }
-            });
+            window.onload = () => {
+    firebase.auth().signOut().then(() => {
+        firebase.auth().onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                fetchSchedule(user.uid);
+            }
+        });
+    });
+};
 
             // Obtener el horario del profesor y poblar la tabla
             function fetchSchedule(userId) {
@@ -233,61 +237,48 @@
 
                     // Recorremos todos los días y horas para encontrar y eliminar las materias que coinciden
                     for (const day in schedule) {
+                        updates[day] = {};
                         for (const time in schedule[day]) {
                             if (schedule[day][time] === subjectToDelete) {
-                                updates[`${day}/${time}`] = null; // Marca la materia para eliminar
+                                updates[day][time] = null;
+                            } else {
+                                updates[day][time] = schedule[day][time]; // Mantener materias que no coinciden
                             }
                         }
                     }
 
                     // Actualizamos la base de datos
                     scheduleRef.update(updates).then(() => {
-                        fetchSchedule(userId); // Refrescamos la tabla
+                        alert('Materia eliminada con éxito');
+                        window.location.reload(); // Recargar la página para actualizar el horario
                     }).catch(error => {
                         console.error('Error al eliminar la materia:', error);
                     });
+                }).catch(error => {
+                    console.error('Error al obtener el horario:', error);
                 });
             }
 
-            // Manejo del formulario de edición
+            // Redirigir al hacer clic en "Editar Horario"
             document.getElementById('editScheduleBtn').addEventListener('click', () => {
-                const editForm = document.getElementById('editForm');
-                editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
+                window.location.href = 'horario.html';
             });
+        });
 
-            document.getElementById('scheduleForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const subject = document.getElementById('subject').value;
-
-                // Guardar la materia en el horario (puedes agregar lógica para seleccionar día y hora aquí)
-                // Ejemplo para guardar en lunes a las 0700
-                const userId = auth.currentUser.uid; // Obtiene el ID del usuario logueado
-                const scheduleRef = database.ref(`users/${userId}/horario/Lunes/0700`);
-
-                scheduleRef.set(subject).then(() => {
-                    fetchSchedule(userId); // Refrescar el horario después de agregar la materia
-                    document.getElementById('editForm').style.display = 'none'; // Ocultar el formulario
+                    // Cierre de sesión automático después de 1 hora
+                    setTimeout(() => {
+                auth.signOut().then(() => {
+                    alert("Has sido desconectado debido a inactividad.");
+                    window.location.href = 'login.html';
                 }).catch(error => {
-                    console.error('Error al guardar la materia:', error);
+                    console.error("Error al cerrar sesión:", error);
                 });
-            });
+            }, 3600000); // 1 hora en milisegundos
 
-            // Cargar las materias disponibles en el formulario
-            const subjects = ["Matemáticas I", "Matemáticas II", "Programación I", "Programación II"];
-            const subjectSelect = document.getElementById('subject');
-            subjects.forEach(sub => {
-                const option = document.createElement('option');
-                option.value = sub;
-                option.textContent = sub;
-                subjectSelect.appendChild(option);
+            // Cierre de sesión al cerrar la ventana
+            window.addEventListener('beforeunload', () => {
+                auth.signOut();
             });
-        });
-
-                window.addEventListener('unload', () => {
-            auth.signOut();
-        });
-    });
-        
     </script>
 </body>
 </html>
