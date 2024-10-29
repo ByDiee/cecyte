@@ -249,37 +249,11 @@
                 });
             }
 
-            // Manejar la inactividad del usuario
-            let inactivityTime = 0;
-            const resetTimer = () => {
-                inactivityTime = 0;
-            };
-
-            const startTimer = () => {
-                inactivityTime++;
-                if (inactivityTime > 59) { // 1 hora
-                    auth.signOut().then(() => {
-                        alert('Has sido desconectado por inactividad.');
-                        window.location.href = 'login.html';
-                    });
-                }
-            };
-
-            // Monitorear eventos de actividad del usuario
-            window.onload = resetTimer;
-            window.onmousemove = resetTimer;
-            window.onkeypress = resetTimer;
-
-            // Iniciar el temporizador de inactividad
-            setInterval(startTimer, 1000); // Comprueba cada segundo
-
-            // Cerrar sesión al cerrar la ventana
-            window.addEventListener('beforeunload', (event) => {
-                auth.signOut().then(() => {
-                    console.log('Sesión cerrada.');
-                });
-            });
-
+        window.addEventListener('unload', () => {
+            auth.signOut();
+        });
+    });
+        
             // Manejo del formulario de edición
             document.getElementById('editScheduleBtn').addEventListener('click', () => {
                 const editForm = document.getElementById('editForm');
