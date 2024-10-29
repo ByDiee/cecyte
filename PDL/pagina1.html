@@ -249,11 +249,6 @@
                 });
             }
 
-        window.addEventListener('unload', () => {
-            auth.signOut();
-        });
-    });
-        
             // Manejo del formulario de edición
             document.getElementById('editScheduleBtn').addEventListener('click', () => {
                 const editForm = document.getElementById('editForm');
@@ -287,6 +282,12 @@
                 subjectSelect.appendChild(option);
             });
         });
+
+                window.addEventListener('unload', () => {
+            auth.signOut();
+        });
+    });
+        
     </script>
 </body>
 </html>
