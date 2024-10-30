@@ -164,40 +164,33 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
-        // Comprobar el estado de autenticación
-        function checkAuthAndRole() {
-            const storedUserId = localStorage.getItem("userId"); // Recuperar UID del almacenamiento local
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    const userId = user.uid;
-                    localStorage.setItem("userId", userId); // Guardar UID en almacenamiento local
+// Revisar si el usuario está autenticado y tiene el UID correcto
+firebase.auth().onAuthStateChanged((user) => {
+    if (!user) {
+        // Redirige al login si no hay usuario autenticado
+        window.location.href = 'login.html';
+    } else {
+        const userId = user.uid;
+        const storedUserId = localStorage.getItem("userId");
 
-                    // Verificar el rol del usuario en la base de datos
-                    database.ref('users/' + userId).once('value')
-                        .then(snapshot => {
-                            const userData = snapshot.val();
-                            if (userData && userData.role === 'admin') {
-                                fetchSchedule(userId); // Obtener el horario
-                            } else {
-                                alert("Acceso denegado. Redirigiendo...");
-                                window.location.href = 'pagina2.html'; // Redirigir si no es admin
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error al verificar el rol del usuario:", error.message);
-                            window.location.href = 'login.html'; // Redirigir en caso de error
-                        });
-                } else if (storedUserId) {
-                    // Si el usuario está autenticado solo en local storage, redirigir al login
-                    console.log("No hay usuario autenticado, redirigiendo a login...");
-                    alert("Redirigiendo a inicio de sesión");
-                    window.location.href = 'login.html';
-                }
-            });
+        if (userId === storedUserId) {
+            // Si el UID coincide con el almacenado, cargar el horario
+            fetchSchedule(userId);
+        } else {
+            // Si no coincide, redirigir al login
+            console.log("UID no coincide, redirigiendo a login...");
+            alert("Redirigiendo a inicio de sesión");
+            window.location.href = 'login.html';
         }
+    }
+});
 
-        // Llamar a la función para comprobar autenticación y rol
-        checkAuthAndRole();
+// Guardar el UID en el almacenamiento local después de la autenticación
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        localStorage.setItem("userId", user.uid); // Guardar el UID en almacenamiento local
+    }
+});
 
     // Función para obtener el horario del profesor y poblar la tabla
     function fetchSchedule(userId) {
