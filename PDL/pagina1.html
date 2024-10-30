@@ -171,6 +171,7 @@ firebase.auth().onAuthStateChanged((user) => {
         window.location.href = 'login.html';
     } else {
         const userId = user.uid;
+        console.log("UID del usuario autenticado:", userId);
 
         // Obtener el currentUserId del usuario desde la base de datos
         const userRef = firebase.database().ref(`users/${userId}/currentUserId`);
