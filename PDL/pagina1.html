@@ -164,28 +164,40 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
-    // Comprobar el estado de autenticación
-    function checkAuth() {
-        const storedUserId = localStorage.getItem("userId"); // Recuperar UID del almacenamiento local
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                console.log("Usuario autenticado: ", user.uid);
-                localStorage.setItem("userId", user.uid); // Guardar UID en almacenamiento local
-                fetchSchedule(user.uid); // Obtener el horario
-            } else if (storedUserId) {
-                // Si se encuentra UID en almacenamiento local, obtener el horario
-                console.log("Usuario autenticado por almacenamiento local: ", storedUserId);
-                fetchSchedule(storedUserId);
-            } else {
-                console.log("No hay usuario autenticado, redirigiendo a login...");
-                alert("Redirigiendo a inicio de sesión");
-                window.location.href = 'login.html';
-            }
-        });
-    }
+        // Comprobar el estado de autenticación
+        function checkAuthAndRole() {
+            const storedUserId = localStorage.getItem("userId"); // Recuperar UID del almacenamiento local
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    const userId = user.uid;
+                    localStorage.setItem("userId", userId); // Guardar UID en almacenamiento local
 
-    // Llamar a la función para comprobar autenticación
-    checkAuth();
+                    // Verificar el rol del usuario en la base de datos
+                    database.ref('users/' + userId).once('value')
+                        .then(snapshot => {
+                            const userData = snapshot.val();
+                            if (userData && userData.role === 'admin') {
+                                fetchSchedule(userId); // Obtener el horario
+                            } else {
+                                alert("Acceso denegado. Redirigiendo...");
+                                window.location.href = 'pagina2.html'; // Redirigir si no es admin
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error al verificar el rol del usuario:", error.message);
+                            window.location.href = 'login.html'; // Redirigir en caso de error
+                        });
+                } else if (storedUserId) {
+                    // Si el usuario está autenticado solo en local storage, redirigir al login
+                    console.log("No hay usuario autenticado, redirigiendo a login...");
+                    alert("Redirigiendo a inicio de sesión");
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        // Llamar a la función para comprobar autenticación y rol
+        checkAuthAndRole();
 
     // Función para obtener el horario del profesor y poblar la tabla
     function fetchSchedule(userId) {
