@@ -102,8 +102,7 @@ firebase.auth().onAuthStateChanged((user) => {
         const storedUserId = localStorage.getItem("userId");
 
         if (userId === storedUserId) {
-            // Si el UID coincide con el almacenado, cargar el horario
-            fetchSchedule(userId);
+
         } else {
             // Si no coincide, redirigir al login
             console.log("UID no coincide, redirigiendo a login...");
