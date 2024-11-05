@@ -109,26 +109,26 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged((user) => {
     if (!user) {
         // Redirige al login si no hay usuario autenticado
         window.location.href = 'login.html';
     } else {
         const userId = user.uid;
+        console.log("UID del usuario autenticado:", userId);
 
         // Obtenemos el rol desde Firebase usando el UID del usuario autenticado
         firebase.database().ref(`/users/${userId}/role`).once('value')
             .then((snapshot) => {
                 const role = snapshot.val();
+                console.log("Rol obtenido desde Firebase:", role);
 
                 if (role === 'student') {
                     // Si el rol es "student"
                     fetchSchedule(userId);
                 } else {
-                    // Si el rol no coincide, redirigir al login
-                    console.log("Rol no autorizado, redirigiendo a login...");
-                    alert("Acceso no autorizado. Redirigiendo a inicio de sesión");
-                    window.location.href = 'login.html';
+                    // Si el rol no coincide, mostrar alerta para depuración
+                    alert("Rol no autorizado. Verifique el rol en Firebase.");
                 }
             })
             .catch((error) => {
