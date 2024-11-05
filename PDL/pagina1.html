@@ -164,33 +164,31 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
-// Revisar si el usuario está autenticado
+// Revisar si el usuario está autenticado y tiene el UID correcto
 firebase.auth().onAuthStateChanged((user) => {
     if (!user) {
         // Redirige al login si no hay usuario autenticado
         window.location.href = 'login.html';
     } else {
         const userId = user.uid;
-        console.log("UID del usuario autenticado:", userId);
+        const storedUserId = localStorage.getItem("userId");
 
-        // Obtener el currentUserId del usuario desde la base de datos
-        const userRef = firebase.database().ref(`users/${userId}/currentUserId`);
-        userRef.once('value').then((snapshot) => {
-            const currentUserId = snapshot.val();
-
-            if (userId === currentUserId) {
-                // Si el UID coincide con el currentUserId en la base de datos, cargar el horario
-                fetchSchedule(userId);
-            } else {
-                // Si no coincide, redirigir al login
-                console.log("UID no coincide con currentUserId, redirigiendo a login...");
-                alert("Redirigiendo a inicio de sesión");
-                window.location.href = 'login.html';
-            }
-        }).catch(error => {
-            console.error("Error al obtener currentUserId:", error);
+        if (userId === storedUserId) {
+            // Si el UID coincide con el almacenado, cargar el horario
+            fetchSchedule(userId);
+        } else {
+            // Si no coincide, redirigir al login
+            console.log("UID no coincide, redirigiendo a login...");
+            alert("Redirigiendo a inicio de sesión");
             window.location.href = 'login.html';
-        });
+        }
+    }
+});
+
+// Guardar el UID en el almacenamiento local después de la autenticación
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        localStorage.setItem("userId", user.uid); // Guardar el UID en almacenamiento local
     }
 });
 
