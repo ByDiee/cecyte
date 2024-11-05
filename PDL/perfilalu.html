@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil del Alumno</title>
+    <script src="auth.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -118,25 +119,17 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // Revisar si el usuario está autenticado y tiene el UID correcto
+// auth.js - Asegúrate de que este script esté incluido en todas las páginas que requieran autenticación
 firebase.auth().onAuthStateChanged((user) => {
     if (!user) {
         // Redirige al login si no hay usuario autenticado
         window.location.href = 'login.html';
     } else {
         const userId = user.uid;
-        const storedUserId = localStorage.getItem("userId");
-
-        if (userId === storedUserId) {
-
-        } else {
-            // Si no coincide, redirigir al login
-            console.log("UID no coincide, redirigiendo a login...");
-            alert("Redirigiendo a inicio de sesión");
-            window.location.href = 'login.html';
-        }
+        localStorage.setItem("userId", userId); // Guardar el UID en almacenamiento local
     }
 });
+
 
         // Mapeo de carrera según el grupo seleccionado
         const careerMapping = {
