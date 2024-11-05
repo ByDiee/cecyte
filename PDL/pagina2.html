@@ -121,8 +121,8 @@
             .then((snapshot) => {
                 const role = snapshot.val();
 
-                if (role === 'admin') {
-                    // Si el rol es "admin"
+                if (role === 'student') {
+                    // Si el rol es "student"
                     fetchSchedule(userId);
                 } else {
                     // Si el rol no coincide, redirigir al login
