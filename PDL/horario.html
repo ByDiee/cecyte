@@ -127,16 +127,32 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-            // Revisar si el usuario está logueado
-    firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            // Redirige al login solo si no hay usuario autenticado
-            window.location.href = 'login.html';
+// Revisar si el usuario está autenticado y tiene el UID correcto
+firebase.auth().onAuthStateChanged((user) => {
+    if (!user) {
+        // Redirige al login si no hay usuario autenticado
+        window.location.href = 'login.html';
+    } else {
+        const userId = user.uid;
+        const storedUserId = localStorage.getItem("userId");
+
+        if (userId === storedUserId) {
+
         } else {
-            // Si el usuario está autenticado, obtenemos el horario del profesor
-            fetchSchedule(user.uid);
+            // Si no coincide, redirigir al login
+            console.log("UID no coincide, redirigiendo a login...");
+            alert("Redirigiendo a inicio de sesión");
+            window.location.href = 'login.html';
         }
-    });
+    }
+});
+
+    // Guardar el UID en el almacenamiento local después de la autenticación
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        localStorage.setItem("userId", user.uid); // Guardar el UID en almacenamiento local
+    }
+});
 
         // Función para seleccionar una materia
         function selectSubject(subjectName, semester, group, schedule) {
