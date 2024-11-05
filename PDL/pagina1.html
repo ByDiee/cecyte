@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero del Profesor</title>
+    <script src="auth.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -164,41 +165,14 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
-    firebase.auth().onAuthStateChanged((user) => {
+// auth.js - Asegúrate de que este script esté incluido en todas las páginas que requieran autenticación
+firebase.auth().onAuthStateChanged((user) => {
     if (!user) {
         // Redirige al login si no hay usuario autenticado
         window.location.href = 'login.html';
     } else {
         const userId = user.uid;
-
-        // Obtenemos el rol desde Firebase usando el UID del usuario autenticado
-        firebase.database().ref(`/users/${userId}/role`).once('value')
-            .then((snapshot) => {
-                const role = snapshot.val();
-
-                if (role === 'admin') {
-                    // Si el rol es "admin"
-                    fetchSchedule(userId);
-                } else {
-                    // Si el rol no coincide, redirigir al login
-                    console.log("Rol no autorizado, redirigiendo a login...");
-                    alert("Acceso no autorizado. Redirigiendo a inicio de sesión");
-                    window.location.href = 'login.html';
-                }
-            })
-            .catch((error) => {
-                console.error("Error al obtener el rol del usuario:", error);
-                alert("Error al verificar el rol. Redirigiendo a inicio de sesión");
-                window.location.href = 'login.html';
-            });
-    }
-});
-
-
-// Guardar el UID en el almacenamiento local después de la autenticación
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        localStorage.setItem("userId", user.uid); // Guardar el UID en almacenamiento local
+        localStorage.setItem("userId", userId); // Guardar el UID en almacenamiento local
     }
 });
 
