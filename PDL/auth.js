@@ -18,10 +18,9 @@ firebase.initializeApp(firebaseConfig);
 function getRequiredRole() {
     const currentPage = window.location.pathname;
 
-    if (currentPage.includes("pagina1.html") || currentPage.includes("perfilmaestro.html") || 
-        currentPage.includes("qr.html") || currentPage.includes("horario.html")) {
+    if (currentPage.includes("pagina1.html", "perfilmaestro.html", "qr.html", "horario.html")) {
         return "admin"; // Acceso solo para administradores
-    } else if (currentPage.includes("pagina2.html") || currentPage.includes("perfilalu.html")) {
+    } else if (currentPage.includes("pagina2.html", "perfilalu.html")) {
         return "student"; // Acceso solo para estudiantes
     } else {
         return null; // Páginas sin restricción de roles
