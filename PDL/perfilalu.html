@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil del Alumno</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
         body {
@@ -99,38 +102,7 @@
         </form>
     </main>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
-
-// auth.js - Asegúrate de que este script esté incluido en todas las páginas que requieran autenticación
-firebase.auth().onAuthStateChanged((user) => {
-    if (!user) {
-        // Redirige al login si no hay usuario autenticado
-        window.location.href = 'login.html';
-    } else {
-        const userId = user.uid;
-        localStorage.setItem("userId", userId); // Guardar el UID en almacenamiento local
-    }
-});
-
-
         // Mapeo de carrera según el grupo seleccionado
         const careerMapping = {
             'A': 'Programacion',
@@ -143,8 +115,8 @@ firebase.auth().onAuthStateChanged((user) => {
 
         // Cargar el perfil del estudiante
         function loadStudentProfile() {
-            const userId = auth.currentUser.uid;
-            const profileRef = database.ref(`users/${userId}`);
+            const userId = localStorage.getItem("userId");
+            const profileRef = firebase.database().ref(`users/${userId}`);
 
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
@@ -168,8 +140,8 @@ firebase.auth().onAuthStateChanged((user) => {
         document.getElementById('studentProfileForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
-            const userId = auth.currentUser.uid;
-            const profileRef = database.ref(`users/${userId}`);
+            const userId = localStorage.getItem("userId");
+            const profileRef = firebase.database().ref(`users/${userId}`);
             const profileData = {
                 firstName: document.getElementById('firstName').value,
                 lastNameP: document.getElementById('lastNameP').value,
@@ -188,14 +160,8 @@ firebase.auth().onAuthStateChanged((user) => {
                 });
         });
 
-        // Cargar la información desde Firebase
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                loadStudentProfile();
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
+        // Cargar la información desde Firebase (verifica si el usuario está autenticado)
+        loadStudentProfile();
 
         // Actualizar carrera si el grupo cambia
         document.getElementById('Grupo').addEventListener('change', function() {
