@@ -144,7 +144,7 @@
                         scheduleTableBody.innerHTML = '';  // Limpiar la tabla antes de llenarla
 
                         const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-                        const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+                        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
                         // Crear las filas para cada hora
                         for (const time of times) {
@@ -182,6 +182,8 @@
                 const currentHour = now.getHours();
                 const currentMinute = now.getMinutes();
                 const currentTime = `${String(currentHour).padStart(2, '0')}${String(currentMinute).padStart(2, '0')}`;
+                
+                console.log("Hora actual (HHMM):", currentTime);  // Mostrar la hora actual para depuración
 
                 // Iterar sobre las celdas para iluminar la que corresponda con la hora actual
                 const scheduleCells = document.querySelectorAll('.schedule-table td');
@@ -189,8 +191,11 @@
                     const timeCell = cell.closest('tr').querySelector('th');
                     const time = timeCell.textContent.replace(":", "");  // Eliminar ":" para comparar
 
+                    console.log(`Comparando ${time} con ${currentTime}`);  // Depuración de comparación
+
                     // Si la celda corresponde a la hora actual, resaltar
                     if (time === currentTime) {
+                        console.log("¡Hora encontrada! Iluminando celda.");
                         cell.classList.add('current');
                     }
                 });
