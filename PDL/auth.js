@@ -11,65 +11,81 @@ const firebaseConfig = {
     databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
 };
 
-// Inicializar Firebase
+// Inicializar Firebase solo una vez en auth.js
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
 
-// Función para determinar el rol requerido según la URL de la página actual
+// Configurar expiración de sesión de una hora y cierre de sesión al cerrar la ventana
+function setupSessionTimeout() {
+    const timeout = 3600000; // 1 hora en milisegundos
+    const lastActiveTime = localStorage.getItem("lastActiveTime");
+
+    if (lastActiveTime && Date.now() - lastActiveTime > timeout) {
+        auth.signOut(); // Expira la sesión si se supera el tiempo
+    }
+    localStorage.setItem("lastActiveTime", Date.now());
+
+    // Escucha eventos de actividad y reinicia el contador
+    window.addEventListener('mousemove', () => localStorage.setItem("lastActiveTime", Date.now()));
+    window.addEventListener('keypress', () => localStorage.setItem("lastActiveTime", Date.now()));
+}
+
+// Cierre de sesión al cerrar la ventana
+window.addEventListener("beforeunload", () => {
+    auth.signOut();
+});
+
+// Obtener el rol según la URL de la página
 function getRequiredRole() {
     const currentPage = window.location.pathname;
-
-    if (currentPage.includes("pagina1.html", "perfilmaestro.html", "qr.html", "horario.html")) {
-        return "admin"; // Acceso solo para administradores
-    } else if (currentPage.includes("pagina2.html", "perfilalu.html")) {
-        return "student"; // Acceso solo para estudiantes
+    if (currentPage.includes("pagina1.html") || currentPage.includes("perfilmaestro.html") || 
+        currentPage.includes("qr.html") || currentPage.includes("horario.html")) {
+        return "admin";
+    } else if (currentPage.includes("pagina2.html") || currentPage.includes("perfilalu.html")) {
+        return "student";
     } else {
         return null; // Páginas sin restricción de roles
     }
 }
 
-// Función para verificar autenticación, UID y rol
+// Verificación de acceso y rol
 function verifyAccessAndRole() {
     const requiredRole = getRequiredRole();
-
-    firebase.auth().onAuthStateChanged((user) => {
+    
+    auth.onAuthStateChanged((user) => {
         if (!user) {
-            // Redirige al login si no hay usuario autenticado
-            window.location.href = 'login.html';
+            window.location.href = 'login.html'; // Redirige si no está autenticado
             return;
         }
         
         const userId = user.uid;
-        localStorage.setItem("userId", userId); // Guardar el UID en almacenamiento local
-
+        localStorage.setItem("userId", userId); // Guardar UID en almacenamiento local
+        console.log("Usuario ID:", userId); // Log del ID del usuario
+        
         if (requiredRole) {
-            // Consultar el rol del usuario en Firebase
-            firebase.database().ref(`/users/${userId}/role`).once('value')
+            // Verificar rol en Firebase
+            database.ref(`/users/${userId}/role`).once('value')
                 .then((snapshot) => {
                     const role = snapshot.val();
+                    console.log("Rol del usuario:", role); // Log del rol del usuario
 
-                    if (role === requiredRole) {
-                        console.log("Acceso autorizado para rol:", role);
-                        loadUserProfile(userId); // Carga el perfil del usuario si está autorizado
-                    } else {
+                    if (role !== requiredRole) {
                         alert("Acceso no autorizado. Redirigiendo...");
-                        window.location.href = 'login.html';
+                        // Redirigir a la última página permitida
+                        window.history.back();
                     }
                 })
                 .catch((error) => {
                     console.error("Error al obtener el rol del usuario:", error);
-                    alert("Error al verificar el rol. Redirigiendo...");
                     window.location.href = 'login.html';
                 });
         }
     });
 }
 
-// Llamar a la función de verificación al cargar la página
-window.onload = verifyAccessAndRole;
-
-// Guardar el UID en el almacenamiento local después de la autenticación
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        localStorage.setItem("userId", user.uid); // Guardar el UID en almacenamiento local
-    }
-});
+// Ejecuta la configuración y verificación al cargar la página
+window.onload = () => {
+    setupSessionTimeout();
+    verifyAccessAndRole();
+};
