@@ -4,64 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero del Alumno</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-database.js"></script>
     <script src="auth.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .schedule-table th, .schedule-table td {
-            border: 1px solid #dddddd;
-            padding: 10px;
-            text-align: center;
-        }
-        .schedule-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .schedule-table td {
-            background-color: #ffffff;
-            color: #000000;
-        }
-        .schedule-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
-        }
-        .schedule-table td.highlight {
-            background-color: #ffcccc; 
-            color: #ff0000; 
-        }
-        .schedule-table td.current {
-            background-color: #c3f9c3; 
-            color: #14c614; 
-        }
+        /* Tus estilos CSS aquí */
     </style>
 </head>
 <body>
@@ -93,15 +41,25 @@
         </div>
     </main>
     <script>
-        
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    loadStudentProfile();
+                } else {
+                    console.error("Usuario no autenticado.");
+                    window.location.href = "login.html"; // Redirigir si el usuario no está autenticado
+                }
+            });
+        });
+
         function loadStudentProfile() {
             const userId = auth.currentUser.uid;
             const profileRef = database.ref(`users/${userId}`);
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
                 if (profileData) {
-                    const semester = profileData.Semestre;  // Cambiado para obtener 'Semestre'
-                    const group = profileData.Grupo;        // Cambiado para obtener 'Grupo'
+                    const semester = profileData.Semestre;
+                    const group = profileData.Grupo;
                     updateSchedule(semester, group);
                 } else {
                     console.error('No se ha encontrado horario');
@@ -176,7 +134,7 @@
 
                 if (currentHour >= startTime && currentHour < endTime) {
                     const dayIndex = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].indexOf(currentDay);
-                    cells[dayIndex + 1].classList.add('current'); // +1 porque el primer <td> es la hora
+                    cells[dayIndex + 1].classList.add('current');
                 }
             });
         }
