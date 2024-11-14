@@ -9,62 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .schedule-table th, .schedule-table td {
-            border: 1px solid #dddddd;
-            padding: 10px;
-            text-align: center;
-        }
-        .schedule-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .schedule-table td {
-            background-color: #ffffff;
-            color: #000000;
-        }
-        .schedule-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
-        }
-        .schedule-table td.highlight {
-            background-color: #ffcccc; 
-            color: #ff0000; 
-        }
-        .schedule-table td.current {
-            background-color: #c3f9c3; 
-            color: #14c614; 
-        }
+        /* Estilos aquí */
     </style>
 </head>
 <body>
@@ -100,14 +45,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             const database = firebase.database();
             
-            // Esperar hasta que el usuario esté autenticado
+            // Asegurarse de que el usuario esté autenticado antes de intentar acceder a su UID
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
                     const userId = user.uid;  // Ahora 'user' es no nulo, y podemos acceder a 'uid'
+                    console.log("Usuario ID:", userId); // Verificación de usuario
                     fetchStudentSchedule(userId);
                 } else {
-                    // Si no hay usuario autenticado, redirigir al login
-                    window.location.href = 'login.html';
+                    console.error('Usuario no autenticado'); // Aquí no se redirige, pero muestra el error
+                    // Opcional: Manejar el caso cuando no hay usuario autenticado si es necesario
                 }
             });
 
@@ -117,14 +63,29 @@
                 
                 userRef.once('value').then(snapshot => {
                     const userData = snapshot.val();
+                    console.log('Datos del usuario:', userData);  // Verifica que los datos del usuario estén correctos
                     const semester = userData.semester;  // Ejemplo: '1'
                     const group = userData.group;  // Ejemplo: 'A'
+
+                    // Verifica si el semestre y grupo existen
+                    if (!semester || !group) {
+                        console.error('Semestre o grupo no encontrados en los datos del usuario');
+                        return;
+                    }
 
                     // Acceder a los horarios del semestre y grupo correspondiente
                     const scheduleRef = database.ref(`classSchedules/${semester}/${group}`);
                     
                     scheduleRef.once('value').then(snapshot => {
                         const schedule = snapshot.val();
+                        console.log('Horario obtenido:', schedule);  // Verifica los datos del horario
+
+                        // Verifica si el horario existe
+                        if (!schedule) {
+                            console.error('No se encontró el horario para el semestre y grupo especificados');
+                            return;
+                        }
+
                         const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
                         scheduleTableBody.innerHTML = '';  // Limpiar la tabla antes de llenarla
 
@@ -144,6 +105,8 @@
                                 const subject = schedule && schedule[day] && schedule[day][time];
                                 if (subject) {
                                     cell.textContent = subject;
+                                } else {
+                                    cell.textContent = '';  // Si no hay materia, dejar vacío
                                 }
                                 row.appendChild(cell);
                             }
