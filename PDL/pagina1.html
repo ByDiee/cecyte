@@ -49,25 +49,6 @@
         .schedule-table th {
             background-color: #f2f2f2;
         }
-        .edit-form {
-            display: none;
-            border: 1px solid #cccccc;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            margin-top: 20px;
-        }
-        #editScheduleBtn {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #editScheduleBtn:hover {
-            background-color: #0056b3;
-        }
         .delete-btn {
             display: none;
             position: absolute;
@@ -94,9 +75,9 @@
         <h1>Bienvenido</h1>
     </header>
     <nav>
-        <a href="qr.html" id="generateQRBtn">Generar QR</a>
-        <a href="perfilmaestro.html" id="editProfileBtn">Editar Perfil</a>
-        <a href="#" id="viewAttendanceBtn">Ver Asistencias</a>
+        <a href="qr.html">Generar QR</a>
+        <a href="perfilmaestro.html">Editar Perfil</a>
+        <a href="#">Ver Asistencias</a>
     </nav>
     <main>
         <div class="welcome">
@@ -124,137 +105,102 @@
             </table>
             <button id="editScheduleBtn">Editar Horario</button>
         </div>
-        
-        <!-- Formulario de Edición de Horario -->
-        <div class="edit-form" id="editForm">
-            <h3>Editar Horario</h3>
-            <form id="scheduleForm">
-                <label for="subject">Materia:</label>
-                <select id="subject" name="subject">
-                    <option value="">Selecciona una materia</option>
-                    <!-- Las materias se cargarán dinámicamente aquí -->
-                </select><br>
-
-                <button type="submit">Guardar Cambios</button>
-            </form>
-        </div>
     </main>
 
-     <!-- Firebase scripts con un parámetro para evitar caché -->
-     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js?v=1.0"></script>
-     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js?v=1.0"></script>
-     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js?v=1.0"></script>
- 
-     <script>
-         document.addEventListener('DOMContentLoaded', function() {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const database = firebase.database();
 
-        // Configuración Firebase
-        const firebaseConfig = {
-        apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-        authDomain: "pdlista-61c4d.firebaseapp.com",
-        projectId: "pdlista-61c4d",
-        storageBucket: "pdlista-61c4d.appspot.com",
-        messagingSenderId: "449596760167",
-        appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-        measurementId: "G-BDXFNR25C0",
-        databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-    };
-
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const database = firebase.database();
-
-// auth.js - Asegúrate de que este script esté incluido en todas las páginas que requieran autenticación
-firebase.auth().onAuthStateChanged((user) => {
-    if (!user) {
-        // Redirige al login si no hay usuario autenticado
-        window.location.href = 'login.html';
-    } else {
-        const userId = user.uid;
-        localStorage.setItem("userId", userId); // Guardar el UID en almacenamiento local
-    }
-});
-
-    // Función para obtener el horario del profesor y poblar la tabla
-    function fetchSchedule(userId) {
-        const scheduleRef = database.ref(`users/${userId}/horario`);
-        scheduleRef.once('value').then(snapshot => {
-            const schedule = snapshot.val();
-            const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
-            scheduleTableBody.innerHTML = '';  // Limpiar la tabla antes de llenarla
-
-            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-
-            // Crear las filas para cada hora
-            for (const time of times) {
-                const row = document.createElement('tr');
-                const timeCell = document.createElement('th');
-                timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                row.appendChild(timeCell);
-
-                // Crear las celdas para cada día
-                for (const day of days) {
-                    const cell = document.createElement('td');
-                    const subject = schedule && schedule[day] && schedule[day][time];
-                    if (subject) {
-                        cell.textContent = subject;
-
-                        // Botón de eliminar
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.textContent = 'X';
-                        deleteBtn.classList.add('delete-btn');
-                        deleteBtn.addEventListener('click', () => {
-                            if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
-                                deleteAllInstancesOfSubject(userId, subject);
-                            }
-                        });
-                        cell.appendChild(deleteBtn);
-                    }
-                    row.appendChild(cell);
+            // Verifica autenticación
+            firebase.auth().onAuthStateChanged((user) => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                } else {
+                    const userId = user.uid;
+                    localStorage.setItem("userId", userId);
+                    fetchSchedule(userId);
                 }
-
-                scheduleTableBody.appendChild(row);
-            }
-        }).catch(error => {
-            console.error('Error al obtener el horario:', error);
-        });
-    }
-
-    // Eliminar todas las instancias de la materia seleccionada del horario
-    function deleteAllInstancesOfSubject(userId, subjectToDelete) {
-        const scheduleRef = database.ref(`users/${userId}/horario`);
-        scheduleRef.once('value').then(snapshot => {
-            const schedule = snapshot.val();
-            const updates = {};
-
-            // Recorremos todos los días y horas para eliminar materias
-            for (const day in schedule) {
-                updates[day] = {};
-                for (const time in schedule[day]) {
-                    if (schedule[day][time] === subjectToDelete) {
-                        updates[day][time] = null;
-                    } else {
-                        updates[day][time] = schedule[day][time];
-                    }
-                }
-            }
-
-            scheduleRef.update(updates).then(() => {
-                alert('Materia eliminada con éxito');
-                window.location.reload();
-            }).catch(error => {
-                console.error('Error al eliminar la materia:', error);
             });
-        }).catch(error => {
-            console.error('Error al obtener el horario:', error);
-        });
-    }
 
-    // Editar horario al hacer clic en el botón
-    document.getElementById('editScheduleBtn').addEventListener('click', () => {
-        window.location.href = 'horario.html';
-    });
-});
-</script>
+            // Función para obtener el horario del profesor y poblar la tabla
+            function fetchSchedule(userId) {
+                const scheduleRef = database.ref(`users/${userId}/horario`);
+                scheduleRef.once('value').then(snapshot => {
+                    const schedule = snapshot.val();
+                    const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+                    scheduleTableBody.innerHTML = '';
+
+                    const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+
+                    // Crear las filas para cada hora
+                    for (const time of times) {
+                        const row = document.createElement('tr');
+                        const timeCell = document.createElement('th');
+                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                        row.appendChild(timeCell);
+
+                        // Crear las celdas para cada día
+                        for (const day of days) {
+                            const cell = document.createElement('td');
+                            const subject = schedule && schedule[day] && schedule[day][time];
+                            if (subject) {
+                                cell.textContent = subject;
+
+                                // Botón de eliminar
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.textContent = 'X';
+                                deleteBtn.classList.add('delete-btn');
+                                deleteBtn.addEventListener('click', () => {
+                                    if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
+                                        deleteAllInstancesOfSubject(userId, subject);
+                                    }
+                                });
+                                cell.appendChild(deleteBtn);
+                            }
+                            row.appendChild(cell);
+                        }
+                        scheduleTableBody.appendChild(row);
+                    }
+                }).catch(error => {
+                    console.error('Error al obtener el horario:', error);
+                });
+            }
+
+            // Eliminar todas las instancias de la materia seleccionada del horario
+            function deleteAllInstancesOfSubject(userId, subjectToDelete) {
+                const scheduleRef = database.ref(`users/${userId}/horario`);
+                scheduleRef.once('value').then(snapshot => {
+                    const schedule = snapshot.val();
+                    const updates = {};
+
+                    for (const day in schedule) {
+                        updates[day] = {};
+                        for (const time in schedule[day]) {
+                            if (schedule[day][time] === subjectToDelete) {
+                                updates[day][time] = null;
+                            } else {
+                                updates[day][time] = schedule[day][time];
+                            }
+                        }
+                    }
+
+                    scheduleRef.update(updates).then(() => {
+                        alert('Materia eliminada con éxito');
+                        window.location.reload();
+                    }).catch(error => {
+                        console.error('Error al eliminar la materia:', error);
+                    });
+                }).catch(error => {
+                    console.error('Error al obtener el horario:', error);
+                });
+            }
+
+            // Editar horario al hacer clic en el botón
+            document.getElementById('editScheduleBtn').addEventListener('click', () => {
+                window.location.href = 'horario.html';
+            });
+        });
+    </script>
+</body>
+</html>
