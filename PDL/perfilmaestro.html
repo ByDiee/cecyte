@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil del Maestro</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
         body {
@@ -34,7 +37,7 @@
             margin-bottom: 8px;
             font-weight: bold;
         }
-        .profile-form input, .profile-form select {
+        .profile-form input {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -73,77 +76,57 @@
         </form>
     </main>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-            authDomain: "pdlista-61c4d.firebaseapp.com",
-            projectId: "pdlista-61c4d",
-            storageBucket: "pdlista-61c4d.appspot.com",
-            messagingSenderId: "449596760167",
-            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-            measurementId: "G-BDXFNR25C0",
-            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-        };
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
+        // Aquí recuperamos el UID del maestro desde el auth.js (suponiendo que auth.js ya lo maneja)
+        const userId = firebase.auth().currentUser?.uid; // Asegúrate de que `currentUser` esté disponible
 
-// auth.js - Asegúrate de que este script esté incluido en todas las páginas que requieran autenticación
-firebase.auth().onAuthStateChanged((user) => {
-    if (!user) {
-        // Redirige al login si no hay usuario autenticado
-        window.location.href = 'login.html';
-    } else {
-        const userId = user.uid;
-        localStorage.setItem("userId", userId); // Guardar el UID en almacenamiento local
-    }
-});
+        if (!userId) {
+            // Si no hay un usuario autenticado, redirigir al login
+            window.location.href = 'login.html';
+        } else {
+            // Cargar los datos del perfil del maestro desde la base de datos de Firebase
+            loadTeacherProfile(userId);
+        }
 
-        // Carga la información del perfil del maestro
-        function loadTeacherProfile() {
-            const userId = auth.currentUser.uid;
-            const profileRef = database.ref(`users/${userId}`);
+        // Función para cargar los datos del perfil desde Firebase
+        function loadTeacherProfile(userId) {
+            const profileRef = database.ref(`users/${userId}`); // Ruta en la base de datos de Firebase
 
             profileRef.once('value').then(snapshot => {
                 const profileData = snapshot.val();
-                document.getElementById('firstName').value = profileData.firstName || '';
-                document.getElementById('lastNameP').value = profileData.lastNameP || '';
-                document.getElementById('lastNameM').value = profileData.lastNameM || '';
+                if (profileData) {
+                    // Prellenar los campos con los datos del perfil
+                    document.getElementById('firstName').value = profileData.firstName || '';
+                    document.getElementById('lastNameP').value = profileData.lastNameP || '';
+                    document.getElementById('lastNameM').value = profileData.lastNameM || '';
+                }
+            }).catch(error => {
+                console.error('Error al cargar los datos del perfil:', error);
             });
         }
 
-        // Guarda la información actualizada
+        // Guardar los cambios del perfil en Firebase
         document.getElementById('teacherProfileForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
-            const userId = auth.currentUser.uid;
-            const profileRef = database.ref(`users/${userId}`);
-            const profileData = {
-                firstName: document.getElementById('firstName').value,
-                lastNameP: document.getElementById('lastNameP').value,
-                lastNameM: document.getElementById('lastNameM').value
-            };
+            // Asegúrate de que el usuario está autenticado
+            if (userId) {
+                const profileRef = database.ref(`users/${userId}`);
+                const profileData = {
+                    firstName: document.getElementById('firstName').value,
+                    lastNameP: document.getElementById('lastNameP').value,
+                    lastNameM: document.getElementById('lastNameM').value
+                };
 
-            profileRef.update(profileData)
-                .then(() => {
-                    alert('Perfil actualizado correctamente.');
-                })
-                .catch(error => {
-                    console.error('Error al actualizar el perfil:', error);
-                });
-        });
-
-        // Carga la información desde Firebase
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                loadTeacherProfile();
-            } else {
-                window.location.href = 'login.html';
+                // Actualizar los datos en Firebase
+                profileRef.update(profileData)
+                    .then(() => {
+                        alert('Perfil actualizado correctamente.');
+                    })
+                    .catch(error => {
+                        console.error('Error al actualizar el perfil:', error);
+                    });
             }
         });
     </script>
