@@ -16,6 +16,15 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
 
+// Configuración de persistencia de sesión para mantenerla activa al recargar
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => {
+        console.log("Persistencia de sesión configurada en local.");
+    })
+    .catch((error) => {
+        console.error("Error al configurar la persistencia de sesión:", error);
+    });
+
 // Configurar expiración de sesión de una hora y cierre de sesión al cerrar la ventana
 function setupSessionTimeout() {
     const timeout = 3600000; // 1 hora en milisegundos
@@ -31,9 +40,11 @@ function setupSessionTimeout() {
     window.addEventListener('keypress', () => localStorage.setItem("lastActiveTime", Date.now()));
 }
 
-// Cierre de sesión al cerrar la ventana
-window.addEventListener("beforeunload", () => {
-    auth.signOut();
+// Cierre de sesión solo al cerrar completamente la ventana, no al recargar
+window.addEventListener("unload", () => {
+    if (!navigator.onLine) {  // Verifica si el navegador está desconectado o alguna otra condición
+        auth.signOut();
+    }
 });
 
 // Obtener el rol según la URL de la página
