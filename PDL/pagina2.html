@@ -147,6 +147,12 @@
                         const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
                         const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
+                        const currentTime = new Date();
+                        const currentHour = currentTime.getHours();
+                        const currentMinute = currentTime.getMinutes();
+                        const currentTimeString = (currentHour < 10 ? '0' : '') + currentHour + (currentMinute < 10 ? '0' : '') + currentMinute;
+                        console.log('Hora actual:', currentTimeString);
+
                         // Crear las filas para cada hora
                         for (const time of times) {
                             const row = document.createElement('tr');
@@ -163,6 +169,12 @@
                                 } else {
                                     cell.textContent = '';  // Si no hay materia, dejar vacío
                                 }
+
+                                // Resaltar la celda si es la hora actual
+                                if (time === currentTimeString) {
+                                    cell.classList.add('current');
+                                }
+                                
                                 row.appendChild(cell);
                             }
                             scheduleTableBody.appendChild(row);
