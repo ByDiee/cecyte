@@ -9,28 +9,28 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-        /* Estilos básicos */
         body {
             font-family: Arial, sans-serif;
+            background-color: #ffffff;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
         }
-        header, nav {
-            background-color: #333;
-            color: #fff;
-            padding: 10px 20px;
+        header {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
         }
-        h1 {
-            margin: 0;
+        nav {
+            background-color: #ff851b;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
         }
         nav a {
-            color: #fff;
+            color: white;
             text-decoration: none;
-            margin-right: 10px;
-        }
-        nav a:hover {
-            text-decoration: underline;
+            font-weight: bold;
         }
         main {
             padding: 20px;
@@ -38,15 +38,32 @@
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .schedule-table th, .schedule-table td {
+            border: 1px solid #dddddd;
             padding: 10px;
             text-align: center;
-            border: 1px solid #ddd;
         }
         .schedule-table th {
-            background-color: #333;
-            color: #fff;
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .schedule-table td {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .schedule-table tr:nth-child(odd) td {
+            background-color: #f9f9f9;
+        }
+        .schedule-table td.highlight {
+            background-color: #ffcccc; 
+            color: #ff0000; 
+        }
+        .schedule-table td.current {
+            background-color: #c3f9c3; 
+            color: #14c614; 
         }
     </style>
 </head>
@@ -102,8 +119,8 @@
                 userRef.once('value').then(snapshot => {
                     const userData = snapshot.val();
                     console.log('Datos del usuario:', userData);  // Verifica que los datos del usuario estén correctos
-                    const semester = userData.semester;  // Ejemplo: '1'
-                    const group = userData.group;  // Ejemplo: 'A'
+                    const semester = userData.Semestre;  // Ejemplo: '3'
+                    const group = userData.Grupo;  // Ejemplo: 'F'
 
                     // Verifica si el semestre y grupo existen
                     if (!semester || !group) {
