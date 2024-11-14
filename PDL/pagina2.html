@@ -7,9 +7,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script> <!-- Asegúrate de que auth.js esté cargado correctamente -->
+    <script src="auth.js"></script> <!-- Carga auth.js, ya maneja la autenticación -->
     <style>
-        /* Estilos personalizados */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
@@ -59,12 +58,12 @@
             background-color: #f9f9f9;
         }
         .schedule-table td.highlight {
-            background-color: #ffcccc;
-            color: #ff0000;
+            background-color: #ffcccc; 
+            color: #ff0000; 
         }
         .schedule-table td.current {
-            background-color: #c3f9c3;
-            color: #14c614;
+            background-color: #c3f9c3; 
+            color: #14c614; 
         }
     </style>
 </head>
@@ -91,41 +90,34 @@
                     </tr>
                 </thead>
                 <tbody id="scheduleBody">
-                    <!-- Schedule will be populated here -->
+                    <!-- Horario cargado dinámicamente -->
                 </tbody>
             </table>
         </div>
     </main>
     <script>
-        // Función para cargar el perfil del estudiante y actualizar el horario en la tabla
-        function loadStudentProfile() {
+        function loadStudentSchedule() {
             const user = firebase.auth().currentUser;
             if (user) {
                 const userId = user.uid;
                 const profileRef = firebase.database().ref(`users/${userId}`);
-                
                 profileRef.once('value').then(snapshot => {
                     const profileData = snapshot.val();
                     if (profileData) {
                         const semester = profileData.Semestre;
                         const group = profileData.Grupo;
-                        updateSchedule(semester, group);
+                        loadSchedule(semester, group);
                     } else {
-                        console.error('No se ha encontrado horario para este estudiante.');
+                        console.error('Perfil no encontrado');
                     }
                 }).catch(error => {
-                    console.error('Error cargando datos del perfil:', error);
+                    console.error('Error al cargar el perfil:', error);
                 });
-            } else {
-                console.log('Usuario no autenticado');
-                window.location.href = 'login.html'; // Redirigir si el usuario no está autenticado
             }
         }
 
-        // Función para actualizar el horario en la tabla
-        function updateSchedule(semester, group) {
+        function loadSchedule(semester, group) {
             const scheduleRef = firebase.database().ref(`classSchedules/${semester}/${group}`);
-            
             scheduleRef.once('value').then(snapshot => {
                 const scheduleData = snapshot.val();
                 const scheduleBody = document.getElementById('scheduleBody');
@@ -157,8 +149,8 @@
                             const classInfo = scheduleData[day] && scheduleData[day][hour.start] ? scheduleData[day][hour.start] : '';
                             cell.textContent = classInfo;
 
-                            if (hour.start === '1000' && hour.end === '1030') { // Receso
-                                cell.classList.add('highlight');
+                            if (hour.start === '1000' && hour.end === '1030') {
+                                cell.classList.add('highlight'); // Resaltar receso
                             }
 
                             row.appendChild(cell);
@@ -166,17 +158,16 @@
                         scheduleBody.appendChild(row);
                     }
 
-                    highlightCurrentTimeCell();
+                    highlightCurrentTime();
                 } else {
                     scheduleBody.innerHTML = '<tr><td colspan="6">No se ha encontrado horario para este semestre y grupo.</td></tr>';
                 }
             }).catch(error => {
-                console.error('Error cargando datos del horario:', error);
+                console.error('Error al cargar el horario:', error);
             });
         }
 
-        // Función para resaltar la celda del horario actual
-        function highlightCurrentTimeCell() {
+        function highlightCurrentTime() {
             const currentTime = new Date();
             const currentHour = currentTime.getHours().toString().padStart(2, '0') + currentTime.getMinutes().toString().padStart(2, '0');
             const currentDayIndex = (currentTime.getDay() + 6) % 7;
@@ -190,13 +181,12 @@
 
                 if (currentHour >= startTime && currentHour < endTime) {
                     const dayIndex = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].indexOf(currentDay);
-                    cells[dayIndex + 1].classList.add('current'); // +1 porque el primer <td> es la hora
+                    cells[dayIndex + 1].classList.add('current');
                 }
             });
         }
 
-        // Cargar el perfil del estudiante cuando la página haya cargado
-        window.addEventListener('load', loadStudentProfile);
+        window.addEventListener('load', loadStudentSchedule);
     </script>
 </body>
 </html>
