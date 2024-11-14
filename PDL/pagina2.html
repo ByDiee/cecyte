@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero del Alumno</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
+        /* Estilos de la página (igual que antes) */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
@@ -96,29 +94,6 @@
         </div>
     </main>
     <script>
-        // Carga el perfil del estudiante y actualiza el horario en la tabla
-        function loadStudentProfile() {
-            const user = firebase.auth().currentUser;
-            if (user) {
-                const userId = user.uid;
-                const profileRef = firebase.database().ref(`users/${userId}`);
-                profileRef.once('value').then(snapshot => {
-                    const profileData = snapshot.val();
-                    if (profileData) {
-                        const semester = profileData.Semestre;
-                        const group = profileData.Grupo;
-                        updateSchedule(semester, group);
-                    } else {
-                        console.error('No se ha encontrado horario');
-                    }
-                }).catch(error => {
-                    console.error('Error cargando datos del perfil:', error);
-                });
-            } else {
-                console.log('Usuario no autenticado');
-            }
-        }
-
         function updateSchedule(semester, group) {
             const scheduleRef = firebase.database().ref(`classSchedules/${semester}/${group}`);
             scheduleRef.once('value').then(snapshot => {
@@ -184,13 +159,15 @@
 
                 if (currentHour >= startTime && currentHour < endTime) {
                     const dayIndex = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].indexOf(currentDay);
-                    cells[dayIndex + 1].classList.add('current'); // +1 porque el primer <td> es la hora
+                    cells[dayIndex + 1].classList.add('current');
                 }
             });
         }
 
-        // Espera a que se cargue auth.js y después carga el perfil del estudiante
-        window.addEventListener('load', loadStudentProfile);
+        // Esta función se llamará desde auth.js una vez autenticado el usuario
+        function loadStudentSchedule(semester, group) {
+            updateSchedule(semester, group);
+        }
     </script>
 </body>
 </html>
