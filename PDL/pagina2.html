@@ -84,7 +84,7 @@
                         <th>Hora</th>
                         <th>Lunes</th>
                         <th>Martes</th>
-                        <th>Miércoles</th>
+                        <th>Miércoles</th>  <!-- Corregido -->
                         <th>Jueves</th>
                         <th>Viernes</th>
                     </tr>
@@ -108,7 +108,6 @@
                     fetchStudentSchedule(userId);
                 } else {
                     console.error('Usuario no autenticado'); // Aquí no se redirige, pero muestra el error
-                    // Opcional: Manejar el caso cuando no hay usuario autenticado si es necesario
                 }
             });
 
@@ -147,12 +146,6 @@
                         const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
                         const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
-                        const currentTime = new Date();
-                        const currentHour = currentTime.getHours();
-                        const currentMinute = currentTime.getMinutes();
-                        const currentTimeString = (currentHour < 10 ? '0' : '') + currentHour + (currentMinute < 10 ? '0' : '') + currentMinute;
-                        console.log('Hora actual:', currentTimeString);
-
                         // Crear las filas para cada hora
                         for (const time of times) {
                             const row = document.createElement('tr');
@@ -169,21 +162,37 @@
                                 } else {
                                     cell.textContent = '';  // Si no hay materia, dejar vacío
                                 }
-
-                                // Resaltar la celda si es la hora actual
-                                if (time === currentTimeString) {
-                                    cell.classList.add('current');
-                                }
-                                
                                 row.appendChild(cell);
                             }
                             scheduleTableBody.appendChild(row);
                         }
+
+                        // Iluminar la celda correspondiente a la hora actual
+                        highlightCurrentTime();
                     }).catch(error => {
                         console.error('Error al obtener el horario:', error);
                     });
                 }).catch(error => {
                     console.error('Error al obtener los datos del alumno:', error);
+                });
+            }
+
+            function highlightCurrentTime() {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                const currentTime = `${String(currentHour).padStart(2, '0')}${String(currentMinute).padStart(2, '0')}`;
+
+                // Iterar sobre las celdas para iluminar la que corresponda con la hora actual
+                const scheduleCells = document.querySelectorAll('.schedule-table td');
+                scheduleCells.forEach(cell => {
+                    const timeCell = cell.closest('tr').querySelector('th');
+                    const time = timeCell.textContent.replace(":", "");  // Eliminar ":" para comparar
+
+                    // Si la celda corresponde a la hora actual, resaltar
+                    if (time === currentTime) {
+                        cell.classList.add('current');
+                    }
                 });
             }
         });
