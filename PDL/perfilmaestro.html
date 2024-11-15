@@ -77,54 +77,58 @@
     </main>
     
     <script>
+        // Obtener el ID del usuario autenticado
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
 
-        // Extraer el ID del usuario autenticado
-        const userId = firebase.auth().currentUser?.uid;
+                // Cargar datos del perfil
+                loadTeacherProfile(userId);
 
-        // Cargar los datos del perfil del usuario
+                // Manejar el evento de guardar cambios
+                document.getElementById('teacherProfileForm').addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    saveTeacherProfile(userId);
+                });
+            } else {
+                console.error("Usuario no autenticado.");
+            }
+        });
+
+        // Función para cargar datos del perfil del usuario
         function loadTeacherProfile(userId) {
-            if (!userId) return; // Evitar errores si no hay UID
             const profileRef = database.ref(`users/${userId}`);
-
             profileRef.once('value')
-                .then(snapshot => {
+                .then((snapshot) => {
                     const profileData = snapshot.val();
                     if (profileData) {
-                        // Rellenar los campos del formulario con los datos del perfil
                         document.getElementById('firstName').value = profileData.firstName || '';
                         document.getElementById('lastNameP').value = profileData.lastNameP || '';
                         document.getElementById('lastNameM').value = profileData.lastNameM || '';
                     }
                 })
-                .catch(error => {
-                    console.error('Error al cargar el perfil:', error);
+                .catch((error) => {
+                    console.error("Error al cargar el perfil:", error);
                 });
         }
 
-        // Guardar cambios del perfil en Firebase
-        document.getElementById('teacherProfileForm').addEventListener('submit', (event) => {
-            event.preventDefault();
-
+        // Función para guardar datos del perfil en Firebase
+        function saveTeacherProfile(userId) {
             const profileData = {
                 firstName: document.getElementById('firstName').value,
                 lastNameP: document.getElementById('lastNameP').value,
-                lastNameM: document.getElementById('lastNameM').value
+                lastNameM: document.getElementById('lastNameM').value,
             };
 
-            if (userId) {
-                const profileRef = database.ref(`users/${userId}`);
-                profileRef.update(profileData)
-                    .then(() => {
-                        alert('Perfil actualizado correctamente.');
-                    })
-                    .catch(error => {
-                        console.error('Error al actualizar el perfil:', error);
-                    });
-            }
-        });
-
-        // Llamar a la función para cargar el perfil al cargar la página
-        loadTeacherProfile(userId);
+            const profileRef = database.ref(`users/${userId}`);
+            profileRef.set(profileData)
+                .then(() => {
+                    alert("Perfil actualizado correctamente.");
+                })
+                .catch((error) => {
+                    console.error("Error al actualizar el perfil:", error);
+                });
+        }
     </script>
 </body>
 </html>
