@@ -76,50 +76,47 @@
         </form>
     </main>
 
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
     <script>
 
-        // Aquí recuperamos el UID del maestro desde el auth.js (suponiendo que auth.js ya lo maneja)
-        const userId = firebase.auth().currentUser?.uid; // Asegúrate de que `currentUser` esté disponible
+        // Extraer el ID del usuario autenticado
+        const userId = firebase.auth().currentUser?.uid;
 
-        if (!userId) {
-            // Si no hay un usuario autenticado, redirigir al login
-            window.location.href = 'login.html';
-        } else {
-            // Cargar los datos del perfil del maestro desde la base de datos de Firebase
-            loadTeacherProfile(userId);
-        }
-
-        // Función para cargar los datos del perfil desde Firebase
+        // Cargar los datos del perfil del usuario
         function loadTeacherProfile(userId) {
-            const profileRef = database.ref(`users/${userId}`); // Ruta en la base de datos de Firebase
+            if (!userId) return; // Evitar errores si no hay UID
+            const profileRef = database.ref(`users/${userId}`);
 
-            profileRef.once('value').then(snapshot => {
-                const profileData = snapshot.val();
-                if (profileData) {
-                    // Prellenar los campos con los datos del perfil
-                    document.getElementById('firstName').value = profileData.firstName || '';
-                    document.getElementById('lastNameP').value = profileData.lastNameP || '';
-                    document.getElementById('lastNameM').value = profileData.lastNameM || '';
-                }
-            }).catch(error => {
-                console.error('Error al cargar los datos del perfil:', error);
-            });
+            profileRef.once('value')
+                .then(snapshot => {
+                    const profileData = snapshot.val();
+                    if (profileData) {
+                        // Rellenar los campos del formulario con los datos del perfil
+                        document.getElementById('firstName').value = profileData.firstName || '';
+                        document.getElementById('lastNameP').value = profileData.lastNameP || '';
+                        document.getElementById('lastNameM').value = profileData.lastNameM || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar el perfil:', error);
+                });
         }
 
-        // Guardar los cambios del perfil en Firebase
+        // Guardar cambios del perfil en Firebase
         document.getElementById('teacherProfileForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
-            // Asegúrate de que el usuario está autenticado
+            const profileData = {
+                firstName: document.getElementById('firstName').value,
+                lastNameP: document.getElementById('lastNameP').value,
+                lastNameM: document.getElementById('lastNameM').value
+            };
+
             if (userId) {
                 const profileRef = database.ref(`users/${userId}`);
-                const profileData = {
-                    firstName: document.getElementById('firstName').value,
-                    lastNameP: document.getElementById('lastNameP').value,
-                    lastNameM: document.getElementById('lastNameM').value
-                };
-
-                // Actualizar los datos en Firebase
                 profileRef.update(profileData)
                     .then(() => {
                         alert('Perfil actualizado correctamente.');
@@ -129,6 +126,9 @@
                     });
             }
         });
+
+        // Llamar a la función para cargar el perfil al cargar la página
+        loadTeacherProfile(userId);
     </script>
 </body>
 </html>
