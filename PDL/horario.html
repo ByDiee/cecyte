@@ -11,7 +11,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
+            background-color: #ffffff;
             margin: 0;
             padding: 0;
         }
@@ -35,56 +35,69 @@
         main {
             padding: 20px;
         }
-        table {
+        .schedule-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        th, td {
+        .schedule-table th, .schedule-table td {
             border: 1px solid #dddddd;
             padding: 10px;
             text-align: center;
         }
-        th {
+        .schedule-table th {
             background-color: #f2f2f2;
+            font-weight: bold;
         }
-        tr:nth-child(odd) td {
+        .schedule-table td {
+            background-color: #ffffff;
+        }
+        .schedule-table tr:nth-child(odd) td {
             background-color: #f9f9f9;
         }
-        tr:hover {
-            background-color: #d4edda;
+        .schedule-table tr:hover {
+            background-color: #7d7d7d;
+            cursor: pointer;
+        }
+        #searchBar {
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 100%;
+            font-size: 16px;
+            border: 1px solid #ccc;
+        }
+        .hours-table {
+            width: 100%;
+            border: 1px solid #dddddd;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .hours-table th, .hours-table td {
+            padding: 5px;
+            border: 1px solid #dddddd;
+            text-align: center;
+        }
+        .hours-table th {
+            background-color: #f0f0f0;
         }
         .hours-table td {
-            cursor: pointer;
-        }
-        .hours-table td.selected {
-            background-color: #28a745;
-            color: white;
-        }
-        #saveAdvisory {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        #saveAdvisory:hover {
-            background-color: #218838;
+            background-color: #ffffff;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Filtrar Materias</h1>
+        <h1>Buscar Materias</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
         <a href="#">Registro de Asistencias</a>
     </nav>
     <main>
-        <h2>Materias</h2>
-        <table>
+        <input type="text" id="searchBar" placeholder="Buscar materia, semestre o grupo...">
+
+        <table class="schedule-table">
             <thead>
                 <tr>
                     <th>Materia</th>
@@ -94,101 +107,76 @@
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Las materias se cargarán dinámicamente -->
+                <!-- Se cargan las materias desde Firebase -->
             </tbody>
         </table>
-
-        <h2>Asignar Asesorías</h2>
-        <table class="hours-table">
-            <thead>
-                <tr>
-                    <th>Día / Hora</th>
-                    <th>07:00</th>
-                    <th>07:45</th>
-                    <th>08:30</th>
-                    <th>09:15</th>
-                    <th>10:00</th>
-                    <th>10:30</th>
-                    <th>11:15</th>
-                    <th>12:00</th>
-                    <th>12:45</th>
-                    <th>13:30</th>
-                    <th>14:15</th>
-                </tr>
-            </thead>
-            <tbody id="advisoryBody">
-                <tr><td>Lunes</td></tr>
-                <tr><td>Martes</td></tr>
-                <tr><td>Miércoles</td></tr>
-                <tr><td>Jueves</td></tr>
-                <tr><td>Viernes</td></tr>
-            </tbody>
-        </table>
-        <button id="saveAdvisory">Guardar Asesorías</button>
+        <h2>Asesorías</h2>
+        <button onclick="addAdvisory()">Seleccionar Asesorías</button>
     </main>
+
     <script>
-        // Mini tabla interactiva: selección de celdas
-        document.querySelectorAll(".hours-table td").forEach(cell => {
-            cell.addEventListener("click", () => {
-                cell.classList.toggle("selected");
-            });
-        });
+        const firebaseConfig = {
+            // Tu configuración de Firebase
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-        // Guardar asesorías en Firebase
-        document.getElementById("saveAdvisory").addEventListener("click", () => {
-            const advisoryData = {};
-            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+        function selectSubject(subjectName, semester, group, schedule) {
+            if (confirm(`¿Deseas agregar la materia ${subjectName} del semestre ${semester} grupo ${group} a tu horario?`)) {
+                saveSubjectToSchedule(subjectName, semester, group, schedule);
+            }
+        }
 
-            document.querySelectorAll(".hours-table tbody tr").forEach((row, index) => {
-                const day = days[index];
-                advisoryData[day] = [];
+        function saveSubjectToSchedule(subjectName, semester, group, schedule) {
+            const userId = firebase.auth().currentUser.uid;
+            const scheduleRef = database.ref(`users/${userId}/horario`);
 
-                row.querySelectorAll("td.selected").forEach((cell, hourIndex) => {
-                    if (hourIndex > 0) { // Ignorar primera columna (Día)
-                        advisoryData[day].push(cell.textContent);
+            scheduleRef.once('value').then(snapshot => {
+                const currentSchedule = snapshot.val() || {};
+                for (const day in schedule) {
+                    if (!currentSchedule[day]) currentSchedule[day] = {};
+                    for (const hour of schedule[day]) {
+                        currentSchedule[day][hour] = subjectName;
                     }
+                }
+                scheduleRef.set(currentSchedule).then(() => {
+                    alert('Materia agregada con éxito a tu horario');
                 });
             });
+        }
 
-            console.log("Asesorías seleccionadas:", advisoryData);
-            // Aquí se guarda en Firebase si es necesario
-        });
-
-        // Cargar materias desde Firebase
         function loadSubjects() {
-            const subjectBody = document.getElementById("subjectBody");
-            const mockData = { // Simulación de datos de Firebase
-                semester1: {
-                    groupA: {
-                        Lunes: {
-                            "0700": "Matemáticas",
-                            "0745": "Física",
-                            "0830": "Química"
-                        },
-                        Martes: {
-                            "0900": "Historia",
-                            "1000": "Arte"
+            const subjectRef = database.ref('classSchedules');
+            subjectRef.once('value').then(snapshot => {
+                const subjects = snapshot.val();
+                const subjectBody = document.getElementById('subjectBody');
+                subjectBody.innerHTML = '';
+                for (let semester in subjects) {
+                    for (let group in subjects[semester]) {
+                        for (let day in subjects[semester][group]) {
+                            for (let hour in subjects[semester][group][day]) {
+                                const subjectName = subjects[semester][group][day][hour];
+                                const row = document.createElement('tr');
+                                const subjectCell = document.createElement('td');
+                                subjectCell.textContent = subjectName;
+                                row.appendChild(subjectCell);
+                                subjectBody.appendChild(row);
+                            }
                         }
                     }
                 }
-            };
+            });
+        }
 
-            subjectBody.innerHTML = ""; // Limpiar contenido anterior
-            for (let semester in mockData) {
-                for (let group in mockData[semester]) {
-                    for (let day in mockData[semester][group]) {
-                        for (let hour in mockData[semester][group][day]) {
-                            const row = document.createElement("tr");
-                            row.innerHTML = `
-                                <td>${mockData[semester][group][day][hour]}</td>
-                                <td>${semester}</td>
-                                <td>${group}</td>
-                                <td>${day} ${hour}</td>
-                            `;
-                            subjectBody.appendChild(row);
-                        }
-                    }
-                }
+        function addAdvisory() {
+            const day = prompt("Selecciona el día para la asesoría (Lunes, Martes, etc.):");
+            const hour = prompt("Selecciona la hora para la asesoría (Formato HHMM):");
+            if (day && hour) {
+                const userId = firebase.auth().currentUser.uid;
+                const scheduleRef = database.ref(`users/${userId}/horario`);
+                scheduleRef.child(day).child(hour).set("Asesoría").then(() => {
+                    alert("Asesoría agregada con éxito.");
+                });
             }
         }
 
