@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Filtrar Materias</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,12 +46,6 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .schedule-table td {
-            background-color: #ffffff;
-        }
-        .schedule-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
-        }
         .schedule-table tr:hover {
             background-color: #7d7d7d;
             cursor: pointer;
@@ -66,23 +56,6 @@
             width: 100%;
             font-size: 16px;
             border: 1px solid #ccc;
-        }
-        .hours-table {
-            width: 100%;
-            border: 1px solid #dddddd;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .hours-table th, .hours-table td {
-            padding: 5px;
-            border: 1px solid #dddddd;
-            text-align: center;
-        }
-        .hours-table th {
-            background-color: #f0f0f0;
-        }
-        .hours-table td {
-            background-color: #ffffff;
         }
     </style>
 </head>
@@ -96,7 +69,6 @@
     </nav>
     <main>
         <input type="text" id="searchBar" placeholder="Buscar materia, semestre o grupo...">
-
         <table class="schedule-table">
             <thead>
                 <tr>
@@ -110,24 +82,49 @@
                 <!-- Se cargan las materias desde Firebase -->
             </tbody>
         </table>
-        <h2>Asesorías</h2>
-        <button onclick="addAdvisory()">Seleccionar Asesorías</button>
+        <button id="addAdvisoryBtn">Seleccionar Asesorías</button>
     </main>
 
     <script>
-        const firebaseConfig = {
-            // Tu configuración de Firebase
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        // La configuración y autenticación ya están en auth.js
+
+        const database = firebase.database(); // Usar la referencia de Firebase inicializada en auth.js.
+
+        function loadSubjects() {
+            const subjectRef = database.ref('classSchedules');
+            subjectRef.once('value').then(snapshot => {
+                const subjects = snapshot.val();
+                const subjectBody = document.getElementById('subjectBody');
+                subjectBody.innerHTML = '';
+
+                for (let semester in subjects) {
+                    for (let group in subjects[semester]) {
+                        for (let day in subjects[semester][group]) {
+                            for (let hour in subjects[semester][group][day]) {
+                                const subjectName = subjects[semester][group][day][hour];
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${subjectName}</td>
+                                    <td>${semester}</td>
+                                    <td>${group}</td>
+                                    <td>${day} - ${hour}</td>
+                                `;
+                                row.onclick = () => selectSubject(subjectName, semester, group, { [day]: [hour] });
+                                subjectBody.appendChild(row);
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         function selectSubject(subjectName, semester, group, schedule) {
             if (confirm(`¿Deseas agregar la materia ${subjectName} del semestre ${semester} grupo ${group} a tu horario?`)) {
-                saveSubjectToSchedule(subjectName, semester, group, schedule);
+                saveSubjectToSchedule(subjectName, schedule);
             }
         }
 
-        function saveSubjectToSchedule(subjectName, semester, group, schedule) {
+        function saveSubjectToSchedule(subjectName, schedule) {
             const userId = firebase.auth().currentUser.uid;
             const scheduleRef = database.ref(`users/${userId}/horario`);
 
@@ -145,30 +142,7 @@
             });
         }
 
-        function loadSubjects() {
-            const subjectRef = database.ref('classSchedules');
-            subjectRef.once('value').then(snapshot => {
-                const subjects = snapshot.val();
-                const subjectBody = document.getElementById('subjectBody');
-                subjectBody.innerHTML = '';
-                for (let semester in subjects) {
-                    for (let group in subjects[semester]) {
-                        for (let day in subjects[semester][group]) {
-                            for (let hour in subjects[semester][group][day]) {
-                                const subjectName = subjects[semester][group][day][hour];
-                                const row = document.createElement('tr');
-                                const subjectCell = document.createElement('td');
-                                subjectCell.textContent = subjectName;
-                                row.appendChild(subjectCell);
-                                subjectBody.appendChild(row);
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function addAdvisory() {
+        document.getElementById('addAdvisoryBtn').addEventListener('click', () => {
             const day = prompt("Selecciona el día para la asesoría (Lunes, Martes, etc.):");
             const hour = prompt("Selecciona la hora para la asesoría (Formato HHMM):");
             if (day && hour) {
@@ -178,7 +152,7 @@
                     alert("Asesoría agregada con éxito.");
                 });
             }
-        }
+        });
 
         window.onload = loadSubjects;
     </script>
