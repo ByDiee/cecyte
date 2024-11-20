@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtrar Materias</title>
+    <title>Materias Disponibles</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -50,8 +50,19 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
+        .mini-table {
+            border: 1px solid #ccc;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .mini-table th, .mini-table td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+            font-size: 12px;
+        }
         .schedule-table tr:hover {
-            background-color: #7d7d7d;
+            background-color: #f1f1f1;
             cursor: pointer;
         }
         #searchBar {
@@ -61,11 +72,22 @@
             font-size: 16px;
             border: 1px solid #ccc;
         }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Buscar Materias</h1>
+        <h1>Buscar y Agregar Materias</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
@@ -79,38 +101,77 @@
                     <th>Materia</th>
                     <th>Semestre</th>
                     <th>Grupo</th>
-                    <th>Horas</th>
+                    <th>Días y Horas</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Se cargan las materias desde Firebase -->
+                <!-- Las materias se cargarán aquí -->
             </tbody>
         </table>
-        <button id="addAdvisoryBtn">Seleccionar Asesorías</button>
     </main>
 
     <script>
+
+        // Cargar materias desde Firebase
         function loadSubjects() {
             const subjectRef = database.ref('classSchedules');
+            const subjectBody = document.getElementById('subjectBody');
+
             subjectRef.once('value').then(snapshot => {
                 const subjects = snapshot.val();
-                const subjectBody = document.getElementById('subjectBody');
-                subjectBody.innerHTML = '';
+                subjectBody.innerHTML = ''; // Limpiar la tabla
 
                 for (let semester in subjects) {
                     for (let group in subjects[semester]) {
-                        for (let day in subjects[semester][group]) {
-                            for (let hour in subjects[semester][group][day]) {
-                                const subjectName = subjects[semester][group][day][hour];
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>${subjectName}</td>
-                                    <td>${semester}</td>
-                                    <td>${group}</td>
-                                    <td>${day} - ${hour}</td>
-                                `;
-                                row.onclick = () => selectSubject(subjectName, semester, group, { [day]: [hour] });
-                                subjectBody.appendChild(row);
+                        const groupData = subjects[semester][group];
+
+                        for (let day in groupData) {
+                            for (let hour in groupData[day]) {
+                                const subjectName = groupData[day][hour];
+
+                                // Verificar si ya existe una fila para esta materia, semestre y grupo
+                                let existingRow = Array.from(subjectBody.rows).find(row => 
+                                    row.cells[0].textContent === subjectName &&
+                                    row.cells[1].textContent === semester &&
+                                    row.cells[2].textContent === group
+                                );
+
+                                if (!existingRow) {
+                                    // Crear una nueva fila si no existe
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>${subjectName}</td>
+                                        <td>${semester}</td>
+                                        <td>${group}</td>
+                                        <td class="mini-table-cell"></td>
+                                        <td><button onclick="addToSchedule('${subjectName}', '${semester}', '${group}')">Agregar</button></td>
+                                    `;
+                                    subjectBody.appendChild(row);
+                                    existingRow = row;
+                                }
+
+                                // Añadir día y hora a la mini tabla
+                                const miniTableCell = existingRow.querySelector('.mini-table-cell');
+                                if (!miniTableCell.querySelector('table')) {
+                                    const miniTable = document.createElement('table');
+                                    miniTable.classList.add('mini-table');
+                                    miniTable.innerHTML = `
+                                        <thead>
+                                            <tr>
+                                                <th>Día</th>
+                                                <th>Hora</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    `;
+                                    miniTableCell.appendChild(miniTable);
+                                }
+
+                                const miniTableBody = miniTableCell.querySelector('tbody');
+                                const newRow = document.createElement('tr');
+                                newRow.innerHTML = `<td>${day}</td><td>${hour}</td>`;
+                                miniTableBody.appendChild(newRow);
                             }
                         }
                     }
@@ -118,41 +179,34 @@
             });
         }
 
-        function selectSubject(subjectName, semester, group, schedule) {
-            if (confirm(`¿Deseas agregar la materia ${subjectName} del semestre ${semester} grupo ${group} a tu horario?`)) {
-                saveSubjectToSchedule(subjectName, schedule);
-            }
-        }
-
-        function saveSubjectToSchedule(subjectName, schedule) {
+        // Agregar materia al horario del profesor
+        function addToSchedule(subjectName, semester, group) {
             const userId = firebase.auth().currentUser.uid;
             const scheduleRef = database.ref(`users/${userId}/horario`);
 
             scheduleRef.once('value').then(snapshot => {
                 const currentSchedule = snapshot.val() || {};
-                for (const day in schedule) {
-                    if (!currentSchedule[day]) currentSchedule[day] = {};
-                    for (const hour of schedule[day]) {
-                        currentSchedule[day][hour] = subjectName;
-                    }
+
+                // Validar que no haya conflictos
+                const conflicts = Object.keys(currentSchedule).some(day => 
+                    currentSchedule[day] && Object.keys(currentSchedule[day]).some(hour => 
+                        currentSchedule[day][hour] === subjectName
+                    )
+                );
+
+                if (conflicts) {
+                    alert("Ya tienes esta materia en tu horario o hay un conflicto de horarios.");
+                    return;
                 }
-                scheduleRef.set(currentSchedule).then(() => {
-                    alert('Materia agregada con éxito a tu horario');
+
+                // Guardar la materia en el horario
+                const updates = {};
+                updates[`/${semester}/${group}`] = subjectName;
+                scheduleRef.update(updates).then(() => {
+                    alert("Materia agregada exitosamente.");
                 });
             });
         }
-
-        document.getElementById('addAdvisoryBtn').addEventListener('click', () => {
-            const day = prompt("Selecciona el día para la asesoría (Lunes, Martes, etc.):");
-            const hour = prompt("Selecciona la hora para la asesoría (Formato HHMM):");
-            if (day && hour) {
-                const userId = firebase.auth().currentUser.uid;
-                const scheduleRef = database.ref(`users/${userId}/horario`);
-                scheduleRef.child(day).child(hour).set("Asesoría").then(() => {
-                    alert("Asesoría agregada con éxito.");
-                });
-            }
-        });
 
         window.onload = loadSubjects;
     </script>
