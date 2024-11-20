@@ -90,10 +90,6 @@
     </main>
 
     <script>
-        // La configuración y autenticación ya están en auth.js
-
-        const database = firebase.database(); // Usar la referencia de Firebase inicializada en auth.js.
-
         function loadSubjects() {
             const subjectRef = database.ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
