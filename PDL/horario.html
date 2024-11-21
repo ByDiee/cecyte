@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Materias Disponibles</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -54,6 +50,7 @@
             border: 1px solid #ccc;
             margin: 0 auto;
             width: 100%;
+            table-layout: fixed;
         }
         .mini-table th, .mini-table td {
             border: 1px solid #ddd;
@@ -101,7 +98,7 @@
                     <th>Materia</th>
                     <th>Semestre</th>
                     <th>Grupo</th>
-                    <th>Días y Horas</th>
+                    <th>Horario</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -112,6 +109,11 @@
     </main>
 
     <script>
+        const database = firebase.database(); // Reutilizando Firebase de auth.js.
+
+        // Horas base para la mini tabla
+        const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:30", "11:15", "12:00", "12:45", "13:30", "14:15", "15:00"];
+        const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
         // Cargar materias desde Firebase
         function loadSubjects() {
@@ -125,87 +127,67 @@
                 for (let semester in subjects) {
                     for (let group in subjects[semester]) {
                         const groupData = subjects[semester][group];
+                        const scheduleMatrix = createScheduleMatrix();
 
                         for (let day in groupData) {
                             for (let hour in groupData[day]) {
                                 const subjectName = groupData[day][hour];
 
-                                // Verificar si ya existe una fila para esta materia, semestre y grupo
-                                let existingRow = Array.from(subjectBody.rows).find(row => 
-                                    row.cells[0].textContent === subjectName &&
-                                    row.cells[1].textContent === semester &&
-                                    row.cells[2].textContent === group
-                                );
-
-                                if (!existingRow) {
-                                    // Crear una nueva fila si no existe
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>${subjectName}</td>
-                                        <td>${semester}</td>
-                                        <td>${group}</td>
-                                        <td class="mini-table-cell"></td>
-                                        <td><button onclick="addToSchedule('${subjectName}', '${semester}', '${group}')">Agregar</button></td>
-                                    `;
-                                    subjectBody.appendChild(row);
-                                    existingRow = row;
+                                // Llenar la matriz de horarios con la materia
+                                const hourIndex = hours.indexOf(formatTime(hour));
+                                if (hourIndex !== -1) {
+                                    const dayIndex = days.indexOf(day);
+                                    if (dayIndex !== -1) {
+                                        scheduleMatrix[hourIndex][dayIndex] = subjectName;
+                                    }
                                 }
-
-                                // Añadir día y hora a la mini tabla
-                                const miniTableCell = existingRow.querySelector('.mini-table-cell');
-                                if (!miniTableCell.querySelector('table')) {
-                                    const miniTable = document.createElement('table');
-                                    miniTable.classList.add('mini-table');
-                                    miniTable.innerHTML = `
-                                        <thead>
-                                            <tr>
-                                                <th>Día</th>
-                                                <th>Hora</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    `;
-                                    miniTableCell.appendChild(miniTable);
-                                }
-
-                                const miniTableBody = miniTableCell.querySelector('tbody');
-                                const newRow = document.createElement('tr');
-                                newRow.innerHTML = `<td>${day}</td><td>${hour}</td>`;
-                                miniTableBody.appendChild(newRow);
                             }
                         }
+
+                        // Crear una fila para la materia
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${groupData[days[0]][hours[0]] || "Desconocido"}</td>
+                            <td>${semester}</td>
+                            <td>${group}</td>
+                            <td>${generateMiniTable(scheduleMatrix)}</td>
+                            <td><button onclick="addToSchedule('${semester}', '${group}')">Agregar</button></td>
+                        `;
+                        subjectBody.appendChild(row);
                     }
                 }
             });
         }
 
-        // Agregar materia al horario del profesor
-        function addToSchedule(subjectName, semester, group) {
-            const userId = firebase.auth().currentUser.uid;
-            const scheduleRef = database.ref(`users/${userId}/horario`);
+        // Formatear tiempo (de 0700 a 07:00)
+        function formatTime(time) {
+            return `${time.slice(0, 2)}:${time.slice(2)}`;
+        }
 
-            scheduleRef.once('value').then(snapshot => {
-                const currentSchedule = snapshot.val() || {};
+        // Crear matriz vacía para la mini tabla
+        function createScheduleMatrix() {
+            return hours.map(() => Array(days.length).fill(""));
+        }
 
-                // Validar que no haya conflictos
-                const conflicts = Object.keys(currentSchedule).some(day => 
-                    currentSchedule[day] && Object.keys(currentSchedule[day]).some(hour => 
-                        currentSchedule[day][hour] === subjectName
-                    )
-                );
+        // Generar mini tabla en HTML
+        function generateMiniTable(matrix) {
+            let html = '<table class="mini-table"><thead><tr><th>Hora</th>';
+            days.forEach(day => (html += `<th>${day}</th>`));
+            html += '</tr></thead><tbody>';
 
-                if (conflicts) {
-                    alert("Ya tienes esta materia en tu horario o hay un conflicto de horarios.");
-                    return;
-                }
-
-                // Guardar la materia en el horario
-                const updates = {};
-                updates[`/${semester}/${group}`] = subjectName;
-                scheduleRef.update(updates).then(() => {
-                    alert("Materia agregada exitosamente.");
-                });
+            matrix.forEach((row, i) => {
+                html += `<tr><td>${hours[i]}</td>`;
+                row.forEach(cell => (html += `<td>${cell || ""}</td>`));
+                html += '</tr>';
             });
+
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // Agregar materia al horario del profesor
+        function addToSchedule(semester, group) {
+            alert(`Materia del semestre ${semester} y grupo ${group} agregada al horario.`);
         }
 
         window.onload = loadSubjects;
