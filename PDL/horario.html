@@ -113,16 +113,18 @@
     </main>
 
     <script>
+        // Función para seleccionar una materia
         function selectSubject(subjectName, semester, group, schedule) {
             if (confirm(`¿Deseas agregar la materia ${subjectName} del semestre ${semester} grupo ${group} a tu horario?`)) {
                 saveSubjectToSchedule(subjectName, semester, group, schedule);
             }
         }
 
+        // Función para guardar la materia en el horario del profesor en Firebase
         function saveSubjectToSchedule(subjectName, semester, group, schedule) {
             const userId = firebase.auth().currentUser.uid;
-            const scheduleRef = firebase.database().ref(`users/${userId}/horario`);
 
+            const scheduleRef = firebase.database().ref(`users/${userId}/horario`);
             scheduleRef.once('value').then(snapshot => {
                 const currentSchedule = snapshot.val() || {};
                 let isDuplicate = false;
@@ -141,24 +143,31 @@
                     alert(`La materia ${subjectName} ya está cargada en tu horario.`);
                 } else {
                     for (const day in schedule) {
-                        if (!currentSchedule[day]) {
-                            currentSchedule[day] = {};
+                        const normalizedDay = day === 'Miércoles' ? 'Miercoles' : day; // Unificar días
+                        if (!currentSchedule[normalizedDay]) {
+                            currentSchedule[normalizedDay] = {};
                         }
                         for (const hour of schedule[day]) {
-                            currentSchedule[day][hour] = subjectName;
+                            if (!currentSchedule[normalizedDay][hour]) {
+                                currentSchedule[normalizedDay][hour] = subjectName;
+                            }
                         }
                     }
+
                     scheduleRef.set(currentSchedule).then(() => {
                         alert('Materia agregada con éxito a tu horario');
                         window.location.href = 'pagina1.html';
                     }).catch(error => {
                         console.error('Error al guardar la materia:', error);
-                        alert('Ocurrió un error al agregar la materia.');
+                        alert('Ocurrió un error al agregar la materia a tu horario');
                     });
                 }
-            }).catch(error => console.error('Error al obtener el horario:', error));
+            }).catch(error => {
+                console.error('Error al obtener el horario:', error);
+            });
         }
 
+        // Función para cargar todas las materias
         function loadSubjects() {
             const subjectRef = firebase.database().ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
@@ -171,12 +180,10 @@
                 for (let semester in subjects) {
                     for (let group in subjects[semester]) {
                         for (let day in subjects[semester][group]) {
-                            const normalizedDay = day === 'Miercoles' ? 'Miércoles' : day;
-
+                            const normalizedDay = day === 'Miércoles' ? 'Miercoles' : day; // Corregir 'Miércoles'
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
-
-                                if (!subjectName || hour === '1000' || hour === '1030') continue;
+                                if (hour === '1000' || hour === '1030') continue;
 
                                 if (!uniqueSubjects[subjectName]) {
                                     uniqueSubjects[subjectName] = {
@@ -189,7 +196,6 @@
                                 if (!uniqueSubjects[subjectName].schedule[normalizedDay]) {
                                     uniqueSubjects[subjectName].schedule[normalizedDay] = [];
                                 }
-
                                 uniqueSubjects[subjectName].schedule[normalizedDay].push(hour);
                             }
                         }
@@ -215,7 +221,7 @@
                     const hoursTable = document.createElement('table');
                     hoursTable.classList.add('hours-table');
 
-                    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
                     const headerRow = document.createElement('tr');
                     days.forEach(day => {
                         const th = document.createElement('th');
@@ -227,14 +233,13 @@
                     const hourRow = document.createElement('tr');
                     days.forEach(day => {
                         const td = document.createElement('td');
-                        const hours = (data.schedule[day] || []).sort();
+                        const hours = data.schedule[day] || [];
                         td.textContent = hours.map(hour => `${hour.slice(0, 2)}:${hour.slice(2)}`).join(', ');
                         hourRow.appendChild(td);
                     });
                     hoursTable.appendChild(hourRow);
 
                     hoursCell.appendChild(hoursTable);
-
                     row.appendChild(subjectCell);
                     row.appendChild(semesterCell);
                     row.appendChild(groupCell);
@@ -242,9 +247,12 @@
 
                     subjectBody.appendChild(row);
                 }
-            }).catch(error => console.error('Error al cargar las materias:', error));
+            }).catch(error => {
+                console.error('Error al cargar las materias:', error);
+            });
         }
 
+        // Cargar las materias al inicio
         loadSubjects();
     </script>
 </body>
