@@ -138,7 +138,7 @@
             hours.forEach(hour => {
                 const row = document.createElement('tr');
                 const hourCell = document.createElement('td');
-                hourCell.textContent = hour;
+                hourCell.textContent = formatHour(hour);
                 row.appendChild(hourCell);
 
                 days.forEach(day => {
@@ -152,6 +152,11 @@
 
                 advisoryBody.appendChild(row);
             });
+        }
+
+        // Formatear las horas al formato hh:mm
+        function formatHour(hour) {
+            return `${hour.slice(0, 2)}:${hour.slice(2)}`;
         }
 
         // Confirmar horarios seleccionados para Asesorías
@@ -205,77 +210,41 @@
             });
         }
 
-        // Crear la tabla de materias agrupadas por días y horas
-        function createGroupedSubjectsTable(subjects) {
+        // Cargar todas las materias existentes desde Firebase
+        function loadSubjects() {
+            const subjectRef = firebase.database().ref('classSchedules');
             const subjectBody = document.getElementById('subjectBody');
-            subjectBody.innerHTML = '';
 
-            const groupedSubjects = {};
+            subjectRef.once('value').then(snapshot => {
+                const subjects = snapshot.val();
+                subjectBody.innerHTML = '';
 
-            // Agrupar las materias por su nombre
-            for (const semester in subjects) {
-                for (const group in subjects[semester]) {
-                    for (const day in subjects[semester][group]) {
-                        const daySchedule = subjects[semester][group][day];
-                        for (const hour in daySchedule) {
-                            const subjectName = daySchedule[hour];
-                            if (subjectName !== 'Asesorías') { // Excluir "Asesorías"
-                                if (!groupedSubjects[subjectName]) {
-                                    groupedSubjects[subjectName] = { semester, group, schedule: {} };
+                for (const semester in subjects) {
+                    for (const group in subjects[semester]) {
+                        for (const day in subjects[semester][group]) {
+                            const daySchedule = subjects[semester][group][day];
+                            for (const hour in daySchedule) {
+                                const subjectName = daySchedule[hour];
+                                if (subjectName) {
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>${subjectName}</td>
+                                        <td>${semester}</td>
+                                        <td>${group}</td>
+                                        <td>${day} ${formatHour(hour)}</td>
+                                    `;
+                                    subjectBody.appendChild(row);
                                 }
-                                if (!groupedSubjects[subjectName].schedule[day]) {
-                                    groupedSubjects[subjectName].schedule[day] = [];
-                                }
-                                groupedSubjects[subjectName].schedule[day].push(hour);
                             }
                         }
                     }
                 }
-            }
-
-            // Crear filas para cada materia agrupada
-            for (const subjectName in groupedSubjects) {
-                const { semester, group, schedule } = groupedSubjects[subjectName];
-
-                for (const day of days) {
-                    const row = document.createElement('tr');
-
-                    if (schedule[day]) {
-                        row.innerHTML = `
-                            <td>${subjectName}</td>
-                            <td>${semester}</td>
-                            <td>${group}</td>
-                            <td>${schedule[day].map(hour => formatHour(hour)).join(', ')}</td>
-                        `;
-                    } else {
-                        row.innerHTML = `
-                            <td>${subjectName}</td>
-                            <td>${semester}</td>
-                            <td>${group}</td>
-                            <td>-</td>
-                        `;
-                    }
-
-                    subjectBody.appendChild(row);
-                }
-            }
-        }
-
-        // Formato de hora (de '0700' a '07:00')
-        function formatHour(hour) {
-            return `${hour.slice(0, 2)}:${hour.slice(2)}`;
-        }
-
-        // Cargar las materias desde Firebase
-        function loadSubjects() {
-            const dbRef = firebase.database().ref('classSchedules');
-            dbRef.once('value').then(snapshot => {
-                const subjects = snapshot.val();
-                createGroupedSubjectsTable(subjects);
+            }).catch(error => {
+                console.error('Error al cargar las materias:', error);
             });
         }
 
-        // Inicializar la tabla
+        // Inicializar
         createAdvisoryTable();
         loadSubjects();
     </script>
