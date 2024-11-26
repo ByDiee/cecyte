@@ -98,7 +98,7 @@
                     <th>Materia</th>
                     <th>Semestre</th>
                     <th>Grupo</th>
-                    <th>Horas</th>
+                    <th>Horarios</th>
                 </tr>
             </thead>
             <tbody id="subjectBody">
@@ -221,22 +221,31 @@
 
                 for (const semester in subjects) {
                     for (const group in subjects[semester]) {
-                        for (const day in subjects[semester][group]) {
-                            const daySchedule = subjects[semester][group][day];
-                            for (const hour in daySchedule) {
-                                const subjectName = daySchedule[hour];
-                                if (subjectName) {
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>${subjectName}</td>
-                                        <td>${semester}</td>
-                                        <td>${group}</td>
-                                        <td>${day} ${formatHour(hour)}</td>
-                                    `;
-                                    subjectBody.appendChild(row);
-                                }
-                            }
-                        }
+                        const row = document.createElement('tr');
+                        const scheduleTable = document.createElement('table');
+                        scheduleTable.classList.add('hours-table');
+                        const scheduleBody = document.createElement('tbody');
+
+                        days.forEach(day => {
+                            const dayRow = document.createElement('tr');
+                            const dayCell = document.createElement('td');
+                            dayCell.textContent = day;
+                            dayRow.appendChild(dayCell);
+
+                            hours.forEach(hour => {
+                                const cell = document.createElement('td');
+                                const subjectName = subjects[semester][group][day] && subjects[semester][group][day][hour];
+                                cell.textContent = subjectName || '';
+                                dayRow.appendChild(cell);
+                            });
+
+                            scheduleBody.appendChild(dayRow);
+                        });
+
+                        scheduleTable.appendChild(scheduleBody);
+                        row.innerHTML = `<td>${semester}</td><td>${group}</td><td></td>`;
+                        row.appendChild(scheduleTable);
+                        subjectBody.appendChild(row);
                     }
                 }
             }).catch(error => {
@@ -244,9 +253,32 @@
             });
         }
 
-        // Inicializar
-        createAdvisoryTable();
-        loadSubjects();
+        // Función para filtrar las materias según el texto de búsqueda
+        function filterSubjects() {
+            const filterText = document.getElementById('searchBar').value.toLowerCase();
+            const subjectRows = document.querySelectorAll('#subjectBody tr');
+
+            subjectRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const subjectText = cells[0].textContent.toLowerCase();
+                const semesterText = cells[1].textContent.toLowerCase();
+                const groupText = cells[2].textContent.toLowerCase();
+
+                if (subjectText.includes(filterText) || semesterText.includes(filterText) || groupText.includes(filterText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        document.getElementById('searchBar').addEventListener('input', filterSubjects);
+
+        // Cargar todo al iniciar
+        window.onload = () => {
+            loadSubjects();
+            createAdvisoryTable();
+        }
     </script>
 </body>
 </html>
