@@ -50,27 +50,15 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .hours-table {
-            width: 100%;
-            border: 1px solid #dddddd;
-            border-collapse: collapse;
-            margin-top: 10px;
+        .schedule-table td {
+            background-color: #ffffff;
         }
-        .hours-table th, .hours-table td {
-            padding: 10px;
-            border: 1px solid #dddddd;
-            text-align: center;
+        .schedule-table tr:nth-child(odd) td {
+            background-color: #f9f9f9;
         }
-        .hours-table th {
-            background-color: #f0f0f0;
-        }
-        .hour-selectable {
-            background-color: #f2f2f2;
+        .schedule-table tr:hover {
+            background-color: #7d7d7d;
             cursor: pointer;
-        }
-        .hour-selectable.selected {
-            background-color: #28a745;
-            color: white;
         }
         #searchBar {
             margin-bottom: 20px;
@@ -78,6 +66,23 @@
             width: 100%;
             font-size: 16px;
             border: 1px solid #ccc;
+        }
+        .hours-table {
+            width: 100%;
+            border: 1px solid #dddddd;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .hours-table th, .hours-table td {
+            padding: 5px;
+            border: 1px solid #dddddd;
+            text-align: center;
+        }
+        .hours-table th {
+            background-color: #f0f0f0;
+        }
+        .hours-table td {
+            background-color: #ffffff;
         }
     </style>
 </head>
@@ -98,20 +103,18 @@
                     <th>Materia</th>
                     <th>Semestre</th>
                     <th>Grupo</th>
-                    <th>Horarios</th>
+                    <th>Horas</th>
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Materias cargadas desde Firebase -->
+                <!-- Se cargan las materias desde Firebase -->
             </tbody>
         </table>
 
-        <!-- Tabla para seleccionar horarios personalizados de Asesorías -->
-        <h2>Seleccionar horarios para "Asesorías"</h2>
-        <table class="hours-table" id="advisoryTable">
+        <table class="hours-table">
             <thead>
                 <tr>
-                    <th>Hora</th>
+                    <th>Hora/Día</th>
                     <th>Lunes</th>
                     <th>Martes</th>
                     <th>Miércoles</th>
@@ -119,165 +122,186 @@
                     <th>Viernes</th>
                 </tr>
             </thead>
-            <tbody id="advisoryBody">
-                <!-- Horas y días generados dinámicamente -->
+            <tbody>
+                <!-- La tabla de horas de asesorías se genera aquí -->
+                <!-- Añadir las filas con horarios y días disponibles para asesorías -->
             </tbody>
         </table>
-        <button onclick="confirmAdvisorySchedule()">Confirmar Horarios de Asesorías</button>
     </main>
 
     <script>
-        const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
-        const hours = ['0700', '0745', '0830', '0915', '1000', '1030', '1115', '1200', '1245', '1330', '1415', '1500'];
 
-        // Crear la tabla de horarios de Asesorías
-        function createAdvisoryTable() {
-            const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = '';
-
-            hours.forEach(hour => {
-                const row = document.createElement('tr');
-                const hourCell = document.createElement('td');
-                hourCell.textContent = formatHour(hour);
-                row.appendChild(hourCell);
-
-                days.forEach(day => {
-                    const cell = document.createElement('td');
-                    cell.classList.add('hour-selectable');
-                    cell.addEventListener('click', () => {
-                        cell.classList.toggle('selected');
-                    });
-                    row.appendChild(cell);
-                });
-
-                advisoryBody.appendChild(row);
-            });
-        }
-
-        // Formatear las horas al formato hh:mm
-        function formatHour(hour) {
-            return `${hour.slice(0, 2)}:${hour.slice(2)}`;
-        }
-
-        // Confirmar horarios seleccionados para Asesorías
-        function confirmAdvisorySchedule() {
-            const selectedSchedule = {};
-            const rows = document.querySelectorAll('#advisoryBody tr');
-
-            rows.forEach(row => {
-                const hour = row.children[0].textContent;
-                const cells = Array.from(row.children).slice(1);
-
-                cells.forEach((cell, index) => {
-                    if (cell.classList.contains('selected')) {
-                        const day = days[index];
-                        if (!selectedSchedule[day]) {
-                            selectedSchedule[day] = {};
-                        }
-                        selectedSchedule[day][hour] = 'Asesorías';
-                    }
-                });
-            });
-
-            if (Object.keys(selectedSchedule).length === 0) {
-                alert('No has seleccionado ningún horario.');
-                return;
-            }
-
-            if (confirm('¿Deseas confirmar los horarios seleccionados para Asesorías?')) {
-                saveSubjectToSchedule('Asesorías', 'N/A', 'N/A', selectedSchedule);
+        // Función para seleccionar una materia
+        function selectSubject(subjectName, semester, group, schedule) {
+            // Mostrar un mensaje de confirmación
+            if (confirm(`¿Deseas agregar la materia ${subjectName} del semestre ${semester} grupo ${group} a tu horario?`)) {
+                // Si se confirma, guarda la materia en la base de datos
+                saveSubjectToSchedule(subjectName, semester, group, schedule);
             }
         }
 
-        // Guardar Asesorías en Firebase
+        // Función para guardar la materia en el horario del profesor en Firebase
         function saveSubjectToSchedule(subjectName, semester, group, schedule) {
-            const userId = firebase.auth().currentUser.uid;
+            const userId = firebase.auth().currentUser.uid; // Obtener el ID del usuario logueado
+
+            // Referencia al campo de horarios del usuario
             const scheduleRef = firebase.database().ref(`users/${userId}/horario`);
+
+            // Obtener el horario actual del usuario
             scheduleRef.once('value').then(snapshot => {
                 const currentSchedule = snapshot.val() || {};
+                let isDuplicate = false; // Bandera para verificar si la materia ya está asignada
+
+                // Verificar si la materia ya está asignada en el horario
                 for (const day in schedule) {
-                    if (!currentSchedule[day]) {
-                        currentSchedule[day] = {};
-                    }
-                    for (const hour in schedule[day]) {
-                        currentSchedule[day][hour] = subjectName;
+                    if (isDuplicate) break; // Si ya es duplicada, no seguir verificando
+                    for (const hour of schedule[day]) {
+                        if (currentSchedule[day] && currentSchedule[day][hour] && currentSchedule[day][hour] === subjectName) {
+                            isDuplicate = true; // Marcar como duplicado si la materia ya existe en esa hora
+                            break;
+                        }
                     }
                 }
-                scheduleRef.set(currentSchedule).then(() => {
-                    alert('Asesorías agregadas correctamente.');
-                    window.location.href = 'pagina1.html';
-                });
-            });
-        }
 
-        // Cargar todas las materias existentes desde Firebase
-        function loadSubjects() {
-            const subjectRef = firebase.database().ref('classSchedules');
-            const subjectBody = document.getElementById('subjectBody');
-
-            subjectRef.once('value').then(snapshot => {
-                const subjects = snapshot.val();
-                subjectBody.innerHTML = '';
-
-                for (const semester in subjects) {
-                    for (const group in subjects[semester]) {
-                        const row = document.createElement('tr');
-                        const scheduleTable = document.createElement('table');
-                        scheduleTable.classList.add('hours-table');
-                        const scheduleBody = document.createElement('tbody');
-
-                        days.forEach(day => {
-                            const dayRow = document.createElement('tr');
-                            const dayCell = document.createElement('td');
-                            dayCell.textContent = day;
-                            dayRow.appendChild(dayCell);
-
-                            hours.forEach(hour => {
-                                const cell = document.createElement('td');
-                                const subjectName = subjects[semester][group][day] && subjects[semester][group][day][hour];
-                                cell.textContent = subjectName || '';
-                                dayRow.appendChild(cell);
-                            });
-
-                            scheduleBody.appendChild(dayRow);
-                        });
-
-                        scheduleTable.appendChild(scheduleBody);
-                        row.innerHTML = `<td>${semester}</td><td>${group}</td><td></td>`;
-                        row.appendChild(scheduleTable);
-                        subjectBody.appendChild(row);
+                // Si la materia ya está asignada, notificar al usuario
+                if (isDuplicate) {
+                    alert(`La materia ${subjectName} ya está cargada en tu horario.`);
+                } else {
+                    // Si no está asignada, proceder a agregar la materia
+                    for (const day in schedule) {
+                        if (!currentSchedule[day]) {
+                            currentSchedule[day] = {};
+                        }
+                        for (const hour of schedule[day]) {
+                            if (!currentSchedule[day][hour]) {
+                                currentSchedule[day][hour] = subjectName;
+                            }
+                        }
                     }
+
+                    // Actualizar la base de datos con el nuevo horario
+                    scheduleRef.set(currentSchedule).then(() => {
+                        alert('Materia agregada con éxito a tu horario');
+                        // Redirigir al dashboard o actualizar la página para reflejar los cambios
+                        window.location.href = 'pagina1.html'; // Redirige al dashboard del profesor
+                    }).catch(error => {
+                        console.error('Error al guardar la materia:', error);
+                        alert('Ocurrió un error al agregar la materia a tu horario');
+                    });
                 }
             }).catch(error => {
-                console.error('Error al cargar las materias:', error);
+                console.error('Error al obtener el horario:', error);
             });
         }
 
-        // Función para filtrar las materias según el texto de búsqueda
-        function filterSubjects() {
-            const filterText = document.getElementById('searchBar').value.toLowerCase();
-            const subjectRows = document.querySelectorAll('#subjectBody tr');
+        // Función para cargar todas las materias
+        function loadSubjects() {
+            const subjectRef = firebase.database().ref('classSchedules');
+            subjectRef.once('value').then(snapshot => {
+                const subjects = snapshot.val();
+                const subjectBody = document.getElementById('subjectBody');
+                subjectBody.innerHTML = '';
 
-            subjectRows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                const subjectText = cells[0].textContent.toLowerCase();
-                const semesterText = cells[1].textContent.toLowerCase();
-                const groupText = cells[2].textContent.toLowerCase();
+                const uniqueSubjects = {};
 
-                if (subjectText.includes(filterText) || semesterText.includes(filterText) || groupText.includes(filterText)) {
+                for (let semester in subjects) {
+                    for (let group in subjects[semester]) {
+                        let scheduleMatrix = {};
+
+                        // Crear la matriz de horarios por día y hora
+                        for (let day in subjects[semester][group]) {
+                            scheduleMatrix[day] = {};
+
+                            for (let hour in subjects[semester][group][day]) {
+                                const subjectName = subjects[semester][group][day][hour];
+
+                                // Ignorar el receso (10:00 a 10:30)
+                                if (hour === '1000' || hour === '1030') continue;
+                                
+                                if (!uniqueSubjects[subjectName]) {
+                                    uniqueSubjects[subjectName] = {
+                                        semester: semester,
+                                        group: group,
+                                        schedule: {}
+                                    };
+                                }
+
+                                if (!uniqueSubjects[subjectName].schedule[day]) {
+                                    uniqueSubjects[subjectName].schedule[day] = [];
+                                }
+
+                                uniqueSubjects[subjectName].schedule[day].push(hour);
+                            }
+                        }
+                    }
+                }
+
+                for (const subjectName in uniqueSubjects) {
+                    const data = uniqueSubjects[subjectName];
+
+                    const row = document.createElement('tr');
+                    const subjectCell = document.createElement('td');
+                    const semesterCell = document.createElement('td');
+                    const groupCell = document.createElement('td');
+                    const hoursCell = document.createElement('td');
+
+                    // Añadir el evento click en la fila para seleccionar la materia
+                    row.addEventListener('click', () => {
+                        // Cargar la materia en el horario directamente
+                        selectSubject(subjectName, data.semester, data.group, data.schedule);
+                    });
+
+                    subjectCell.textContent = subjectName;
+                    semesterCell.textContent = data.semester;
+                    groupCell.textContent = data.group;
+
+                    // Crear una mini tabla para organizar las horas
+                    const hoursTable = document.createElement('table');
+                    hoursTable.className = 'hours-table';
+
+                    for (const day in data.schedule) {
+                        const row = document.createElement('tr');
+                        const hourCell = document.createElement('td');
+                        hourCell.textContent = day;
+                        const timeCell = document.createElement('td');
+                        timeCell.textContent = data.schedule[day].join(', ');
+                        row.appendChild(hourCell);
+                        row.appendChild(timeCell);
+                        hoursTable.appendChild(row);
+                    }
+
+                    hoursCell.appendChild(hoursTable);
+
+                    row.appendChild(subjectCell);
+                    row.appendChild(semesterCell);
+                    row.appendChild(groupCell);
+                    row.appendChild(hoursCell);
+                    subjectBody.appendChild(row);
+                }
+            });
+        }
+
+        // Filtrar las materias en tiempo real
+        document.getElementById('searchBar').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.schedule-table tbody tr');
+
+            rows.forEach(row => {
+                const subjectName = row.cells[0].textContent.toLowerCase();
+                const semester = row.cells[1].textContent.toLowerCase();
+                const group = row.cells[2].textContent.toLowerCase();
+
+                if (subjectName.includes(filter) || semester.includes(filter) || group.includes(filter)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
             });
-        }
+        });
 
-        document.getElementById('searchBar').addEventListener('input', filterSubjects);
-
-        // Cargar todo al iniciar
-        window.onload = () => {
+        // Cargar las materias al cargar la página
+        window.onload = function() {
             loadSubjects();
-            createAdvisoryTable();
         }
     </script>
 </body>
