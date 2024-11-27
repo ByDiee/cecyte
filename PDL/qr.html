@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar Código QR</title>
+    <title>Generar Código QR con Logo</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -61,11 +61,15 @@
             text-align: center;
             margin: 20px 0;
         }
+        canvas {
+            margin: 20px auto;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Generar Código QR para Asistencia</h1>
+        <h1>Generar Código QR con Logo</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
@@ -85,10 +89,14 @@
                 <label for="maxStudents">Máximo de Alumnos</label>
                 <input type="number" id="maxStudents" min="1" required>
             </div>
+            <div class="form-group">
+                <label for="logo">Subir Logo (Opcional)</label>
+                <input type="file" id="logo" accept="image/*">
+            </div>
             <button type="button" onclick="generateQRCode()">Generar Código QR</button>
         </form>
         <div class="qr-container">
-            <div id="qrcode"></div>
+            <canvas id="qrCanvas" width="300" height="300"></canvas>
             <p id="qrLink"></p>
         </div>
     </main>
@@ -104,6 +112,7 @@
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const maxStudents = parseInt(document.getElementById('maxStudents').value, 10);
+            const logoInput = document.getElementById('logo').files[0];
 
             if (!startDate || !endDate || !maxStudents) {
                 alert("Por favor completa todos los campos.");
@@ -123,64 +132,39 @@
 
             // Generar QR con enlace único
             const qrUrl = `${projectMainPage}?qrId=${qrRef.key}`;
+            generateQRWithLogo(qrUrl, logoInput);
+
             document.getElementById('qrLink').innerText = `Enlace: ${qrUrl}`;
-            new QRCode(document.getElementById("qrcode"), qrUrl);
-
-            alert("Código QR generado correctamente.");
         }
 
-        // Registrar asistencia
-        function registerAttendance(qrId, userId, userName, userRole) {
-            const currentTime = new Date();
-            const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "12:45", "13:30", "14:15", "15:00"];
-            const attendanceTime = hours.find(hour => {
-                const [hourNum, minute] = hour.split(':').map(Number);
-                return currentTime.getHours() === hourNum && currentTime.getMinutes() >= minute;
+        function generateQRWithLogo(url, logoFile) {
+            const canvas = document.getElementById('qrCanvas');
+            const qrCode = new QRCode(canvas, {
+                text: url,
+                width: 300,
+                height: 300,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
             });
 
-            if (!attendanceTime) {
-                alert("No se encuentra dentro de un módulo válido para registrar asistencia.");
-                return;
+            // Agregar logo si se sube
+            if (logoFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const logoSize = 50; // Tamaño del logo
+                        const x = (canvas.width - logoSize) / 2;
+                        const y = (canvas.height - logoSize) / 2;
+                        ctx.drawImage(img, x, y, logoSize, logoSize);
+                    };
+                };
+                reader.readAsDataURL(logoFile);
             }
-
-            const attendanceRef = database.ref(`attendances/${qrId}/${attendanceTime}`);
-            attendanceRef.once('value').then(snapshot => {
-                const currentStudents = snapshot.val() || [];
-                if (currentStudents.length >= qrData.maxStudents) {
-                    alert("Máximo de alumnos alcanzado.");
-                    return;
-                }
-
-                if (currentStudents.includes(userId)) {
-                    alert("Ya has registrado tu asistencia.");
-                    return;
-                }
-
-                // Registrar asistencia del alumno
-                attendanceRef.set([...currentStudents, { id: userId, name: userName, role: userRole }]);
-                alert("Asistencia registrada correctamente.");
-            });
         }
-
-        // Simular el escaneo del QR
-        function simulateScan() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const qrId = urlParams.get('qrId');
-            if (!qrId) return;
-
-            firebase.auth().onAuthStateChanged(user => {
-                if (user) {
-                    const userId = user.uid;
-                    const userName = user.displayName;
-                    const userRole = "Alumno"; // Aquí se puede ajustar según el usuario
-                    registerAttendance(qrId, userId, userName, userRole);
-                } else {
-                    alert("Por favor inicia sesión para registrar asistencia.");
-                }
-            });
-        }
-
-        simulateScan();
     </script>
 </body>
 </html>
