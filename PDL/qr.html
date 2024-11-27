@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Código QR</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        nav {
+            background-color: #ff851b;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        main {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Generar Código QR para Asistencia</h1>
+    </header>
+    <nav>
+        <a href="perfilmaestro.html">Editar Perfil</a>
+        <a href="#">Registro de Asistencias</a>
+    </nav>
+    <main>
+        <form id="qrForm">
+            <div class="form-group">
+                <label for="startDate">Fecha de Inicio</label>
+                <input type="date" id="startDate" required>
+            </div>
+            <div class="form-group">
+                <label for="endDate">Fecha de Caducidad</label>
+                <input type="date" id="endDate" required>
+            </div>
+            <div class="form-group">
+                <label for="maxStudents">Máximo de Alumnos</label>
+                <input type="number" id="maxStudents" min="1" required>
+            </div>
+            <button type="button" onclick="generateQRCode()">Generar Código QR</button>
+        </form>
+        <div class="qr-container">
+            <div id="qrcode"></div>
+            <p id="qrLink"></p>
+        </div>
+    </main>
+
+    <script>
+        const firebaseConfig = { /* Configuración de tu Firebase */ };
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const projectMainPage = "https://tuproyecto.github.io/"; // URL de tu página principal
+
+        function generateQRCode() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const maxStudents = parseInt(document.getElementById('maxStudents').value, 10);
+
+            if (!startDate || !endDate || !maxStudents) {
+                alert("Por favor completa todos los campos.");
+                return;
+            }
+
+            const qrData = {
+                startDate,
+                endDate,
+                maxStudents,
+                scannedCount: 0
+            };
+
+            // Guardar datos del QR en Firebase
+            const qrRef = database.ref('attendanceQRs').push();
+            qrRef.set(qrData);
+
+            // Generar QR con enlace único
+            const qrUrl = `${projectMainPage}?qrId=${qrRef.key}`;
+            document.getElementById('qrLink').innerText = `Enlace: ${qrUrl}`;
+            new QRCode(document.getElementById("qrcode"), qrUrl);
+
+            alert("Código QR generado correctamente.");
+        }
+
+        // Registrar asistencia
+        function registerAttendance(qrId, userId, userName, userRole) {
+            const currentTime = new Date();
+            const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "12:45", "13:30", "14:15", "15:00"];
+            const attendanceTime = hours.find(hour => {
+                const [hourNum, minute] = hour.split(':').map(Number);
+                return currentTime.getHours() === hourNum && currentTime.getMinutes() >= minute;
+            });
+
+            if (!attendanceTime) {
+                alert("No se encuentra dentro de un módulo válido para registrar asistencia.");
+                return;
+            }
+
+            const attendanceRef = database.ref(`attendances/${qrId}/${attendanceTime}`);
+            attendanceRef.once('value').then(snapshot => {
+                const currentStudents = snapshot.val() || [];
+                if (currentStudents.length >= qrData.maxStudents) {
+                    alert("Máximo de alumnos alcanzado.");
+                    return;
+                }
+
+                if (currentStudents.includes(userId)) {
+                    alert("Ya has registrado tu asistencia.");
+                    return;
+                }
+
+                // Registrar asistencia del alumno
+                attendanceRef.set([...currentStudents, { id: userId, name: userName, role: userRole }]);
+                alert("Asistencia registrada correctamente.");
+            });
+        }
+
+        // Simular el escaneo del QR
+        function simulateScan() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const qrId = urlParams.get('qrId');
+            if (!qrId) return;
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    const userId = user.uid;
+                    const userName = user.displayName;
+                    const userRole = "Alumno"; // Aquí se puede ajustar según el usuario
+                    registerAttendance(qrId, userId, userName, userRole);
+                } else {
+                    alert("Por favor inicia sesión para registrar asistencia.");
+                }
+            });
+        }
+
+        simulateScan();
+    </script>
+</body>
+</html>
