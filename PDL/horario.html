@@ -35,61 +35,45 @@
         main {
             padding: 20px;
         }
-        .schedule-table, .advisory-table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin: 20px 0;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .schedule-table th, .schedule-table td,
-        .advisory-table th, .advisory-table td {
-            border: 1px solid #dddddd;
-            padding: 10px;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: center;
         }
-        .schedule-table th, .advisory-table th {
+        th {
             background-color: #f2f2f2;
-            font-weight: bold;
         }
-        .schedule-table td, .advisory-table td {
-            background-color: #ffffff;
-        }
-        .schedule-table tr:nth-child(odd) td,
-        .advisory-table tr:nth-child(odd) td {
+        tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        .schedule-table tr:hover, .advisory-table tr:hover {
-            background-color: #7d7d7d;
+        tr:hover {
+            background-color: #d1e7dd;
             cursor: pointer;
-        }
-        #searchBar {
-            margin-bottom: 20px;
-            padding: 10px;
-            width: 100%;
-            font-size: 16px;
-            border: 1px solid #ccc;
-        }
-        .hours-table {
-            width: 100%;
-            border: 1px solid #dddddd;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .hours-table th, .hours-table td {
-            padding: 5px;
-            border: 1px solid #dddddd;
-            text-align: center;
-        }
-        .hours-table th {
-            background-color: #f0f0f0;
-        }
-        .hours-table td {
-            background-color: #ffffff;
         }
         .selected {
+            background-color: #28a745 !important;
+            color: white;
+        }
+        button {
             background-color: #28a745;
             color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
             cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -102,112 +86,135 @@
         <a href="#">Registro de Asistencias</a>
     </nav>
     <main>
-        <input type="text" id="searchBar" placeholder="Buscar materia, semestre o grupo...">
-
-        <!-- Tabla de materias -->
-        <table class="schedule-table">
+        <!-- Materias cargadas desde Firebase -->
+        <h2>Materias Disponibles</h2>
+        <table id="subjectsTable">
             <thead>
                 <tr>
                     <th>Materia</th>
                     <th>Semestre</th>
                     <th>Grupo</th>
-                    <th>Horas</th>
+                    <th>Días/Horas</th>
+                    <th>Agregar al Horario</th>
                 </tr>
             </thead>
-            <tbody id="subjectBody">
-                <!-- Materias cargadas desde Firebase -->
+            <tbody id="subjectsBody">
+                <!-- Carga de materias aquí -->
             </tbody>
         </table>
 
         <!-- Tabla de asesorías -->
         <h2>Horario de Asesorías</h2>
-        <table class="advisory-table">
+        <table id="advisoryTable">
             <thead>
                 <tr>
-                    <th>Día</th>
-                    <th>0700</th>
-                    <th>0745</th>
-                    <th>0830</th>
-                    <th>0915</th>
-                    <th>1115</th>
-                    <th>1200</th>
-                    <th>1245</th>
-                    <th>1330</th>
+                    <th>Días</th>
+                    <th>07:00</th>
+                    <th>07:45</th>
+                    <th>08:30</th>
+                    <th>09:15</th>
+                    <th>10:00</th>
+                    <th>10:45</th>
+                    <th>11:30</th>
+                    <th>12:15</th>
                 </tr>
             </thead>
             <tbody id="advisoryBody">
-                <!-- Días y horas para seleccionar -->
+                <!-- Asesorías aquí -->
             </tbody>
         </table>
-        <button onclick="saveAdvisory()">Guardar Asesorías</button>
+        <button onclick="confirmAdvisory()">Confirmar Asesorías</button>
     </main>
 
     <script>
         const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+        const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15"];
+        
+        const database = firebase.database();
 
-        // Función para cargar las materias desde Firebase
+        // Cargar materias desde Firebase
         function loadSubjects() {
             const subjectRef = database.ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
                 const subjects = snapshot.val();
-                const subjectBody = document.getElementById('subjectBody');
-                subjectBody.innerHTML = '';
+                const subjectsBody = document.getElementById('subjectsBody');
+                subjectsBody.innerHTML = '';
 
-                const uniqueSubjects = {};
+                for (const semester in subjects) {
+                    for (const group in subjects[semester]) {
+                        for (const day in subjects[semester][group]) {
+                            const hours = Object.keys(subjects[semester][group][day]);
+                            const subjectName = subjects[semester][group][day][hours[0]];
 
-                for (let semester in subjects) {
-                    for (let group in subjects[semester]) {
-                        for (let day in subjects[semester][group]) {
-                            for (let hour in subjects[semester][group][day]) {
-                                const subjectName = subjects[semester][group][day][hour];
-
-                                if (!uniqueSubjects[`${subjectName}_${semester}_${group}`]) {
-                                    uniqueSubjects[`${subjectName}_${semester}_${group}`] = {
-                                        semester: semester,
-                                        group: group,
-                                        schedule: {}
-                                    };
-                                }
-
-                                if (!uniqueSubjects[`${subjectName}_${semester}_${group}`].schedule[day]) {
-                                    uniqueSubjects[`${subjectName}_${semester}_${group}`].schedule[day] = [];
-                                }
-
-                                uniqueSubjects[`${subjectName}_${semester}_${group}`].schedule[day].push(hour);
-                            }
+                            // Crear fila por materia
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${subjectName}</td>
+                                <td>${semester}</td>
+                                <td>${group}</td>
+                                <td>${day}: ${hours.join(', ')}</td>
+                                <td><button onclick="addSubjectToSchedule('${subjectName}', '${semester}', '${group}', '${day}', '${hours}')">Agregar</button></td>
+                            `;
+                            subjectsBody.appendChild(row);
                         }
                     }
-                }
-
-                for (const subjectKey in uniqueSubjects) {
-                    const { semester, group, schedule } = uniqueSubjects[subjectKey];
-                    const row = document.createElement('tr');
-
-                    row.innerHTML = `
-                        <td>${subjectKey.split('_')[0]}</td>
-                        <td>${semester}</td>
-                        <td>${group}</td>
-                        <td>
-                            <table class="hours-table">${renderHoursTable(schedule)}</table>
-                        </td>
-                    `;
-                    subjectBody.appendChild(row);
                 }
             });
         }
 
-        // Función para renderizar una mini tabla de horas
-        function renderHoursTable(schedule) {
-            return days.map(day => `
-                <tr>
-                    <th>${day}</th>
-                    ${Array(9).fill(0).map((_, i) => `
-                        <td>${schedule[day] ? schedule[day][i] || '' : ''}</td>`).join('')}
-                </tr>`).join('');
+        // Agregar materias al horario
+        function addSubjectToSchedule(subject, semester, group, day, hours) {
+            const scheduleRef = database.ref(`users/admin/horario`);
+            scheduleRef.push({
+                materia: subject,
+                semestre: semester,
+                grupo: group,
+                dia: day,
+                horas: hours
+            });
+            alert(`Materia "${subject}" agregada al horario.`);
         }
 
-        // Cargar materias al inicio
+        // Crear tabla de asesorías
+        function createAdvisoryTable() {
+            const advisoryBody = document.getElementById('advisoryBody');
+            advisoryBody.innerHTML = '';
+
+            days.forEach(day => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${day}</td>` + 
+                    hours.map(hour => `<td onclick="toggleSelection(this)" data-day="${day}" data-hour="${hour}"></td>`).join('');
+                advisoryBody.appendChild(row);
+            });
+        }
+
+        // Seleccionar/desmarcar una celda
+        function toggleSelection(cell) {
+            cell.classList.toggle('selected');
+        }
+
+        // Confirmar asesorías seleccionadas
+        function confirmAdvisory() {
+            const selectedCells = document.querySelectorAll('.selected');
+            const advisoryData = {};
+
+            selectedCells.forEach(cell => {
+                const day = cell.getAttribute('data-day');
+                const hour = cell.getAttribute('data-hour');
+
+                if (!advisoryData[day]) advisoryData[day] = [];
+                advisoryData[day].push(hour);
+            });
+
+            const advisoryRef = database.ref(`users/admin/horario/asesorias`);
+            advisoryRef.set(advisoryData);
+
+            alert('Asesorías guardadas correctamente.');
+        }
+
+        // Inicializar tablas
         loadSubjects();
+        createAdvisoryTable();
     </script>
 </body>
 </html>
