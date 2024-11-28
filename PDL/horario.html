@@ -153,7 +153,9 @@
 
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
-                                if (subjectName === "") continue; // Ignoramos recesos o materias sin nombre
+                                
+                                // Eliminar recesos y materias en el rango de 10:00 a 10:29
+                                if (subjectName === "" || (hour === "1000" || hour === "1030")) continue;
 
                                 if (!uniqueSubjects[subjectName]) {
                                     uniqueSubjects[subjectName] = {
@@ -235,11 +237,10 @@
 
         function selectSubject(subjectName, semester, group, schedule) {
             const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = ''; // Clear previous content
+            advisoryBody.innerHTML = '';
 
-            // Populate the advisory table with hours and available days
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
             const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
             times.forEach(time => {
                 const tr = document.createElement('tr');
@@ -265,8 +266,7 @@
         document.getElementById('confirmAdvisory').addEventListener('click', () => {
             const selectedCells = document.querySelectorAll('.advisory-table td.selected');
             selectedCells.forEach(cell => {
-                // Agregar la materia seleccionada al horario
-                alert('Materia seleccionada para asesoría');
+                alert('Hora de asesoría seleccionada');
             });
         });
 
