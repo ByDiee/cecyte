@@ -121,92 +121,53 @@
     </main>
 
     <script>
-        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-        const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15"];
+firebase.database().ref('materias/3/F').once('value').then(snapshot => {
+    const materias = snapshot.val();
+    const tablaMaterias = document.getElementById('tablaMaterias');
 
-function cargarMateriasDesdeFirebase() {
-    const databaseRef = firebase.database().ref("classSchedules");
-
-    databaseRef.once("value", (snapshot) => {
-        const data = snapshot.val();
-        const materias = [];
-
-        for (const semestre in data) {
-            for (const grupo in data[semestre]) {
-                for (const dia in data[semestre][grupo]) {
-                    for (const hora in data[semestre][grupo][dia]) {
-                        const materia = data[semestre][grupo][dia][hora];
-
-                        // Omitir materias sin nombre
-                        if (materia.trim() === "") continue;
-
-                        materias.push({
-                            semestre,
-                            grupo,
-                            dia,
-                            hora,
-                            materia,
-                        });
-                    }
-                }
-            }
-        }
-
-        mostrarMateriasEnTabla(materias);
-    });
-}
-
-// Mostrar materias en la tabla
-function mostrarMateriasEnTabla(materias) {
-    // Agrupar materias por día y ordenarlas por hora
-    const tabla = document.getElementById("tablaMaterias");
-    tabla.innerHTML = ""; // Limpiar tabla
-
-    const materiasPorDia = materias.reduce((acc, materia) => {
-        if (!acc[materia.dia]) acc[materia.dia] = [];
-        acc[materia.dia].push(materia);
-        return acc;
-    }, {});
-
-    for (const dia in materiasPorDia) {
-        // Ordenar materias por hora
-        materiasPorDia[dia].sort((a, b) => parseInt(a.hora) - parseInt(b.hora));
-
-        const filaDia = document.createElement("tr");
-        const celdaDia = document.createElement("td");
-        celdaDia.colSpan = 2;
+    // Recorrer los días de la semana
+    for (let dia in materias) {
+        const filaDia = document.createElement('tr');
+        const celdaDia = document.createElement('td');
+        celdaDia.setAttribute('colspan', '2');
         celdaDia.textContent = dia;
-        celdaDia.style.fontWeight = "bold";
         filaDia.appendChild(celdaDia);
-        tabla.appendChild(filaDia);
+        tablaMaterias.appendChild(filaDia);
 
-        materiasPorDia[dia].forEach(({ hora, materia, grupo, semestre }) => {
-            const fila = document.createElement("tr");
+        // Recorrer las horas de cada día
+        for (let hora in materias[dia]) {
+            const materia = materias[dia][hora];
 
-            const celdaHora = document.createElement("td");
-            celdaHora.textContent = `${hora.slice(0, 2)}:${hora.slice(2)}`;
-            fila.appendChild(celdaHora);
+            // Omitir las materias sin nombre (vacías)
+            if (materia === "") continue;
 
-            const celdaMateria = document.createElement("td");
-            celdaMateria.textContent = `${materia} (Grupo ${grupo}, Semestre ${semestre})`;
-            fila.appendChild(celdaMateria);
+            const filaMateria = document.createElement('tr');
+            const celdaHora = document.createElement('td');
+            const celdaMateria = document.createElement('td');
 
-            tabla.appendChild(fila);
-        });
+            // Formatear la hora para que se muestre como hh:mm
+            const horaFormateada = `${hora.slice(0, 2)}:${hora.slice(2)}`;
+
+            celdaHora.textContent = horaFormateada;
+            celdaMateria.textContent = materia;
+
+            filaMateria.appendChild(celdaHora);
+            filaMateria.appendChild(celdaMateria);
+            tablaMaterias.appendChild(filaMateria);
+        }
     }
-}
+});
 
-// Guardar asesorías como materias
-function guardarAsesoria(dia, hora, grupo, semestre, asesor) {
-    const databaseRef = firebase.database().ref(`classSchedules/${semestre}/${grupo}/${dia}/${hora}`);
-    databaseRef.set(asesor)
-        .then(() => {
-            alert("Asesoría guardada exitosamente como materia.");
-            cargarMateriasDesdeFirebase(); // Actualizar vista
-        })
-        .catch((error) => {
-            console.error("Error al guardar la asesoría:", error);
-        });
+// Función para agregar una asesoría (guarda directamente en el horario)
+function agregarAsesoria(dia, hora, materia) {
+    const horarioRef = firebase.database().ref('materias/3/F/' + dia + '/' + hora);
+    horarioRef.set(materia, error => {
+        if (error) {
+            alert('Error al agregar la asesoría.');
+        } else {
+            alert('Asesoría agregada con éxito.');
+        }
+    });
 }
     </script>
 </body>
