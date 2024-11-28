@@ -33,7 +33,10 @@
         // Obtener el horario del profesor
         function getProfessorSchedule() {
             const currentUser = firebase.auth().currentUser;
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.error('No hay usuario autenticado.');
+                return;
+            }
 
             const userId = currentUser.uid;
             const classRef = firebase.database().ref(`users/${userId}/classSchedules`);
@@ -41,14 +44,26 @@
             const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
             const currentHour = currentTime.getHours() * 100 + currentTime.getMinutes();
 
+            console.log(`Buscando clases para el usuario: ${userId}`);
+            console.log(`Día actual: ${currentDay}, Hora actual: ${currentHour}`);
+
             classRef.once('value').then(snapshot => {
                 let classData = snapshot.val();
+                if (!classData) {
+                    console.error('No se encontraron horarios en la base de datos para este usuario.');
+                    return;
+                }
+
+                console.log('Datos de horario obtenidos:', classData);
+
                 let currentClass = null;
 
                 // Buscar la materia, grado y grupo correspondiente a la hora actual
                 for (let semester in classData) {
                     for (let group in classData[semester]) {
                         const daySchedule = classData[semester][group][currentDay];
+                        console.log(`Horario para el grupo ${group} en el semestre ${semester}:`, daySchedule);
+
                         for (let hour in daySchedule) {
                             if (parseInt(hour) <= currentHour && parseInt(hour) + 45 > currentHour) {
                                 currentClass = {
@@ -69,20 +84,30 @@
                     // Mostrar el mensaje de asistencia
                     document.getElementById('attendanceMessage').innerHTML = 
                         `Asistencia de ${currentClass.materia} del grado ${currentClass.semestre} grupo ${currentClass.grupo}`;
+                    
+                    console.log('Clase encontrada:', currentClass);
 
                     // Generar el QR con la información de la clase
                     generateQR(currentClass);
                 } else {
+                    console.log('No se encontró clase para la hora actual.');
                     alert('No hay clases programadas para este horario.');
                 }
+            }).catch(error => {
+                console.error('Error al leer los datos de la base de datos:', error);
             });
         }
 
         // Generar el código QR con los datos de la clase
         function generateQR(currentClass) {
             const qrData = JSON.stringify(currentClass); // Datos de la materia, grupo y semestre
+            console.log('Generando QR con los siguientes datos:', qrData);
             QRCode.toCanvas(document.getElementById('qrContainer'), qrData, function (error) {
-                if (error) console.error(error);
+                if (error) {
+                    console.error('Error al generar el código QR:', error);
+                } else {
+                    console.log('Código QR generado con éxito.');
+                }
             });
         }
 
