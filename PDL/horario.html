@@ -121,60 +121,83 @@
     </main>
 
     <script>
-        // Cargar materias desde Firebase
-        firebase.database().ref('materias/3/F').once('value').then(snapshot => {
-            const materias = snapshot.val();
-            const tablaMaterias = document.getElementById('subjectsBody'); // Aquí debe coincidir el id con el HTML
+        // Referencia a la base de datos Firebase
+        const dbRef = firebase.database().ref('classSchedules');  // Ruta correcta a la base de datos
 
-            // Verifica si 'materias' tiene datos
-            if (!materias) {
-                console.log('No se encontraron materias');
-                return;
-            }
+        // Cargar materias de Firebase
+        dbRef.once('value').then(snapshot => {
+            const data = snapshot.val();
+            const subjectsBody = document.getElementById('subjectsBody');
 
-            // Recorrer los días de la semana
-            for (let dia in materias) {
-                const filaDia = document.createElement('tr');
-                const celdaDia = document.createElement('td');
-                celdaDia.setAttribute('colspan', '2');
-                celdaDia.textContent = dia;
-                filaDia.appendChild(celdaDia);
-                tablaMaterias.appendChild(filaDia);
+            // Iterar sobre semestres y grupos
+            for (const semester in data) {
+                for (const group in data[semester]) {
+                    const materias = data[semester][group];
+                    
+                    // Iterar sobre los días de la semana para cada materia
+                    for (const day in materias) {
+                        const row = document.createElement('tr');
 
-                // Recorrer las horas de cada día
-                for (let hora in materias[dia]) {
-                    const materia = materias[dia][hora];
+                        // Crear fila para el día
+                        const dayCell = document.createElement('td');
+                        dayCell.setAttribute('colspan', '5');
+                        dayCell.textContent = day;
+                        row.appendChild(dayCell);
+                        subjectsBody.appendChild(row);
 
-                    // Omitir las materias sin nombre (vacías)
-                    if (materia === "") continue;
+                        // Iterar sobre las horas para cada día
+                        for (const hour in materias[day]) {
+                            const materia = materias[day][hour];
+                            if (materia === "") continue;  // Omitir materias vacías
 
-                    const filaMateria = document.createElement('tr');
-                    const celdaHora = document.createElement('td');
-                    const celdaMateria = document.createElement('td');
+                            const materialRow = document.createElement('tr');
+                            const timeCell = document.createElement('td');
+                            const subjectCell = document.createElement('td');
+                            const semesterCell = document.createElement('td');
+                            const groupCell = document.createElement('td');
+                            const addButtonCell = document.createElement('td');
 
-                    // Formatear la hora para que se muestre como hh:mm
-                    const horaFormateada = `${hora.slice(0, 2)}:${hora.slice(2)}`;
+                            // Formatear la hora en formato hh:mm
+                            const formattedTime = `${hour.slice(0, 2)}:${hour.slice(2)}`;
 
-                    celdaHora.textContent = horaFormateada;
-                    celdaMateria.textContent = materia;
+                            // Añadir los datos a las celdas
+                            timeCell.textContent = formattedTime;
+                            subjectCell.textContent = materia;
+                            semesterCell.textContent = semester;
+                            groupCell.textContent = group;
+                            addButtonCell.innerHTML = `<button onclick="addSubjectToSchedule('${semester}', '${group}', '${day}', '${hour}', '${materia}')">Agregar</button>`;
 
-                    filaMateria.appendChild(celdaHora);
-                    filaMateria.appendChild(celdaMateria);
-                    tablaMaterias.appendChild(filaMateria);
+                            // Añadir celdas a la fila
+                            materialRow.appendChild(timeCell);
+                            materialRow.appendChild(subjectCell);
+                            materialRow.appendChild(semesterCell);
+                            materialRow.appendChild(groupCell);
+                            materialRow.appendChild(addButtonCell);
+                            subjectsBody.appendChild(materialRow);
+                        }
+                    }
                 }
             }
-        }).catch(error => {
-            console.error('Error al cargar las materias:', error);
         });
 
-        // Función para agregar una asesoría (guarda directamente en el horario)
-        function agregarAsesoria(dia, hora, materia) {
-            const horarioRef = firebase.database().ref('materias/3/F/' + dia + '/' + hora);
-            horarioRef.set(materia, error => {
+        // Función para agregar materia al horario
+        function addSubjectToSchedule(semester, group, day, hour, subject) {
+            const userId = firebase.auth().currentUser.uid;  // Obtener el ID del usuario actual
+            const scheduleRef = firebase.database().ref('users/' + userId + '/schedules');  // Ruta de los horarios de los usuarios
+
+            const newSchedule = {
+                semester: semester,
+                group: group,
+                day: day,
+                hour: hour,
+                subject: subject
+            };
+
+            scheduleRef.push(newSchedule, error => {
                 if (error) {
-                    alert('Error al agregar la asesoría.');
+                    alert('Error al agregar la materia al horario');
                 } else {
-                    alert('Asesoría agregada con éxito.');
+                    alert('Materia agregada con éxito al horario');
                 }
             });
         }
