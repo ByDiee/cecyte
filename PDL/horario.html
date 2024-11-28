@@ -85,16 +85,7 @@
             background-color: #ffffff;
         }
         .hours-table td.selected {
-            background-color: #dff0d8; /* verde para selección */
-        }
-        .hours-table td:hover {
-            background-color: #d3f9d8; /* verde claro al pasar el ratón */
-        }
-        .hours-table td.selected:hover {
-            background-color: #c1e7c1; /* verde más fuerte cuando está seleccionado */
-        }
-        .hours-table td:hover, .hours-table td.selected {
-            cursor: pointer;
+            background-color: #dff0d8; /* green background for selected time */
         }
     </style>
 </head>
@@ -119,7 +110,7 @@
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Las materias se cargan desde Firebase aquí -->
+                <!-- Se cargan las materias desde Firebase -->
             </tbody>
         </table>
 
@@ -136,7 +127,7 @@
                 </tr>
             </thead>
             <tbody id="advisoryBody">
-                <!-- Las horas de asesorías se cargan aquí -->
+                <!-- Se cargan las horas de asesorías -->
             </tbody>
         </table>
         <button id="confirmAdvisory" style="margin-top: 20px; padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer;">Confirmar Asesoría</button>
@@ -162,9 +153,7 @@
 
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
-                                
-                                // Eliminar recesos y materias vacías
-                                if (subjectName === "" || (hour === "1000" || hour === "1030")) continue;
+                                if (subjectName === "") continue; // Ignoramos recesos o materias sin nombre
 
                                 if (!uniqueSubjects[subjectName]) {
                                     uniqueSubjects[subjectName] = {
@@ -183,8 +172,6 @@
                         }
                     }
                 }
-
-                const fragment = document.createDocumentFragment();
 
                 for (const subjectName in uniqueSubjects) {
                     const data = uniqueSubjects[subjectName];
@@ -210,7 +197,7 @@
                     const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
                     const trHead = document.createElement('tr');
-                    trHead.appendChild(document.createElement('th')); // Celda vacía en la esquina
+                    trHead.appendChild(document.createElement('th')); // Empty cell at the corner
                     days.forEach(day => {
                         const th = document.createElement('th');
                         th.textContent = day;
@@ -228,18 +215,8 @@
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
                                 td.textContent = subjectName;
-                                td.dataset.time = time;
-                                td.dataset.day = day;
-
-                                td.addEventListener('mouseover', () => {
-                                    td.style.backgroundColor = '#c1e7c1';  // Sombreado
-                                });
-
-                                td.addEventListener('click', () => {
-                                    td.classList.toggle('selected');
-                                });
+                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
                             }
-
                             tr.appendChild(td);
                         });
 
@@ -251,29 +228,48 @@
                     row.appendChild(semesterCell);
                     row.appendChild(groupCell);
                     row.appendChild(hoursCell);
-                    fragment.appendChild(row);
-                }
 
-                subjectBody.appendChild(fragment);
+                    subjectBody.appendChild(row);
+                }
             });
         }
 
-        // Confirmar asesoría y cargar a la base de datos
+        function selectSubject(subjectName, semester, group, schedule) {
+            const advisoryBody = document.getElementById('advisoryBody');
+            advisoryBody.innerHTML = ''; // Clear previous content
+
+            // Populate the advisory table with hours and available days
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+            times.forEach(time => {
+                const tr = document.createElement('tr');
+                const tdTime = document.createElement('td');
+                tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                tr.appendChild(tdTime);
+
+                days.forEach(day => {
+                    const td = document.createElement('td');
+                    if (schedule[day] && schedule[day].includes(time)) {
+                        td.classList.add('selectable');
+                        td.addEventListener('click', () => {
+                            td.classList.toggle('selected');
+                        });
+                    }
+                    tr.appendChild(td);
+                });
+
+                advisoryBody.appendChild(tr);
+            });
+        }
+
         document.getElementById('confirmAdvisory').addEventListener('click', () => {
             const selectedCells = document.querySelectorAll('.advisory-table td.selected');
-            if (selectedCells.length > 0) {
-                // Aquí puedes agregar la lógica para guardar los datos a la base de datos
-                alert('Asesoría confirmada y cargada a la base de datos');
-            } else {
-                alert('No se seleccionó ninguna hora de asesoría.');
-            }
+            selectedCells.forEach(cell => {
+                // Agregar la materia seleccionada al horario
+                alert('Materia seleccionada para asesoría');
+            });
         });
-
-        // Función para seleccionar la materia
-        function selectSubject(name, semester, group, schedule) {
-            alert(`Materia seleccionada y cargada a la base de datos:\nMateria: ${name}\nSemestre: ${semester}\nGrupo: ${group}`);
-            console.log('Horario:', schedule);
-        }
 
         loadSubjects();
     </script>
