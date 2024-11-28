@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar Código QR</title>
+    <title>Generar Código QR de Asistencia</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    
-    <!-- Scripts de Firebase -->
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -18,36 +18,19 @@
             text-align: center;
             margin-top: 50px;
         }
-
         #qrContainer {
             margin-top: 20px;
-        }
-
-        video {
-            width: 100%;
-            max-width: 400px;
-            border: 1px solid #ccc;
-        }
-
-        #scannedResult {
-            margin-top: 20px;
-            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
-
     <h1>Generar Código QR para Asistencia</h1>
 
-    <!-- Aquí se muestra el QR generado -->
-    <div id="qrContainer"></div>
-
-    <h3>Escanear QR (para estudiantes)</h3>
-    <video id="scanner" style="display:none;" autoplay></video>
-    <p id="scannedResult">Escanee un QR con su cámara.</p>
+    <div id="attendanceMessage"></div> <!-- Aquí se mostrará el mensaje de asistencia -->
+    <div id="qrContainer"></div> <!-- Aquí se generará el código QR -->
 
     <script>
-        // Obtener la hora actual y detectar la clase del profesor
+        // Obtener el horario del profesor
         function getProfessorSchedule() {
             const currentUser = firebase.auth().currentUser;
             if (!currentUser) return;
@@ -62,7 +45,7 @@
                 let classData = snapshot.val();
                 let currentClass = null;
 
-                // Buscar la materia correspondiente a la hora actual
+                // Buscar la materia, grado y grupo correspondiente a la hora actual
                 for (let semester in classData) {
                     for (let group in classData[semester]) {
                         const daySchedule = classData[semester][group][currentDay];
@@ -83,7 +66,11 @@
                 }
 
                 if (currentClass) {
-                    // Generar QR con la información de la clase
+                    // Mostrar el mensaje de asistencia
+                    document.getElementById('attendanceMessage').innerHTML = 
+                        `Asistencia de ${currentClass.materia} del grado ${currentClass.semestre} grupo ${currentClass.grupo}`;
+
+                    // Generar el QR con la información de la clase
                     generateQR(currentClass);
                 } else {
                     alert('No hay clases programadas para este horario.');
@@ -91,7 +78,7 @@
             });
         }
 
-        // Generar el código QR con la información de la clase
+        // Generar el código QR con los datos de la clase
         function generateQR(currentClass) {
             const qrData = JSON.stringify(currentClass); // Datos de la materia, grupo y semestre
             QRCode.toCanvas(document.getElementById('qrContainer'), qrData, function (error) {
@@ -99,91 +86,8 @@
             });
         }
 
-        // Función para escanear QR directamente desde la cámara del alumno
-        function startScanner() {
-            const videoElement = document.getElementById('scanner');
-            const scannedResult = document.getElementById('scannedResult');
-
-            // Activar la cámara
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    videoElement.srcObject = stream;
-                    videoElement.setAttribute("playsinline", true);
-                    videoElement.play();
-                    requestAnimationFrame(scanQRCode);
-                }).catch(err => {
-                    alert('No se pudo acceder a la cámara.');
-                });
-
-            // Función para escanear el código QR
-            function scanQRCode() {
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
-                canvas.height = videoElement.videoHeight;
-                canvas.width = videoElement.videoWidth;
-                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
-
-                if (qrCode) {
-                    const qrData = JSON.parse(qrCode.data);
-                    scannedResult.innerText = `QR Escaneado: Materia: ${qrData.materia}, Grupo: ${qrData.grupo}, Semestre: ${qrData.semestre}, Hora: ${qrData.hora}`;
-                    
-                    // Aquí registrar la asistencia en Firebase
-                    registerAttendance(qrData);
-                } else {
-                    scannedResult.innerText = "Escaneando QR...";
-                    requestAnimationFrame(scanQRCode);
-                }
-            }
-        }
-
-        // Función para registrar asistencia
-        function registerAttendance(qrData) {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser) return;
-
-            const userId = currentUser.uid;
-            const userName = currentUser.displayName || "Alumno sin nombre";
-            const currentDate = new Date();
-            const currentDay = currentDate.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
-            const dateString = currentDate.toISOString().split('T')[0];
-
-            const attendanceRef = firebase.database().ref(`attendances/${qrData.semestre}/${qrData.grupo}/${currentDay}`);
-            attendanceRef.child(dateString).child("students").child(userId).set({
-                name: userName,
-                present: true
-            }).then(() => {
-                alert("Asistencia registrada correctamente");
-                showNotification('Asistencia registrada', '¡Tu asistencia fue registrada correctamente!');
-            });
-        }
-
-        // Función para mostrar notificación
-        function showNotification(title, message) {
-            if (Notification.permission === "granted") {
-                new Notification(title, {
-                    body: message,
-                    icon: 'icon.png'
-                });
-            } else {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification(title, {
-                            body: message,
-                            icon: 'icon.png'
-                        });
-                    }
-                });
-            }
-        }
-
-        // Iniciar el escaneo de QR y generar el horario del profesor
-        startScanner();
+        // Iniciar la generación del código QR
         getProfessorSchedule();
-
     </script>
-
 </body>
 </html>
