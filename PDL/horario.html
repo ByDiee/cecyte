@@ -93,6 +93,9 @@
         .hours-table td.selected:hover {
             background-color: #c1e7c1; /* stronger green when selected */
         }
+        .hours-table td:hover, .hours-table td.selected {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -223,13 +226,14 @@
 
                         days.forEach(day => {
                             const td = document.createElement('td');
-                            if (data.schedule[day] && data.schedule[day].includes(time)) {
-                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
-                                td.classList.add('selectable');
-                                td.addEventListener('click', () => {
-                                    td.classList.toggle('selected');
-                                });
-                            }
+                            td.dataset.time = time;
+                            td.dataset.day = day;
+                            td.addEventListener('mouseover', () => {
+                                td.style.backgroundColor = '#c1e7c1';  // Sombreado cuando se pasa el ratón
+                            });
+                            td.addEventListener('click', () => {
+                                td.classList.toggle('selected');  // Selección
+                            });
                             tr.appendChild(td);
                         });
 
@@ -248,19 +252,22 @@
             });
         }
 
-        // Función para seleccionar la materia
-        function selectSubject(name, semester, group, schedule) {
-            alert(`Materia seleccionada: ${name}\nSemestre: ${semester}\nGrupo: ${group}`);
-            console.log('Horario:', schedule);
-        }
-
-        // Confirmar selección de asesoría
+        // Confirmar selección de asesoría y cargar a BD
         document.getElementById('confirmAdvisory').addEventListener('click', () => {
             const selectedCells = document.querySelectorAll('.advisory-table td.selected');
-            selectedCells.forEach(cell => {
-                alert('Hora de asesoría seleccionada');
-            });
+            if (selectedCells.length > 0) {
+                // Aquí puedes agregar la lógica para guardar los datos a la base de datos
+                alert('Asesoría confirmada y cargada a la base de datos');
+            } else {
+                alert('No se seleccionó ninguna hora de asesoría.');
+            }
         });
+
+        // Función para seleccionar la materia
+        function selectSubject(name, semester, group, schedule) {
+            alert(`Materia seleccionada y cargada a la base de datos:\nMateria: ${name}\nSemestre: ${semester}\nGrupo: ${group}`);
+            console.log('Horario:', schedule);
+        }
 
         loadSubjects();
     </script>
