@@ -1,168 +1,171 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar Código QR</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generar y escanear QR de Asistencia</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-            background-color: #f4f4f9;
-        }
-        header {
-            margin-bottom: 20px;
-        }
-        form {
-            display: inline-block;
-            text-align: left;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .qr-container {
-            margin-top: 20px;
-        }
-        canvas {
-            margin-top: 20px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-        }
-        input, label, button {
-            display: block;
-            margin: 10px 0;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 15px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
 </head>
 <body>
-    <header>
-        <h1>Generar Código QR Personalizado</h1>
-    </header>
-    <main>
-        <form id="qrForm">
-            <label for="startDate">Fecha de Inicio:</label>
-            <input type="date" id="startDate" required>
 
-            <label for="endDate">Fecha de Caducidad:</label>
-            <input type="date" id="endDate" required>
+  <h2>Generar QR para Asistencia</h2>
+  
+  <!-- Sección para generar QR -->
+  <div>
+    <button onclick="generateQR()">Generar QR</button>
+  </div>
 
-            <label for="maxStudents">Máximo de Alumnos:</label>
-            <input type="number" id="maxStudents" placeholder="Ej: 30" required>
+  <h3>QR Generado</h3>
+  <div id="qrContainer"></div>
 
-            <label for="logo">Logo (opcional):</label>
-            <input type="file" id="logo" accept="image/*">
+  <h2>Escanear QR (para estudiantes)</h2>
+  
+  <!-- Sección para escanear el QR -->
+  <video id="scanner" width="300" height="300" style="border: 1px solid #000;"></video>
+  <p id="scannedResult">Escanee un QR</p>
 
-            <button type="button" id="generateBtn">Generar Código QR</button>
-        </form>
-        <div class="qr-container">
-            <canvas id="qrCanvas" width="300" height="300"></canvas>
-        </div>
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <script>
-        const projectMainPage = "https://tuproyecto.github.io/";
+  <h3>Información de la clase</h3>
+  <p id="classInfo"></p>
 
-        // Función para generar QR con opciones personalizadas
-        async function generateQRCode() {
-            const startDate = document.getElementById("startDate").value;
-            const endDate = document.getElementById("endDate").value;
-            const maxStudents = document.getElementById("maxStudents").value;
-            const logoFile = document.getElementById("logo").files[0];
+  <script>
 
-            if (!startDate || !endDate || !maxStudents) {
-                alert("Por favor, completa todos los campos obligatorios.");
-                return;
-            }
+    // Obtener la información del horario del profesor
+    function getProfessorSchedule() {
+      const currentUser = firebase.auth().currentUser;
+      if (!currentUser) return;
 
-            // Datos que estarán incluidos en el QR
-            const qrData = {
-                url: projectMainPage,
-                startDate,
-                endDate,
-                maxStudents,
-            };
+      const userId = currentUser.uid;
+      const classRef = firebase.database().ref(`users/${userId}/classSchedules`);
+      const currentTime = new Date();
+      const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
+      const currentHour = currentTime.getHours() * 100 + currentTime.getMinutes();
 
-            const qrCanvas = document.getElementById("qrCanvas");
-            const qrCodeOptions = {
-                text: JSON.stringify(qrData),
-                width: 300,
-                height: 300,
-            };
-
-            if (logoFile) {
-                // Si se seleccionó un logo, lo incluimos en el QR
-                const reader = new FileReader();
-                reader.onload = async function (e) {
-                    const logo = new Image();
-                    logo.src = e.target.result;
-
-                    logo.onload = async function () {
-                        await drawQRCodeWithLogo(qrCanvas, qrCodeOptions, logo);
-                        alert("QR generado con logo incluido.");
-                    };
+      classRef.once('value').then(snapshot => {
+        let classData = snapshot.val();
+        let currentClass = null;
+        
+        // Buscar la materia correspondiente a la hora actual
+        for (let semester in classData) {
+          for (let group in classData[semester]) {
+            const daySchedule = classData[semester][group][currentDay];
+            for (let hour in daySchedule) {
+              if (parseInt(hour) <= currentHour && parseInt(hour) + 45 > currentHour) { // Asumiendo clases de 45 minutos
+                currentClass = {
+                  materia: daySchedule[hour],
+                  semestre: semester,
+                  grupo: group,
+                  hora: hour
                 };
-                reader.readAsDataURL(logoFile);
-            } else {
-                // Si no hay logo, generamos el QR directamente
-                QRCode.toCanvas(qrCanvas, JSON.stringify(qrData), qrCodeOptions, function (error) {
-                    if (error) console.error(error);
-                    alert("QR generado correctamente.");
-                });
+                break;
+              }
             }
+            if (currentClass) break;
+          }
+          if (currentClass) break;
         }
 
-        // Función para dibujar el QR con un logo
-        async function drawQRCodeWithLogo(canvas, options, logo) {
-            // Generamos el QR en el canvas
-            const qrCanvasTemp = document.createElement("canvas");
-            qrCanvasTemp.width = options.width;
-            qrCanvasTemp.height = options.height;
+        if (currentClass) {
+          document.getElementById('classInfo').innerHTML = `Materia: ${currentClass.materia}<br>Semestre: ${currentClass.semestre}<br>Grupo: ${currentClass.grupo}`;
+          generateQR(currentClass); // Generar el QR automáticamente con esta clase
+        } else {
+          document.getElementById('classInfo').innerText = "No hay clases programadas para este horario.";
+        }
+      });
+    }
 
-            await QRCode.toCanvas(qrCanvasTemp, options.text, {
-                width: options.width,
-                height: options.height,
+    // Función para generar QR con los datos del horario
+    function generateQR(currentClass) {
+      const qrData = JSON.stringify(currentClass); // Datos de la materia, grupo y semestre
+      QRCode.toCanvas(document.getElementById('qrContainer'), qrData, function (error) {
+        if (error) console.error(error);
+      });
+    }
+
+    // Configuración para escanear QR
+    const videoElement = document.getElementById('scanner');
+    const scannedResult = document.getElementById('scannedResult');
+    
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        videoElement.srcObject = stream;
+        videoElement.setAttribute("playsinline", true);
+        videoElement.play();
+        requestAnimationFrame(scanQRCode);
+      });
+
+    function scanQRCode() {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.height = videoElement.videoHeight;
+      canvas.width = videoElement.videoWidth;
+      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+
+      if (qrCode) {
+        const qrData = JSON.parse(qrCode.data);
+        scannedResult.innerText = `QR Escaneado: Materia: ${qrData.materia}, Grupo: ${qrData.grupo}, Semestre: ${qrData.semestre}, Hora: ${qrData.hora}`;
+        
+        // Registrar asistencia en Firebase
+        registerAttendance(qrData);
+      } else {
+        scannedResult.innerText = "Escaneando QR...";
+        requestAnimationFrame(scanQRCode);
+      }
+    }
+
+    // Función para registrar asistencia en Firebase
+    function registerAttendance(qrData) {
+      const currentUser = firebase.auth().currentUser;
+      if (!currentUser) return;
+
+      const userId = currentUser.uid;
+      const userName = currentUser.displayName || "Alumno sin nombre";
+      const currentDate = new Date();
+      const currentDay = currentDate.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
+      const dateString = currentDate.toISOString().split('T')[0];
+
+      const attendanceRef = firebase.database().ref(`attendances/${qrData.semestre}/${qrData.grupo}/${currentDay}`);
+      attendanceRef.child(dateString).child("students").child(userId).set({
+        name: userName,
+        present: true
+      }).then(() => {
+        alert("Asistencia registrada correctamente");
+        showNotification('Asistencia registrada', '¡Tu asistencia fue registrada correctamente!');
+      });
+    }
+
+    // Función para mostrar notificación
+    function showNotification(title, message) {
+      if (Notification.permission === "granted") {
+        new Notification(title, {
+          body: message,
+          icon: 'icon.png'
+        });
+      } else {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification(title, {
+              body: message,
+              icon: 'icon.png'
             });
+          }
+        });
+      }
+    }
 
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(qrCanvasTemp, 0, 0);
+    // Llamar a la función para obtener el horario del profesor
+    getProfessorSchedule();
 
-            // Calculamos las dimensiones del logo (centrado)
-            const logoSize = options.width * 0.2; // 20% del tamaño del QR
-            const logoX = (options.width - logoSize) / 2;
-            const logoY = (options.height - logoSize) / 2;
-
-            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-        }
-
-        // Vincular la función al botón
-        document.getElementById("generateBtn").addEventListener("click", generateQRCode);
-    </script>
+  </script>
 </body>
 </html>
