@@ -221,93 +221,83 @@
                     }
                 }
 
+                // Filtro por búsqueda
+                const searchInput = document.getElementById('searchBar');
+                const searchQuery = searchInput.value.toLowerCase();
+
                 for (const subjectName in uniqueSubjects) {
                     const data = uniqueSubjects[subjectName];
 
-                    const row = document.createElement('tr');
-                    const subjectCell = document.createElement('td');
-                    const semesterCell = document.createElement('td');
-                    const groupCell = document.createElement('td');
-                    const hoursCell = document.createElement('td');
+                    if (subjectName.toLowerCase().includes(searchQuery) || data.semester.toLowerCase().includes(searchQuery) || data.group.toLowerCase().includes(searchQuery)) {
+                        const row = document.createElement('tr');
+                        const subjectCell = document.createElement('td');
+                        const semesterCell = document.createElement('td');
+                        const groupCell = document.createElement('td');
+                        const hoursCell = document.createElement('td');
 
-                    row.addEventListener('click', () => {
-                        selectSubject(subjectName, data.semester, data.group, data.schedule);
-                    });
-
-                    subjectCell.textContent = subjectName;
-                    semesterCell.textContent = data.semester;
-                    groupCell.textContent = data.group;
-
-                    const hoursTable = document.createElement('table');
-                    hoursTable.classList.add('hours-table');
-
-                    const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-                    const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-
-                    const trHead = document.createElement('tr');
-                    trHead.appendChild(document.createElement('th')); // Empty cell at the corner
-                    days.forEach(day => {
-                        const th = document.createElement('th');
-                        th.textContent = day;
-                        trHead.appendChild(th);
-                    });
-                    hoursTable.appendChild(trHead);
-
-                    times.forEach(time => {
-                        const tr = document.createElement('tr');
-                        const tdTime = document.createElement('td');
-                        tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                        tr.appendChild(tdTime);
-
-                        days.forEach(day => {
-                            const td = document.createElement('td');
-                            if (data.schedule[day] && data.schedule[day].includes(time)) {
-                                td.textContent = subjectName;
-                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
-                            }
-                            tr.appendChild(td);
+                        row.addEventListener('click', () => {
+                            selectSubject(subjectName, data.semester, data.group, data.schedule);
                         });
 
-                        hoursTable.appendChild(tr);
-                    });
+                        subjectCell.textContent = subjectName;
+                        semesterCell.textContent = data.semester;
+                        groupCell.textContent = data.group;
 
-                    hoursCell.appendChild(hoursTable);
-                    row.appendChild(subjectCell);
-                    row.appendChild(semesterCell);
-                    row.appendChild(groupCell);
-                    row.appendChild(hoursCell);
+                        const hoursTable = document.createElement('table');
+                        hoursTable.classList.add('hours-table');
 
-                    subjectBody.appendChild(row);
+                        const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+                        const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+                        const trHead = document.createElement('tr');
+                        trHead.appendChild(document.createElement('th')); // Empty cell at the corner
+                        days.forEach(day => {
+                            const th = document.createElement('th');
+                            th.textContent = day;
+                            trHead.appendChild(th);
+                        });
+                        hoursTable.appendChild(trHead);
+
+                        times.forEach(time => {
+                            const tr = document.createElement('tr');
+                            const tdTime = document.createElement('td');
+                            tdTime.textContent = time;
+                            tr.appendChild(tdTime);
+
+                            days.forEach(day => {
+                                const td = document.createElement('td');
+                                if (data.schedule[day] && data.schedule[day].includes(time)) {
+                                    td.style.backgroundColor = '#28a745';
+                                    td.textContent = subjectName;
+                                }
+                                tr.appendChild(td);
+                            });
+
+                            hoursTable.appendChild(tr);
+                        });
+
+                        hoursCell.appendChild(hoursTable);
+
+                        row.appendChild(subjectCell);
+                        row.appendChild(semesterCell);
+                        row.appendChild(groupCell);
+                        row.appendChild(hoursCell);
+
+                        subjectBody.appendChild(row);
+                    }
                 }
-            }).catch(error => {
-                console.error('Error al cargar las materias:', error);
             });
         }
 
-        function loadAdvisorySchedule() {
-            const advisoryBody = document.getElementById('advisoryBody');
-            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+        // Cargar las materias cuando se carga la página
+        window.onload = function() {
+            loadSubjects();
+        };
 
-            for (let i = 0; i < times.length; i++) {
-                const row = document.createElement('tr');
-                const timeCell = document.createElement('td');
-                timeCell.textContent = `${times[i].substring(0, 2)}:${times[i].substring(2)}`;
-                row.appendChild(timeCell);
-
-                for (let j = 0; j < days.length; j++) {
-                    const cell = document.createElement('td');
-                    cell.textContent = "Seleccionar";
-                    cell.style.backgroundColor = '#f9f9f9'; // light gray background
-                    row.appendChild(cell);
-                }
-
-                advisoryBody.appendChild(row);
-            }
-        }
-
-        loadSubjects();
-        loadAdvisorySchedule();
+        // Filtrar las materias cuando se escribe en el input de búsqueda
+        document.getElementById('searchBar').addEventListener('input', function() {
+            loadSubjects();
+        });
     </script>
 </body>
 </html>
