@@ -9,72 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #d1e7dd;
-            cursor: pointer;
-        }
-        .selected {
-            background-color: #28a745 !important;
-            color: white;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 10px 0;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        .hidden {
-            display: none;
-        }
+        /* Tu CSS aquí */
     </style>
 </head>
 <body>
@@ -86,7 +21,6 @@
         <a href="#">Registro de Asistencias</a>
     </nav>
     <main>
-        <!-- Materias cargadas desde Firebase -->
         <h2>Materias Disponibles</h2>
         <table id="subjectsTable">
             <thead>
@@ -99,11 +33,10 @@
                 </tr>
             </thead>
             <tbody id="subjectsBody">
-                <!-- Carga de materias aquí -->
+                <!-- Materias cargadas aquí -->
             </tbody>
         </table>
 
-        <!-- Tabla de asesorías -->
         <h2>Horario de Asesorías</h2>
         <table id="advisoryTable">
             <thead>
@@ -129,8 +62,6 @@
     <script>
         const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
         const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15"];
-        
-        const database = firebase.database();
 
         // Cargar materias desde Firebase
         function loadSubjects() {
@@ -146,7 +77,8 @@
                             const hours = Object.keys(subjects[semester][group][day]);
                             const subjectName = subjects[semester][group][day][hours[0]];
 
-                            // Crear fila por materia
+                            if (!subjectName) continue; // Ignorar materias sin nombre
+
                             const row = document.createElement('tr');
                             row.innerHTML = `
                                 <td>${subjectName}</td>
@@ -159,7 +91,7 @@
                         }
                     }
                 }
-            });
+            }).catch(error => console.error('Error al cargar las materias:', error));
         }
 
         // Agregar materias al horario
