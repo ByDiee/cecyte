@@ -9,69 +9,20 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #d1e7dd;
-            cursor: pointer;
-        }
-        .selected {
-            background-color: #28a745 !important;
-            color: white;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 10px 0;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #218838;
-        }
+        /* Tu estilo original */
+        body { font-family: Arial, sans-serif; background-color: #ffffff; margin: 0; padding: 0; }
+        header { background-color: #28a745; color: white; padding: 15px; text-align: center; }
+        nav { background-color: #ff851b; padding: 10px; display: flex; justify-content: space-around; }
+        nav a { color: white; text-decoration: none; font-weight: bold; }
+        main { padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #d1e7dd; cursor: pointer; }
+        .selected { background-color: #28a745 !important; color: white; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; margin: 10px 0; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #218838; }
     </style>
 </head>
 <body>
@@ -95,9 +46,7 @@
                     <th>Agregar al Horario</th>
                 </tr>
             </thead>
-            <tbody id="subjectsBody">
-                <!-- Carga de materias aquí -->
-            </tbody>
+            <tbody id="subjectsBody"></tbody>
         </table>
 
         <!-- Tabla de asesorías -->
@@ -113,16 +62,14 @@
                     <th>Viernes</th>
                 </tr>
             </thead>
-            <tbody id="advisoryBody">
-                <!-- Asesorías aquí -->
-            </tbody>
+            <tbody id="advisoryBody"></tbody>
         </table>
         <button onclick="confirmAdvisory()">Confirmar Asesorías</button>
     </main>
 
     <script>
         const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-        const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15"];
+        const hours = ["07:00", "07:45", "08:30", "09:15", "10:30", "11:15", "12:00", "12:45", "13:30", "14:15"];
 
         // Cargar materias desde Firebase
         function loadSubjects() {
@@ -134,33 +81,27 @@
 
                 for (const semester in subjects) {
                     for (const group in subjects[semester]) {
-                        const schedule = {};
+                        const uniqueSubjects = new Set();
+
                         for (const day in subjects[semester][group]) {
-                            if (!schedule[day]) schedule[day] = [];
+                            const dayKey = day === 'Miercoles' ? 'Miércoles' : day; // Corregir nombre del día
                             for (const hour in subjects[semester][group][day]) {
-                                const subjectName = subjects[semester][group][day][hour];
-                                if (!schedule[day].includes(hour)) schedule[day].push(hour);
+                                const subjectName = subjects[semester][group][day][hour] || 'Sin nombre';
+                                uniqueSubjects.add(subjectName);
                             }
                         }
 
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${subjects[semester][group][days[0]][hours[0]] || 'Sin nombre'}</td>
-                            <td>${semester}</td>
-                            <td>${group}</td>
-                            <td>
-                                <table>
-                                    <thead>
-                                        <tr>${days.map(day => `<th>${day}</th>`).join('')}</tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>${days.map(day => `<td>${(schedule[day] || []).join('<br>')}</td>`).join('')}</tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td><button onclick="addSubjectToSchedule('${semester}', '${group}')">Agregar</button></td>
-                        `;
-                        subjectsBody.appendChild(row);
+                        uniqueSubjects.forEach(subject => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${subject}</td>
+                                <td>${semester}</td>
+                                <td>${group}</td>
+                                <td>Se muestran horarios por grupo</td>
+                                <td><button onclick="addSubjectToSchedule('${semester}', '${group}', '${subject}')">Agregar</button></td>
+                            `;
+                            subjectsBody.appendChild(row);
+                        });
                     }
                 }
             });
@@ -173,7 +114,7 @@
 
             hours.forEach(hour => {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td>${hour}</td>` + 
+                row.innerHTML = `<td>${hour}</td>` +
                     days.map(day => `<td onclick="toggleSelection(this)" data-day="${day}" data-hour="${hour}"></td>`).join('');
                 advisoryBody.appendChild(row);
             });
@@ -186,21 +127,28 @@
 
         // Confirmar asesorías seleccionadas
         function confirmAdvisory() {
-            const selectedCells = document.querySelectorAll('.selected');
-            const advisoryData = {};
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    const userId = user.uid;
+                    const selectedCells = document.querySelectorAll('.selected');
+                    const advisoryData = {};
 
-            selectedCells.forEach(cell => {
-                const day = cell.getAttribute('data-day');
-                const hour = cell.getAttribute('data-hour');
+                    selectedCells.forEach(cell => {
+                        const day = cell.getAttribute('data-day');
+                        const hour = cell.getAttribute('data-hour');
 
-                if (!advisoryData[day]) advisoryData[day] = [];
-                advisoryData[day].push(hour);
+                        if (!advisoryData[day]) advisoryData[day] = [];
+                        advisoryData[day].push(hour);
+                    });
+
+                    const advisoryRef = database.ref(`users/${userId}/horario/asesorias`);
+                    advisoryRef.set(advisoryData);
+
+                    alert('Asesorías guardadas correctamente.');
+                } else {
+                    alert('Debe iniciar sesión para guardar asesorías.');
+                }
             });
-
-            const advisoryRef = database.ref(`users/admin/horario/asesorias`);
-            advisoryRef.set(advisoryData);
-
-            alert('Asesorías guardadas correctamente.');
         }
 
         // Inicializar tablas
