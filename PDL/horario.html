@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtrar Materias</title>
+    <title>Filtrar Materias y Asesorías</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -91,7 +91,7 @@
 </head>
 <body>
     <header>
-        <h1>Buscar Materias</h1>
+        <h1>Buscar Materias y Asesorías</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
@@ -214,7 +214,6 @@
                         days.forEach(day => {
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
-                                td.textContent = subjectName;
                                 td.style.backgroundColor = '#dff0d8'; // green background for selected time
                             }
                             tr.appendChild(td);
@@ -240,7 +239,7 @@
 
             // Populate the advisory table with hours and available days
             const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
             times.forEach(time => {
                 const tr = document.createElement('tr');
@@ -266,8 +265,8 @@
         document.getElementById('confirmAdvisory').addEventListener('click', () => {
             const selectedCells = document.querySelectorAll('.advisory-table td.selected');
             selectedCells.forEach(cell => {
-                // Agregar la materia seleccionada al horario
-                alert('Materia seleccionada para asesoría');
+                // Agregar la asesoría seleccionada al horario
+                alert('Asesoría seleccionada');
             });
         });
 
