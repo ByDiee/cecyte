@@ -124,87 +124,90 @@
         const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
         const hours = ["07:00", "07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15"];
 
-        // Cargar materias desde Firebase
-        function loadSubjects() {
-            const subjectRef = database.ref('classSchedules');
-            subjectRef.once('value').then(snapshot => {
-                const subjects = snapshot.val();
-                const subjectsBody = document.getElementById('subjectsBody');
-                subjectsBody.innerHTML = '';
+function cargarMateriasDesdeFirebase() {
+    const databaseRef = firebase.database().ref("classSchedules");
 
-                for (const semester in subjects) {
-                    for (const group in subjects[semester]) {
-                        const schedule = {};
+    databaseRef.once("value", (snapshot) => {
+        const data = snapshot.val();
+        const materias = [];
 
-                        for (const day in subjects[semester][group]) {
-                            if (!schedule[day]) schedule[day] = [];
-                            for (const hour in subjects[semester][group][day]) {
-                                const subjectName = subjects[semester][group][day][hour];
-                                if (subjectName && subjectName.trim() !== "") {
-                                    schedule[day].push(`${hour}: ${subjectName}`);
-                                }
-                            }
-                        }
+        for (const semestre in data) {
+            for (const grupo in data[semestre]) {
+                for (const dia in data[semestre][grupo]) {
+                    for (const hora in data[semestre][grupo][dia]) {
+                        const materia = data[semestre][grupo][dia][hora];
 
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${Object.values(schedule).flat()[0]}</td>
-                            <td>${semester}</td>
-                            <td>${group}</td>
-                            <td>
-                                <table>
-                                    <thead>
-                                        <tr>${days.map(day => `<th>${day}</th>`).join('')}</tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>${days.map(day => `<td>${(schedule[day] || []).join('<br>')}</td>`).join('')}</tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td><button onclick="addSubjectToSchedule('${semester}', '${group}')">Agregar</button></td>
-                        `;
-                        subjectsBody.appendChild(row);
+                        // Omitir materias sin nombre
+                        if (materia.trim() === "") continue;
+
+                        materias.push({
+                            semestre,
+                            grupo,
+                            dia,
+                            hora,
+                            materia,
+                        });
                     }
                 }
-            });
+            }
         }
 
-        // Crear tabla de asesorías
-        function createAdvisoryTable() {
-            const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = '';
+        mostrarMateriasEnTabla(materias);
+    });
+}
 
-            hours.forEach(hour => {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${hour}</td>` + 
-                    days.map(day => `<td onclick="toggleSelection(this)" data-day="${day}" data-hour="${hour}"></td>`).join('');
-                advisoryBody.appendChild(row);
-            });
-        }
+// Mostrar materias en la tabla
+function mostrarMateriasEnTabla(materias) {
+    // Agrupar materias por día y ordenarlas por hora
+    const tabla = document.getElementById("tablaMaterias");
+    tabla.innerHTML = ""; // Limpiar tabla
 
-        // Seleccionar/desmarcar una celda
-        function toggleSelection(cell) {
-            cell.classList.toggle('selected');
-        }
+    const materiasPorDia = materias.reduce((acc, materia) => {
+        if (!acc[materia.dia]) acc[materia.dia] = [];
+        acc[materia.dia].push(materia);
+        return acc;
+    }, {});
 
-        // Confirmar asesorías seleccionadas
-        function confirmAdvisory() {
-            const selectedCells = document.querySelectorAll('.selected');
-            const advisoryData = {};
+    for (const dia in materiasPorDia) {
+        // Ordenar materias por hora
+        materiasPorDia[dia].sort((a, b) => parseInt(a.hora) - parseInt(b.hora));
 
-            selectedCells.forEach(cell => {
-                const day = cell.getAttribute('data-day');
-                const hour = cell.getAttribute('data-hour');
+        const filaDia = document.createElement("tr");
+        const celdaDia = document.createElement("td");
+        celdaDia.colSpan = 2;
+        celdaDia.textContent = dia;
+        celdaDia.style.fontWeight = "bold";
+        filaDia.appendChild(celdaDia);
+        tabla.appendChild(filaDia);
 
-                if (!advisoryData[day]) advisoryData[day] = {};
-                advisoryData[day][hour] = "Asesoría"; // Se guarda como si fuera una materia más.
-            });
+        materiasPorDia[dia].forEach(({ hora, materia, grupo, semestre }) => {
+            const fila = document.createElement("tr");
 
-            const advisoryRef = database.ref('classSchedules/3/F'); // Ajusta a tu estructura
-            advisoryRef.update(advisoryData);
+            const celdaHora = document.createElement("td");
+            celdaHora.textContent = `${hora.slice(0, 2)}:${hora.slice(2)}`;
+            fila.appendChild(celdaHora);
 
-            alert('Asesorías guardadas correctamente.');
-        }
+            const celdaMateria = document.createElement("td");
+            celdaMateria.textContent = `${materia} (Grupo ${grupo}, Semestre ${semestre})`;
+            fila.appendChild(celdaMateria);
+
+            tabla.appendChild(fila);
+        });
+    }
+}
+
+// Guardar asesorías como materias
+function guardarAsesoria(dia, hora, grupo, semestre, asesor) {
+    const databaseRef = firebase.database().ref(`classSchedules/${semestre}/${grupo}/${dia}/${hora}`);
+    databaseRef.set(asesor)
+        .then(() => {
+            alert("Asesoría guardada exitosamente como materia.");
+            cargarMateriasDesdeFirebase(); // Actualizar vista
+        })
+        .catch((error) => {
+            console.error("Error al guardar la asesoría:", error);
+        });
+}
 
         // Inicializar tablas
         loadSubjects();
