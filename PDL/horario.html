@@ -121,103 +121,87 @@
     </main>
 
     <script>
-        // Referencia a la base de datos Firebase
-        const dbRef = firebase.database().ref('classSchedules');  // Ruta correcta a la base de datos
-
-        // Obtener el currentUserId del usuario autenticado
-        const currentUserId = firebase.auth().currentUser.uid; // Obtener el ID del usuario autenticado
-
-        // Cargar materias de Firebase
-        dbRef.once('value').then(snapshot => {
-            const data = snapshot.val();
-            const subjectsBody = document.getElementById('subjectsBody');
-
-            // Iterar sobre semestres y grupos
-            for (const semester in data) {
-                for (const group in data[semester]) {
-                    const materias = data[semester][group];
+        // Función para cargar las materias desde Firebase
+        function cargarMaterias() {
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    const currentUserId = user.uid;
+                    const dbRef = firebase.database().ref('classSchedules');
                     
-                    // Iterar sobre los días de la semana para cada materia
-                    for (const day in materias) {
-                        const row = document.createElement('tr');
+                    dbRef.once('value').then(snapshot => {
+                        const data = snapshot.val();
+                        const subjectsBody = document.getElementById('subjectsBody');
 
-                        // Crear fila para el día
-                        const dayCell = document.createElement('td');
-                        dayCell.setAttribute('colspan', '5');
-                        dayCell.textContent = day;
-                        row.appendChild(dayCell);
-                        subjectsBody.appendChild(row);
+                        for (let grupo in data) {
+                            for (let dia in data[grupo]) {
+                                const materia = data[grupo][dia];
+                                // Omitir materias vacías
+                                if (!materia || materia === "") continue;
 
-                        // Crear mini tabla de horarios por materia
-                        const miniTableCell = document.createElement('td');
-                        const miniTable = document.createElement('table');
-                        miniTable.setAttribute('border', '1');
-                        miniTable.innerHTML = `
-                            <thead>
-                                <tr>
-                                    <th>Lunes</th>
-                                    <th>Martes</th>
-                                    <th>Miércoles</th>
-                                    <th>Jueves</th>
-                                    <th>Viernes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="miniTableBody"></tbody>
-                        `;
-                        const miniTableBody = miniTable.querySelector('tbody');
-                        
-                        // Iterar sobre las horas para cada día y agregar a la mini tabla
-                        for (const hour in materias[day]) {
-                            const materialRow = document.createElement('tr');
-                            const timeCell = document.createElement('td');
-                            const subjectCell = document.createElement('td');
+                                const row = document.createElement('tr');
+                                const cellMateria = document.createElement('td');
+                                const cellSemestre = document.createElement('td');
+                                const cellGrupo = document.createElement('td');
+                                const cellHorario = document.createElement('td');
+                                const cellButton = document.createElement('td');
+                                
+                                cellMateria.textContent = materia;
+                                cellSemestre.textContent = grupo; // Aquí lo puedes cambiar según tu estructura
+                                cellGrupo.textContent = grupo; // Aquí también
+                                
+                                // Crear tabla interna para los horarios
+                                const horarioTable = document.createElement('table');
+                                horarioTable.classList.add('nestedTable');
+                                const horarioHead = document.createElement('thead');
+                                const horarioHeadRow = document.createElement('tr');
+                                horarioHeadRow.innerHTML = `<th>Lunes</th><th>Martes</th><th>Miércoles</th><th>Jueves</th><th>Viernes</th>`;
+                                horarioHead.appendChild(horarioHeadRow);
+                                horarioTable.appendChild(horarioHead);
+                                
+                                const horarioBody = document.createElement('tbody');
+                                for (let hour in data[grupo][dia]) {
+                                    const hourRow = document.createElement('tr');
+                                    hourRow.innerHTML = `<td>${hour}</td><td>${data[grupo][dia][hour]}</td>`;
+                                    horarioBody.appendChild(hourRow);
+                                }
+                                horarioTable.appendChild(horarioBody);
+                                
+                                cellHorario.appendChild(horarioTable);
+                                
+                                const addButton = document.createElement('button');
+                                addButton.textContent = "Agregar al Horario";
+                                addButton.onclick = () => agregarMateriaAlHorario(currentUserId, grupo, materia);
+                                cellButton.appendChild(addButton);
 
-                            // Formatear la hora en formato hh:mm
-                            const formattedTime = `${hour.slice(0, 2)}:${hour.slice(2)}`;
-
-                            // Agregar hora y materia
-                            timeCell.textContent = formattedTime;
-                            subjectCell.textContent = materias[day][hour];
-                            materialRow.appendChild(timeCell);
-                            materialRow.appendChild(subjectCell);
-                            miniTableBody.appendChild(materialRow);
+                                row.appendChild(cellMateria);
+                                row.appendChild(cellSemestre);
+                                row.appendChild(cellGrupo);
+                                row.appendChild(cellHorario);
+                                row.appendChild(cellButton);
+                                subjectsBody.appendChild(row);
+                            }
                         }
-
-                        // Agregar mini tabla a la celda
-                        miniTableCell.appendChild(miniTable);
-                        row.appendChild(miniTableCell);
-                        subjectsBody.appendChild(row);
-                    }
+                    });
                 }
-            }
-        });
-
-        // Función para agregar materia al horario del usuario
-        function addToSchedule(subject, day, hour) {
-            const scheduleRef = firebase.database().ref('users/' + currentUserId + '/horario');
-
-            // Obtener el horario actual del usuario
-            scheduleRef.once('value', function(snapshot) {
-                const currentSchedule = snapshot.val() || {};
-
-                // Agregar la nueva materia y hora
-                if (!currentSchedule[day]) {
-                    currentSchedule[day] = [];
-                }
-
-                currentSchedule[day].push({ subject, hour });
-
-                // Actualizar el horario en la base de datos
-                scheduleRef.set(currentSchedule).then(() => {
-                    alert('Materia agregada al horario');
-                });
             });
         }
 
-        // Función para confirmar y agregar asesoría
-        function confirmAdvisory() {
-            // Lógica para agregar asesorías seleccionadas
+        // Función para agregar materia al horario del usuario
+        function agregarMateriaAlHorario(userId, grupo, materia) {
+            const horarioRef = firebase.database().ref(`users/${userId}/horario/${grupo}`);
+            horarioRef.push({
+                materia: materia,
+                dia: grupo,  // Aquí podrías mapear el día de la materia si es necesario
+                hora: new Date().toLocaleTimeString() // Ejemplo de hora, ajusta según tus necesidades
+            }).then(() => {
+                alert("Materia agregada al horario.");
+            }).catch(error => {
+                alert("Error al agregar materia: " + error.message);
+            });
         }
+
+        // Llamamos a cargar las materias cuando la página cargue
+        window.onload = cargarMaterias;
     </script>
 </body>
 </html>
