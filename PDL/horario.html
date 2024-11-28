@@ -85,13 +85,13 @@
             background-color: #ffffff;
         }
         .hours-table td.selected {
-            background-color: #dff0d8; /* green background for selected time */
+            background-color: #dff0d8; /* verde para selección */
         }
         .hours-table td:hover {
-            background-color: #d3f9d8; /* light green on hover */
+            background-color: #d3f9d8; /* verde claro al pasar el ratón */
         }
         .hours-table td.selected:hover {
-            background-color: #c1e7c1; /* stronger green when selected */
+            background-color: #c1e7c1; /* verde más fuerte cuando está seleccionado */
         }
         .hours-table td:hover, .hours-table td.selected {
             cursor: pointer;
@@ -119,7 +119,7 @@
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Se cargan las materias desde Firebase -->
+                <!-- Las materias se cargan desde Firebase aquí -->
             </tbody>
         </table>
 
@@ -136,7 +136,7 @@
                 </tr>
             </thead>
             <tbody id="advisoryBody">
-                <!-- Se cargan las horas de asesorías -->
+                <!-- Las horas de asesorías se cargan aquí -->
             </tbody>
         </table>
         <button id="confirmAdvisory" style="margin-top: 20px; padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer;">Confirmar Asesoría</button>
@@ -163,7 +163,7 @@
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
                                 
-                                // Eliminar recesos y materias en el rango de 10:00 a 10:29
+                                // Eliminar recesos y materias vacías
                                 if (subjectName === "" || (hour === "1000" || hour === "1030")) continue;
 
                                 if (!uniqueSubjects[subjectName]) {
@@ -184,7 +184,7 @@
                     }
                 }
 
-                const fragment = document.createDocumentFragment();  // Usamos un fragmento para mejorar el rendimiento.
+                const fragment = document.createDocumentFragment();
 
                 for (const subjectName in uniqueSubjects) {
                     const data = uniqueSubjects[subjectName];
@@ -210,7 +210,7 @@
                     const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
                     const trHead = document.createElement('tr');
-                    trHead.appendChild(document.createElement('th')); // Empty cell at the corner
+                    trHead.appendChild(document.createElement('th')); // Celda vacía en la esquina
                     days.forEach(day => {
                         const th = document.createElement('th');
                         th.textContent = day;
@@ -226,14 +226,20 @@
 
                         days.forEach(day => {
                             const td = document.createElement('td');
-                            td.dataset.time = time;
-                            td.dataset.day = day;
-                            td.addEventListener('mouseover', () => {
-                                td.style.backgroundColor = '#c1e7c1';  // Sombreado cuando se pasa el ratón
-                            });
-                            td.addEventListener('click', () => {
-                                td.classList.toggle('selected');  // Selección
-                            });
+                            if (data.schedule[day] && data.schedule[day].includes(time)) {
+                                td.textContent = subjectName;
+                                td.dataset.time = time;
+                                td.dataset.day = day;
+
+                                td.addEventListener('mouseover', () => {
+                                    td.style.backgroundColor = '#c1e7c1';  // Sombreado
+                                });
+
+                                td.addEventListener('click', () => {
+                                    td.classList.toggle('selected');
+                                });
+                            }
+
                             tr.appendChild(td);
                         });
 
@@ -252,7 +258,7 @@
             });
         }
 
-        // Confirmar selección de asesoría y cargar a BD
+        // Confirmar asesoría y cargar a la base de datos
         document.getElementById('confirmAdvisory').addEventListener('click', () => {
             const selectedCells = document.querySelectorAll('.advisory-table td.selected');
             if (selectedCells.length > 0) {
