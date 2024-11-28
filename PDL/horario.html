@@ -121,54 +121,63 @@
     </main>
 
     <script>
-firebase.database().ref('materias/3/F').once('value').then(snapshot => {
-    const materias = snapshot.val();
-    const tablaMaterias = document.getElementById('tablaMaterias');
+        // Cargar materias desde Firebase
+        firebase.database().ref('materias/3/F').once('value').then(snapshot => {
+            const materias = snapshot.val();
+            const tablaMaterias = document.getElementById('subjectsBody'); // Aquí debe coincidir el id con el HTML
 
-    // Recorrer los días de la semana
-    for (let dia in materias) {
-        const filaDia = document.createElement('tr');
-        const celdaDia = document.createElement('td');
-        celdaDia.setAttribute('colspan', '2');
-        celdaDia.textContent = dia;
-        filaDia.appendChild(celdaDia);
-        tablaMaterias.appendChild(filaDia);
+            // Verifica si 'materias' tiene datos
+            if (!materias) {
+                console.log('No se encontraron materias');
+                return;
+            }
 
-        // Recorrer las horas de cada día
-        for (let hora in materias[dia]) {
-            const materia = materias[dia][hora];
+            // Recorrer los días de la semana
+            for (let dia in materias) {
+                const filaDia = document.createElement('tr');
+                const celdaDia = document.createElement('td');
+                celdaDia.setAttribute('colspan', '2');
+                celdaDia.textContent = dia;
+                filaDia.appendChild(celdaDia);
+                tablaMaterias.appendChild(filaDia);
 
-            // Omitir las materias sin nombre (vacías)
-            if (materia === "") continue;
+                // Recorrer las horas de cada día
+                for (let hora in materias[dia]) {
+                    const materia = materias[dia][hora];
 
-            const filaMateria = document.createElement('tr');
-            const celdaHora = document.createElement('td');
-            const celdaMateria = document.createElement('td');
+                    // Omitir las materias sin nombre (vacías)
+                    if (materia === "") continue;
 
-            // Formatear la hora para que se muestre como hh:mm
-            const horaFormateada = `${hora.slice(0, 2)}:${hora.slice(2)}`;
+                    const filaMateria = document.createElement('tr');
+                    const celdaHora = document.createElement('td');
+                    const celdaMateria = document.createElement('td');
 
-            celdaHora.textContent = horaFormateada;
-            celdaMateria.textContent = materia;
+                    // Formatear la hora para que se muestre como hh:mm
+                    const horaFormateada = `${hora.slice(0, 2)}:${hora.slice(2)}`;
 
-            filaMateria.appendChild(celdaHora);
-            filaMateria.appendChild(celdaMateria);
-            tablaMaterias.appendChild(filaMateria);
+                    celdaHora.textContent = horaFormateada;
+                    celdaMateria.textContent = materia;
+
+                    filaMateria.appendChild(celdaHora);
+                    filaMateria.appendChild(celdaMateria);
+                    tablaMaterias.appendChild(filaMateria);
+                }
+            }
+        }).catch(error => {
+            console.error('Error al cargar las materias:', error);
+        });
+
+        // Función para agregar una asesoría (guarda directamente en el horario)
+        function agregarAsesoria(dia, hora, materia) {
+            const horarioRef = firebase.database().ref('materias/3/F/' + dia + '/' + hora);
+            horarioRef.set(materia, error => {
+                if (error) {
+                    alert('Error al agregar la asesoría.');
+                } else {
+                    alert('Asesoría agregada con éxito.');
+                }
+            });
         }
-    }
-});
-
-// Función para agregar una asesoría (guarda directamente en el horario)
-function agregarAsesoria(dia, hora, materia) {
-    const horarioRef = firebase.database().ref('materias/3/F/' + dia + '/' + hora);
-    horarioRef.set(materia, error => {
-        if (error) {
-            alert('Error al agregar la asesoría.');
-        } else {
-            alert('Asesoría agregada con éxito.');
-        }
-    });
-}
     </script>
 </body>
 </html>
