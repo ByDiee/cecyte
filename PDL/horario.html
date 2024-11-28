@@ -214,7 +214,6 @@
                         days.forEach(day => {
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
-                                td.textContent = subjectName;
                                 td.style.backgroundColor = '#dff0d8'; // green background for selected time
                             }
                             tr.appendChild(td);
