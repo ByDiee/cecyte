@@ -30,15 +30,20 @@
     <div id="qrContainer"></div> <!-- Aquí se generará el código QR -->
 
     <script>
-        // Obtener el horario del profesor
-        function getProfessorSchedule() {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser) {
+        // Observar cambios en la autenticación del usuario
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                console.log('Usuario autenticado:', user.uid);
+                // Llamar a la función para obtener el horario
+                getProfessorSchedule(user.uid);
+            } else {
                 console.error('No hay usuario autenticado.');
-                return;
+                alert('Debes iniciar sesión para generar el QR.');
             }
+        });
 
-            const userId = currentUser.uid;
+        // Obtener el horario del profesor
+        function getProfessorSchedule(userId) {
             const classRef = firebase.database().ref(`users/${userId}/classSchedules`);
             const currentTime = new Date();
             const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
@@ -51,6 +56,7 @@
                 let classData = snapshot.val();
                 if (!classData) {
                     console.error('No se encontraron horarios en la base de datos para este usuario.');
+                    alert('No se encontró un horario asociado a este usuario.');
                     return;
                 }
 
@@ -110,9 +116,6 @@
                 }
             });
         }
-
-        // Iniciar la generación del código QR
-        getProfessorSchedule();
     </script>
 </body>
 </html>
