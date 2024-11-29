@@ -240,7 +240,7 @@
 
             // Populate the advisory table with hours and available days
             const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-            const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
             times.forEach(time => {
                 const tr = document.createElement('tr');
@@ -262,8 +262,34 @@
         }
 
         document.getElementById('confirmAdvisory').addEventListener('click', function() {
-            alert('Asesoría confirmada');
-            // Aquí puedes agregar la lógica para guardar la selección en la base de datos
+            const currentUser = firebase.auth().currentUser;
+
+            if (currentUser) {
+                const selectedSubject = document.querySelector('.advisory-table .selected');
+                if (!selectedSubject) {
+                    alert('Por favor selecciona un horario.');
+                    return;
+                }
+
+                const subjectName = selectedSubject.textContent;
+                const semester = document.querySelector('td:nth-child(2)').textContent;
+                const group = document.querySelector('td:nth-child(3)').textContent;
+                const schedule = {};  // Here you'll need to map the days and hours selected
+
+                // Save to Firebase under the current teacher's schedule
+                firebase.database().ref('teachers/' + currentUser.uid + '/schedule').push({
+                    subjectName,
+                    semester,
+                    group,
+                    schedule
+                }).then(() => {
+                    alert('Horario confirmado y guardado!');
+                }).catch((error) => {
+                    alert('Error al guardar el horario: ' + error.message);
+                });
+            } else {
+                alert('Por favor inicia sesión.');
+            }
         });
 
         loadSubjects();
