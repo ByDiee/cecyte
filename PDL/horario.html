@@ -1,207 +1,120 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtrar Materias</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        .schedule-table, .advisory-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .schedule-table th, .schedule-table td, .advisory-table th, .advisory-table td {
-            border: 1px solid #dddddd;
-            padding: 10px;
-            text-align: center;
-        }
-        .schedule-table th, .advisory-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .schedule-table td, .advisory-table td {
-            background-color: #ffffff;
-        }
-        .schedule-table tr:nth-child(odd) td, .advisory-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
-        }
-        .schedule-table tr:hover, .advisory-table tr:hover {
-            background-color: #7d7d7d;
-            cursor: pointer;
-        }
-        .hours-table {
-            width: 100%;
-            border: 1px solid #dddddd;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .hours-table td.selected {
-            background-color: #dff0d8; /* Green background */
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Tabla</title>
+  <style>
+    .mini-table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .mini-table th, .mini-table td {
+      border: 1px solid #ddd;
+      text-align: center;
+      padding: 8px;
+    }
+    .mini-table .highlight {
+      background-color: #4caf50; /* Sombreado verde */
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Filtrar Materias</h1>
-    </header>
-    <nav>
-        <a href="perfilmaestro.html">Editar Perfil</a>
-        <a href="#">Registro de Asistencias</a>
-    </nav>
-    <main>
-        <table class="schedule-table">
-            <thead>
-                <tr>
-                    <th>Semestre</th>
-                    <th>Grupo</th>
-                    <th>Horas</th>
-                </tr>
-            </thead>
-            <tbody id="subjectBody">
-                <!-- Materias cargadas dinámicamente -->
-            </tbody>
-        </table>
-        <h2>Horas Disponibles</h2>
-        <table class="advisory-table">
-            <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Lunes</th>
-                    <th>Martes</th>
-                    <th>Miércoles</th>
-                    <th>Jueves</th>
-                    <th>Viernes</th>
-                </tr>
-            </thead>
-            <tbody id="advisoryBody">
-                <!-- Horas dinámicas -->
-            </tbody>
-        </table>
-        <button id="confirmAdvisory">Confirmar Materia</button>
-    </main>
+  <table class="mini-table" id="miniTable">
+    <thead>
+      <tr>
+        <th>Hora</th>
+        <th>Lunes</th>
+        <th>Martes</th>
+        <th>Miércoles</th>
+        <th>Jueves</th>
+        <th>Viernes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Las celdas se generarán dinámicamente -->
+    </tbody>
+  </table>
 
-    <script>
-        function loadSubjects() {
-            const subjectRef = firebase.database().ref('classSchedules');
-            subjectRef.once('value').then(snapshot => {
-                const subjects = snapshot.val();
-                const subjectBody = document.getElementById('subjectBody');
-                subjectBody.innerHTML = '';
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
+  <script>
+    // Configuración de Firebase (dejar como está)
+    const firebaseConfig = {
+      // Agregar tu configuración aquí
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
 
-                for (const semester in subjects) {
-                    for (const group in subjects[semester]) {
-                        for (const day in subjects[semester][group]) {
-                            for (const hour in subjects[semester][group][day]) {
-                                const subjectName = subjects[semester][group][day][hour];
+    // Obtener los datos de Firebase y generar la mini tabla
+    const userId = "ICFZFW6trcVIVRC378DlNVK0B1r2"; // Usuario ejemplo (reemplazar si es necesario)
+    const miniTableBody = document.querySelector('#miniTable tbody');
 
-                                if (subjectName === "" || subjectName === "RECESO") continue;
+    db.ref('classSchedules').once('value', snapshot => {
+      const data = snapshot.val();
+      const hours = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
-                                const row = document.createElement('tr');
-                                const semesterCell = document.createElement('td');
-                                const groupCell = document.createElement('td');
-                                const hourCell = document.createElement('td');
+      hours.forEach(hour => {
+        const row = document.createElement('tr');
+        const hourCell = document.createElement('td');
+        hourCell.textContent = formatHour(hour);
+        row.appendChild(hourCell);
 
-                                semesterCell.textContent = semester;
-                                groupCell.textContent = group;
-                                hourCell.textContent = `${hour.substring(0, 2)}:${hour.substring(2)}`;
+        ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"].forEach(day => {
+          const cell = document.createElement('td');
+          const subject = getSubject(data, day, hour);
 
-                                row.appendChild(semesterCell);
-                                row.appendChild(groupCell);
-                                row.appendChild(hourCell);
+          if (subject && subject !== "RECESO") {
+            cell.classList.add('highlight');
+            cell.dataset.day = day;
+            cell.dataset.hour = hour;
+          }
 
-                                subjectBody.appendChild(row);
-
-                                row.addEventListener('click', () => {
-                                    selectSubject(subjectName, semester, group, day, hour);
-                                });
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function selectSubject(subjectName, semester, group, day, hour) {
-            const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = '';
-
-            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-            days.forEach(dayName => {
-                const row = document.createElement('tr');
-                const timeCell = document.createElement('td');
-                timeCell.textContent = `${hour.substring(0, 2)}:${hour.substring(2)}`;
-                row.appendChild(timeCell);
-
-                const dayCell = document.createElement('td');
-                dayCell.textContent = dayName === day ? subjectName : '';
-                row.appendChild(dayCell);
-
-                advisoryBody.appendChild(row);
-            });
-        }
-
-        document.getElementById('confirmAdvisory').addEventListener('click', () => {
-            const currentUser = firebase.auth().currentUser;
-
-            if (currentUser) {
-                const userId = currentUser.uid;
-                const updates = {};
-
-                const advisoryBody = document.getElementById('advisoryBody');
-                const rows = advisoryBody.querySelectorAll('tr');
-
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    const time = cells[0].textContent.replace(':', '');
-                    const day = cells[1].textContent;
-
-                    if (day) {
-                        updates[`users/${userId}/horario/${day}/${time}`] = day;
-                    }
-                });
-
-                firebase.database().ref().update(updates).then(() => {
-                    alert('Horario actualizado correctamente.');
-                }).catch(error => {
-                    console.error('Error al actualizar:', error);
-                });
-            } else {
-                alert('No se encontró un usuario autenticado.');
-            }
+          row.appendChild(cell);
         });
 
-        loadSubjects();
-    </script>
+        miniTableBody.appendChild(row);
+      });
+
+      // Agregar evento a las celdas destacadas para cargar materias al horario
+      document.querySelectorAll('.highlight').forEach(cell => {
+        cell.addEventListener('click', () => {
+          const day = cell.dataset.day;
+          const hour = cell.dataset.hour;
+
+          const newSubject = prompt("Ingresa el nombre de la materia que deseas agregar:");
+          if (newSubject) {
+            addSubjectToSchedule(userId, day, hour, newSubject);
+            alert(`Materia "${newSubject}" agregada a ${day} a las ${formatHour(hour)}`);
+          }
+        });
+      });
+    });
+
+    // Obtener el nombre de la materia según día y hora
+    function getSubject(data, day, hour) {
+      for (const semester in data) {
+        for (const group in data[semester]) {
+          const subject = data[semester][group][day]?.[hour];
+          if (subject) return subject;
+        }
+      }
+      return null;
+    }
+
+    // Agregar materia al horario del profesor
+    function addSubjectToSchedule(userId, day, hour, subject) {
+      const refPath = `users/${userId}/horario/${day}/${hour}`;
+      db.ref(refPath).set(subject);
+    }
+
+    // Formatear horas de "HHMM" a "HH:mm"
+    function formatHour(hour) {
+      return `${hour.slice(0, 2)}:${hour.slice(2)}`;
+    }
+  </script>
 </body>
 </html>
