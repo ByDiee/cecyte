@@ -153,7 +153,7 @@
 
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
-                                if (subjectName === "" || subjectName === "RECESO") continue; // Ignoramos recesos o materias sin nombre
+                                if (subjectName === "") continue; // Ignoramos recesos o materias sin nombre
 
                                 if (!uniqueSubjects[subjectName]) {
                                     uniqueSubjects[subjectName] = {
@@ -186,7 +186,7 @@
                         selectSubject(subjectName, data.semester, data.group, data.schedule);
                     });
 
-                    subjectCell.textContent = ''; // No mostrar el nombre de la materia
+                    subjectCell.textContent = subjectName;
                     semesterCell.textContent = data.semester;
                     groupCell.textContent = data.group;
 
@@ -214,6 +214,7 @@
                         days.forEach(day => {
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
+                                td.textContent = subjectName;
                                 td.style.backgroundColor = '#dff0d8'; // green background for selected time
                             }
                             tr.appendChild(td);
@@ -235,27 +236,38 @@
 
         function selectSubject(subjectName, semester, group, schedule) {
             const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = ''; // Clear advisory body
+            advisoryBody.innerHTML = ''; // Clear previous content
 
-            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+            // Populate the advisory table with hours and available days
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
             const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
-            const row = document.createElement('tr');
-            const subjectCell = document.createElement('td');
-            subjectCell.textContent = subjectName;
+            times.forEach(time => {
+                const tr = document.createElement('tr');
+                const tdTime = document.createElement('td');
+                tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                tr.appendChild(tdTime);
 
-            days.forEach(day => {
-                const td = document.createElement('td');
-                td.addEventListener('click', () => {
-                    td.classList.toggle('selected');
+                days.forEach(day => {
+                    const td = document.createElement('td');
+                    if (schedule[day] && schedule[day].includes(time)) {
+                        td.textContent = subjectName;
+                        td.classList.add('selected');
+                    }
+                    tr.appendChild(td);
                 });
-                row.appendChild(td);
-            });
 
-            advisoryBody.appendChild(row);
+                advisoryBody.appendChild(tr);
+            });
         }
 
+        // Inicialización
         loadSubjects();
+
+        // Confirmar asesoría
+        document.getElementById('confirmAdvisory').addEventListener('click', () => {
+            alert("Asesoría confirmada. Información guardada.");
+        });
     </script>
 </body>
 </html>
