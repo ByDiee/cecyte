@@ -85,7 +85,7 @@
             background-color: #ffffff;
         }
         .hours-table td.selected {
-            background-color: #dff0d8; /* Green background for selected time */
+            background-color: #dff0d8; /* green background for selected time */
         }
     </style>
 </head>
@@ -113,27 +113,10 @@
                 <!-- Se cargan las materias desde Firebase -->
             </tbody>
         </table>
-
-        <h2>Asesorías</h2>
-        <table class="hours-table">
-            <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Lunes</th>
-                    <th>Martes</th>
-                    <th>Miércoles</th>
-                    <th>Jueves</th>
-                    <th>Viernes</th>
-                </tr>
-            </thead>
-            <tbody id="advisoryBody">
-                <!-- Se cargan las horas de asesorías -->
-            </tbody>
-        </table>
-        <button id="confirmAdvisory" style="margin-top: 20px; padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer;">Confirmar Asesoría</button>
     </main>
 
     <script>
+        // Filtrando "Miercoles" sin acento y recesos vacíos
         function loadSubjects() {
             const subjectRef = firebase.database().ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
@@ -152,7 +135,7 @@
 
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
-                                if (subjectName === "" || hour === "1000") continue; // Ignoramos recesos o la hora 10:00
+                                if (subjectName === "" || hour === "1000") continue; // Ignoramos recesos o materias sin nombre, y las 10:00
 
                                 if (!uniqueSubjects[subjectName]) {
                                     uniqueSubjects[subjectName] = {
@@ -214,7 +197,7 @@
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
                                 td.textContent = subjectName;
-                                td.style.backgroundColor = '#dff0d8'; // Green background for selected time
+                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
                             }
                             tr.appendChild(td);
                         });
@@ -234,33 +217,28 @@
         }
 
         function selectSubject(subjectName, semester, group, schedule) {
-            const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = ''; // Clear previous content
+            const currentUser = firebase.auth().currentUser;
+            if (currentUser) {
+                // Add "Receso" to the schedule if it's the first time a subject is selected
+                if (!schedule["Lunes"]) {
+                    schedule["Lunes"] = ["1000"]; // Add "Receso" at 10:00
+                }
 
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-
-            times.forEach(time => {
-                const tr = document.createElement('tr');
-                const tdTime = document.createElement('td');
-                tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                tr.appendChild(tdTime);
-
-                days.forEach(day => {
-                    const td = document.createElement('td');
-                    if (schedule[day] && schedule[day].includes(time)) {
-                        td.classList.add('selected');
-                    }
-                    tr.appendChild(td);
+                // Save selected subject to Firebase under the current teacher's schedule
+                firebase.database().ref('teachers/' + currentUser.uid + '/schedule').push({
+                    subjectName,
+                    semester,
+                    group,
+                    schedule
+                }).then(() => {
+                    alert('Materia guardada exitosamente en Firebase!');
+                }).catch((error) => {
+                    alert('Error al guardar la materia: ' + error.message);
                 });
-
-                advisoryBody.appendChild(tr);
-            });
+            } else {
+                alert('Por favor inicia sesión.');
+            }
         }
-
-        document.getElementById('confirmAdvisory').addEventListener('click', () => {
-            alert("¡Asesoría confirmada!");
-        });
 
         loadSubjects();
     </script>
