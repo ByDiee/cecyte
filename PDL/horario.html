@@ -134,7 +134,6 @@
     </main>
 
     <script>
-        // Filtrando "Miercoles" sin acento y recesos vacíos
         function loadSubjects() {
             const subjectRef = firebase.database().ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
@@ -193,7 +192,7 @@
                     const hoursTable = document.createElement('table');
                     hoursTable.classList.add('hours-table');
 
-                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                    const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
                     const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
                     const trHead = document.createElement('tr');
@@ -235,39 +234,38 @@
         }
 
         function selectSubject(subjectName, semester, group, schedule) {
-            const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = ''; // Clear previous content
+            const currentUser = firebase.auth().currentUser;
 
-            // Populate the advisory table with hours and available days
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            if (currentUser) {
+                const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
 
-            times.forEach(time => {
-                const tr = document.createElement('tr');
-                const tdTime = document.createElement('td');
-                tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                tr.appendChild(tdTime);
-
-                days.forEach(day => {
-                    const td = document.createElement('td');
-                    if (schedule[day] && schedule[day].includes(time)) {
-                        td.textContent = subjectName;
-                        td.classList.add('selected');
+                // Check if the subject already exists in the user's schedule
+                for (const day in schedule) {
+                    for (const hour of schedule[day]) {
+                        if (userScheduleRef.child(day).child(hour).exists()) {
+                            alert(`La hora ${hour} del ${day} ya tiene una materia asignada.`);
+                            return;
+                        }
                     }
-                    tr.appendChild(td);
-                });
+                }
 
-                advisoryBody.appendChild(tr);
-            });
+                // Update the user's schedule in Firebase
+                userScheduleRef.update(schedule).then(() => {
+                    alert(`Materia ${subjectName} añadida a tu horario.`);
+                }).catch(error => {
+                    console.error(error);
+                    alert("Hubo un error al añadir la materia.");
+                });
+            } else {
+                alert("Debes estar autenticado para agregar materias.");
+            }
         }
 
-        // Inicialización
-        loadSubjects();
-
-        // Confirmar asesoría
         document.getElementById('confirmAdvisory').addEventListener('click', () => {
-            alert("Asesoría confirmada. Información guardada.");
+            alert("Asesoría confirmada.");
         });
+
+        window.onload = loadSubjects;
     </script>
 </body>
 </html>
