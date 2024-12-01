@@ -135,6 +135,21 @@
                     }
                 }
 
+                // Cargar automáticamente "Receso" en las horas de 10:00 a 10:30
+                const recessHours = ["1000", "1030"];
+                const recess = {
+                    schedule: {
+                        "Lunes": recessHours,
+                        "Martes": recessHours,
+                        "Miercoles": recessHours,
+                        "Jueves": recessHours,
+                        "Viernes": recessHours
+                    }
+                };
+
+                // Asignamos "Receso" al horario
+                uniqueSubjects["Receso"] = recess;
+
                 for (const subjectName in uniqueSubjects) {
                     const data = uniqueSubjects[subjectName];
 
@@ -176,8 +191,7 @@
                         days.forEach(day => {
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
-                                td.textContent = subjectName;
-                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
+                                td.style.backgroundColor = '#dff0d8'; // Verde cuando toca
                             }
                             tr.appendChild(td);
                         });
