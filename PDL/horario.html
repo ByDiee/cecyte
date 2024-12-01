@@ -138,9 +138,6 @@
     </main>
 
     <script>
-        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-        const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-
         function loadSubjects() {
             const subjectRef = firebase.database().ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
@@ -148,84 +145,156 @@
                 const subjectBody = document.getElementById('subjectBody');
                 subjectBody.innerHTML = '';
 
+                const uniqueSubjects = {};
+
                 for (let semester in subjects) {
                     for (let group in subjects[semester]) {
+                        let scheduleMatrix = {};
+
                         for (let day in subjects[semester][group]) {
-                            // Process subject and display in the table
+                            scheduleMatrix[day] = {};
+
+                            for (let hour in subjects[semester][group][day]) {
+                                const subjectName = subjects[semester][group][day][hour];
+                                if (subjectName === "") continue; // Ignoramos recesos o materias sin nombre
+
+                                if (!uniqueSubjects[subjectName]) {
+                                    uniqueSubjects[subjectName] = {
+                                        semester: semester,
+                                        group: group,
+                                        schedule: {}
+                                    };
+                                }
+
+                                if (!uniqueSubjects[subjectName].schedule[day]) {
+                                    uniqueSubjects[subjectName].schedule[day] = [];
+                                }
+
+                                uniqueSubjects[subjectName].schedule[day].push(hour);
+                            }
                         }
                     }
+                }
+
+                for (const subjectName in uniqueSubjects) {
+                    const data = uniqueSubjects[subjectName];
+
+                    const row = document.createElement('tr');
+                    const subjectCell = document.createElement('td');
+                    const semesterCell = document.createElement('td');
+                    const groupCell = document.createElement('td');
+                    const hoursCell = document.createElement('td');
+
+                    row.addEventListener('click', () => {
+                        selectSubject(subjectName, data.semester, data.group, data.schedule);
+                    });
+
+                    subjectCell.textContent = subjectName;
+                    semesterCell.textContent = data.semester;
+                    groupCell.textContent = data.group;
+
+                    const hoursTable = document.createElement('table');
+                    hoursTable.classList.add('hours-table');
+
+                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                    const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+                    const trHead = document.createElement('tr');
+                    trHead.appendChild(document.createElement('th')); // Empty cell at the corner
+                    days.forEach(day => {
+                        const th = document.createElement('th');
+                        th.textContent = day;
+                        trHead.appendChild(th);
+                    });
+                    hoursTable.appendChild(trHead);
+
+                    times.forEach(time => {
+                        const tr = document.createElement('tr');
+                        const tdTime = document.createElement('td');
+                        tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                        tr.appendChild(tdTime);
+
+                        days.forEach(day => {
+                            const td = document.createElement('td');
+                            if (data.schedule[day] && data.schedule[day].includes(time)) {
+                                td.textContent = subjectName;
+                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
+                            }
+                            tr.appendChild(td);
+                        });
+
+                        hoursTable.appendChild(tr);
+                    });
+
+                    hoursCell.appendChild(hoursTable);
+                    row.appendChild(subjectCell);
+                    row.appendChild(semesterCell);
+                    row.appendChild(groupCell);
+                    row.appendChild(hoursCell);
+
+                    subjectBody.appendChild(row);
                 }
             });
         }
 
-        function loadAdvisorySchedule() {
-            const user = firebase.auth().currentUser;
-            if (!user) return;
+        function selectSubject(subjectName, semester, group, schedule) {
+            const advisoryBody = document.getElementById('advisoryBody');
+            advisoryBody.innerHTML = ''; // Clear previous content
 
-            const advisoryRef = firebase.database().ref('teachers/' + user.uid + '/schedule');
-            advisoryRef.once('value').then(snapshot => {
-                const schedule = snapshot.val() || {};
-                const advisoryBody = document.getElementById('advisoryBody');
-                advisoryBody.innerHTML = '';
+            // Populate the advisory table with hours and available days
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
-                times.forEach(time => {
-                    const tr = document.createElement('tr');
-                    const tdTime = document.createElement('td');
-                    tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                    tr.appendChild(tdTime);
+            times.forEach(time => {
+                const tr = document.createElement('tr');
+                const tdTime = document.createElement('td');
+                tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                tr.appendChild(tdTime);
 
-                    days.forEach(day => {
-                        const td = document.createElement('td');
-                        const isOccupied = schedule[day] && schedule[day].includes(time);
-                        td.className = isOccupied ? 'occupied' : '';
-                        td.addEventListener('click', () => {
-                            if (!td.classList.contains('occupied')) {
-                                td.classList.toggle('selected');
-                            }
-                        });
-                        tr.appendChild(td);
-                    });
-
-                    advisoryBody.appendChild(tr);
+                days.forEach(day => {
+                    const td = document.createElement('td');
+                    if (schedule[day] && schedule[day].includes(time)) {
+                        td.textContent = subjectName;
+                        td.classList.add('selected');
+                    }
+                    tr.appendChild(td);
                 });
+
+                advisoryBody.appendChild(tr);
             });
         }
 
-        document.getElementById('confirmAdvisory').addEventListener('click', () => {
-            const user = firebase.auth().currentUser;
-            if (!user) {
-                alert('Por favor, inicia sesión.');
-                return;
-            }
+        document.getElementById('confirmAdvisory').addEventListener('click', function() {
+            const currentUser = firebase.auth().currentUser;
 
-            const advisoryBody = document.getElementById('advisoryBody');
-            const selectedCells = advisoryBody.querySelectorAll('td.selected');
-            const schedule = {};
+            if (currentUser) {
+                const selectedSubject = document.querySelector('.advisory-table .selected');
+                if (!selectedSubject) {
+                    alert('Por favor selecciona un horario.');
+                    return;
+                }
 
-            selectedCells.forEach(cell => {
-                const day = cell.dataset.day;
-                const time = cell.dataset.time;
-                if (!schedule[day]) schedule[day] = [];
-                schedule[day].push(time);
-            });
+                const subjectName = selectedSubject.textContent;
+                const semester = document.querySelector('td:nth-child(2)').textContent;
+                const group = document.querySelector('td:nth-child(3)').textContent;
+                const schedule = {};  // Aquí mapea los días y horas seleccionadas
 
-            const advisoryRef = firebase.database().ref('teachers/' + user.uid + '/schedule');
-            advisoryRef.set(schedule).then(() => {
-                alert('¡Horario confirmado correctamente!');
-                window.location.href = 'pagina1.html';
-            }).catch(error => {
-                alert('Error al guardar: ' + error.message);
-            });
-        });
-
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                loadSubjects();
-                loadAdvisorySchedule();
+                // Se guarda en Firebase bajo el horario del profesor
+                firebase.database().ref('teachers/' + currentUser.uid + '/schedule/' + subjectName).set({
+                    semester: semester,
+                    group: group,
+                    schedule: schedule
+                }).then(() => {
+                    alert('Horario de asesoría confirmado y guardado!');
+                }).catch((error) => {
+                    alert('Error al guardar el horario: ' + error.message);
+                });
             } else {
-                alert('Por favor, inicia sesión.');
+                alert('Por favor inicia sesión.');
             }
         });
+
+        loadSubjects();
     </script>
 </body>
 </html>
