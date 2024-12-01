@@ -35,28 +35,28 @@
         main {
             padding: 20px;
         }
-        .schedule-table, .advisory-table {
+        .schedule-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .schedule-table th, .schedule-table td, .advisory-table th, .advisory-table td {
+        .schedule-table th, .schedule-table td {
             border: 1px solid #dddddd;
             padding: 10px;
             text-align: center;
         }
-        .schedule-table th, .advisory-table th {
+        .schedule-table th {
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .schedule-table td, .advisory-table td {
+        .schedule-table td {
             background-color: #ffffff;
         }
-        .schedule-table tr:nth-child(odd) td, .advisory-table tr:nth-child(odd) td {
+        .schedule-table tr:nth-child(odd) td {
             background-color: #f9f9f9;
         }
-        .schedule-table tr:hover, .advisory-table tr:hover {
+        .schedule-table tr:hover {
             background-color: #7d7d7d;
             cursor: pointer;
         }
@@ -66,26 +66,6 @@
             width: 100%;
             font-size: 16px;
             border: 1px solid #ccc;
-        }
-        .hours-table {
-            width: 100%;
-            border: 1px solid #dddddd;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .hours-table th, .hours-table td {
-            padding: 5px;
-            border: 1px solid #dddddd;
-            text-align: center;
-        }
-        .hours-table th {
-            background-color: #f0f0f0;
-        }
-        .hours-table td {
-            background-color: #ffffff;
-        }
-        .hours-table td.selected {
-            background-color: #dff0d8; /* green background for selected time */
         }
     </style>
 </head>
@@ -113,28 +93,10 @@
                 <!-- Se cargan las materias desde Firebase -->
             </tbody>
         </table>
-
-        <h2>Asesorías</h2>
-        <table class="advisory-table">
-            <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Lunes</th>
-                    <th>Martes</th>
-                    <th>Miércoles</th>
-                    <th>Jueves</th>
-                    <th>Viernes</th>
-                </tr>
-            </thead>
-            <tbody id="advisoryBody">
-                <!-- Se cargan las horas de asesorías -->
-            </tbody>
-        </table>
-        <button id="confirmAdvisory" style="margin-top: 20px; padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer;">Confirmar Asesoría</button>
     </main>
 
     <script>
-        // Filtrando "Miercoles" sin acento y recesos vacíos
+        // Cargar las materias desde Firebase
         function loadSubjects() {
             const subjectRef = firebase.database().ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
@@ -194,7 +156,7 @@
                     hoursTable.classList.add('hours-table');
 
                     const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-                    const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+                    const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
                     const trHead = document.createElement('tr');
                     trHead.appendChild(document.createElement('th')); // Empty cell at the corner
@@ -235,67 +197,53 @@
         }
 
         function selectSubject(subjectName, semester, group, schedule) {
-            const advisoryBody = document.getElementById('advisoryBody');
-            advisoryBody.innerHTML = ''; // Clear previous content
-
-            // Populate the advisory table with hours and available days
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-
-            times.forEach(time => {
-                const tr = document.createElement('tr');
-                const tdTime = document.createElement('td');
-                tdTime.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                tr.appendChild(tdTime);
-
-                days.forEach(day => {
-                    const td = document.createElement('td');
-                    if (schedule[day] && schedule[day].includes(time) && time !== "1000" && time !== "1030") {
-                        td.textContent = subjectName;
-                        td.classList.add('selected');
-                    } else if (time === "1000" || time === "1030") {
-                        td.textContent = "RECESO";
-                        td.style.backgroundColor = "#cccccc"; // Gray color for break
-                    }
-                    tr.appendChild(td);
-                });
-
-                advisoryBody.appendChild(tr);
-            });
-        }
-
-        document.getElementById('confirmAdvisory').addEventListener('click', function() {
             const currentUser = firebase.auth().currentUser;
 
             if (currentUser) {
-                const selectedSubject = document.querySelector('.advisory-table .selected');
-                if (!selectedSubject) {
-                    alert('Por favor selecciona un horario.');
-                    return;
-                }
+                const userRef = firebase.database().ref('users/' + currentUser.uid + '/horario');
+                userRef.once('value').then(snapshot => {
+                    const userSchedule = snapshot.val() || {};
+                    let isConflict = false;
 
-                const subjectName = selectedSubject.textContent;
-                const semester = document.querySelector('td:nth-child(2)').textContent;
-                const group = document.querySelector('td:nth-child(3)').textContent;
-                const schedule = {};  // Here you'll need to map the days and hours selected
+                    // Revisamos si hay conflicto con el horario
+                    for (let day in schedule) {
+                        schedule[day].forEach(hour => {
+                            if (userSchedule[day] && userSchedule[day][hour]) {
+                                isConflict = true; // Si ya hay algo en esa hora, hay conflicto
+                            }
+                        });
+                    }
 
-                // Save to Firebase under the current teacher's schedule
-                firebase.database().ref('teachers/' + currentUser.uid + '/schedule').push({
-                    subjectName,
-                    semester,
-                    group,
-                    schedule
-                }).then(() => {
-                    alert('Horario confirmado y guardado!');
-                }).catch((error) => {
-                    alert('Error al guardar el horario: ' + error.message);
+                    if (isConflict) {
+                        alert('¡Advertencia! Hay un conflicto con el horario, esa hora ya está ocupada.');
+                    } else {
+                        // Agregar la materia al horario del profesor
+                        for (let day in schedule) {
+                            if (!userSchedule[day]) {
+                                userSchedule[day] = {};
+                            }
+
+                            schedule[day].forEach(hour => {
+                                userSchedule[day][hour] = subjectName; // Agregamos la materia en la hora seleccionada
+                            });
+                        }
+
+                        // Guardar el horario actualizado en Firebase
+                        firebase.database().ref('users/' + currentUser.uid + '/horario').set(userSchedule)
+                            .then(() => {
+                                alert('Materia registrada correctamente en tu horario.');
+                            })
+                            .catch((error) => {
+                                alert('Error al guardar la materia: ' + error.message);
+                            });
+                    }
                 });
             } else {
-                alert('Por favor inicia sesión.');
+                alert('Por favor, inicia sesión.');
             }
-        });
+        }
 
-        loadSubjects();
+        loadSubjects(); // Cargar las materias desde Firebase
     </script>
 </body>
 </html>
