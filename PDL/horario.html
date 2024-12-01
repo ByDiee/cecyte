@@ -218,21 +218,35 @@
         function selectSubject(subjectName, semester, group, schedule) {
             const currentUser = firebase.auth().currentUser;
             if (currentUser) {
-                // Add "Receso" to the schedule if it's the first time a subject is selected
-                if (!schedule["Lunes"]) {
-                    schedule["Lunes"] = ["1000"]; // Add "Receso" at 10:00
-                }
+                const userRef = firebase.database().ref('users/' + currentUser.uid);
 
-                // Save selected subject and "Receso" to Firebase under the current teacher's schedule
-                firebase.database().ref('teachers/' + currentUser.uid + '/schedule').push({
-                    subjectName,
-                    semester,
-                    group,
-                    schedule
-                }).then(() => {
-                    alert('Materia guardada exitosamente en Firebase!');
-                }).catch((error) => {
-                    alert('Error al guardar la materia: ' + error.message);
+                userRef.once('value').then(snapshot => {
+                    const userData = snapshot.val();
+
+                    // Add "Receso" to the schedule at 10:00 if it's the first time selecting a subject
+                    if (!userData.horario) {
+                        userData.horario = {};
+                    }
+
+                    if (!userData.horario["Lunes"]) {
+                        userData.horario["Lunes"] = {};
+                    }
+
+                    if (!userData.horario["Lunes"]["1000"]) {
+                        userData.horario["Lunes"]["1000"] = "Receso"; // Adding Receso at 10:00
+                    }
+
+                    // Save the selected subject and "Receso" to Firebase
+                    if (!userData.horario[semester]) {
+                        userData.horario[semester] = {};
+                    }
+
+                    userData.horario[semester][group] = schedule;
+                    userRef.set(userData).then(() => {
+                        alert('Materia y horario guardados exitosamente en Firebase!');
+                    }).catch((error) => {
+                        alert('Error al guardar la materia: ' + error.message);
+                    });
                 });
             } else {
                 alert('Por favor inicia sesión.');
