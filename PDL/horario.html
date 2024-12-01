@@ -196,7 +196,6 @@
                         days.forEach(day => {
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
-                                td.textContent = subjectName;
                                 td.style.backgroundColor = '#dff0d8'; // green background for selected time
                             }
                             tr.appendChild(td);
@@ -224,7 +223,7 @@
                     schedule["Lunes"] = ["1000"]; // Add "Receso" at 10:00
                 }
 
-                // Save selected subject to Firebase under the current teacher's schedule
+                // Save selected subject and "Receso" to Firebase under the current teacher's schedule
                 firebase.database().ref('teachers/' + currentUser.uid + '/schedule').push({
                     subjectName,
                     semester,
