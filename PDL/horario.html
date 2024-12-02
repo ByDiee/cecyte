@@ -50,11 +50,8 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .schedule-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
-        }
         .schedule-table tr:hover {
-            background-color: #7d7d7d !important; /* Hover universal */
+            background-color: #7d7d7d;
             cursor: pointer;
         }
         #searchBar {
@@ -166,8 +163,8 @@
 
                                     days.forEach(day => {
                                         const td = document.createElement('td');
-                                        if (subjects[semester][group][day] && subjects[semester][group][day][time]) {
-                                            td.classList.add('selected'); // Marcar en verde siempre que haya dato
+                                        if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
+                                            td.classList.add('selected'); // Marcar en verde
                                         }
                                         tr.appendChild(td);
                                     });
@@ -212,8 +209,8 @@
 
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
-                
-                // Verificación de colisiones de horario: revisar todos los días y horas
+
+                // Verificación de colisiones de horario: revisar todos los días y horas de la materia seleccionada
                 let isConflict = false;
                 const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
                 days.forEach(day => {
