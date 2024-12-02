@@ -204,59 +204,37 @@
             });
         }
 
-// Guardar materia seleccionada en Firebase
-function saveToSchedule(subjectName, semester, group) {
-    const currentUser = firebase.auth().currentUser;
-
-    if (!currentUser) {
-        alert('Por favor inicia sesión.');
-        return;
-    }
-
-    const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
+function saveToSchedule(subjectName, semester, group, selectedDay, selectedHour) {
+    const userScheduleRef = firebase.database().ref('users/' + currentUserId + '/horario');
 
     userScheduleRef.once('value').then(snapshot => {
         const existingSchedule = snapshot.val() || {};
-        
-        // Días y horas en los que la materia está programada
-        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-        const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
+        // Verificación de colisiones de horario
         let isConflict = false;
-
-        // Verificar si hay conflictos en cualquier día y hora
+        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
         days.forEach(day => {
-            times.forEach(time => {
-                // Comprobamos si esta materia está programada en este día y hora
-                if (existingSchedule[day] && existingSchedule[day][time]) {
-                    isConflict = true; // Ya hay una materia asignada en esa hora
-                }
-            });
+            if (existingSchedule[day] && existingSchedule[day][selectedHour]) {
+                isConflict = true; // Ya hay una materia en ese horario
+            }
         });
 
         if (isConflict) {
-            alert('Hay un conflicto de horarios, no se puede asignar la materia.');
+            alert(`Ya tienes una materia asignada el ${selectedDay} a las ${selectedHour.substring(0, 2)}:${selectedHour.substring(2)}.`);
             return;
         }
 
-        // Asignamos todas las clases de la materia en todos los días y horas correspondientes
-        days.forEach(day => {
-            times.forEach(time => {
-                // Comprobamos si esta materia está programada en este día y hora
-                if (existingSchedule[day] && existingSchedule[day][time] === "") {
-                    // Si la hora está disponible (vacía), asignamos la materia
-                    if (!existingSchedule[day]) {
-                        existingSchedule[day] = {};  // Crear el día si no existe
-                    }
-                    existingSchedule[day][time] = subjectName; // Asignar la materia a la hora correspondiente
-                }
-            });
-        });
+        // Asignar la materia a todos los días correspondientes
+        if (!existingSchedule[selectedDay]) {
+            existingSchedule[selectedDay] = {};
+        }
+
+        existingSchedule[selectedDay][selectedHour] = subjectName;
 
         userScheduleRef.set(existingSchedule)
             .then(() => {
-                alert('Todas las clases de la materia han sido asignadas con éxito.');
-                window.location.href = 'pagina1.html'; // Redirigir
+                alert('Materia asignada con éxito.');
+                // Redirigir o actualizar la interfaz según sea necesario
             })
             .catch(error => {
                 alert('Error al guardar la materia: ' + error.message);
