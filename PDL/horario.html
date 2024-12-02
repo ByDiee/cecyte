@@ -134,7 +134,7 @@
     </main>
 
     <script>
-        // Filtrando materias para ignorar vacías ("") y la hora exacta de las 10:00
+        // Filtrar materias y permitir selección de fila
         function loadSubjects() {
             const subjectRef = firebase.database().ref('classSchedules');
             subjectRef.once('value').then(snapshot => {
@@ -173,13 +173,14 @@
                     const data = uniqueSubjects[subjectName];
     
                     const row = document.createElement('tr');
+                    row.classList.add('subject-row');
                     const subjectCell = document.createElement('td');
                     const semesterCell = document.createElement('td');
                     const groupCell = document.createElement('td');
                     const hoursCell = document.createElement('td');
     
                     row.addEventListener('click', () => {
-                        selectSubject(subjectName, data.semester, data.group, data.schedule);
+                        selectSubject(row, subjectName, data);
                     });
     
                     subjectCell.textContent = subjectName;
@@ -211,7 +212,7 @@
                             const td = document.createElement('td');
                             if (data.schedule[day] && data.schedule[day].includes(time)) {
                                 td.textContent = subjectName;
-                                td.style.backgroundColor = '#dff0d8'; // green background for selected time
+                                td.style.backgroundColor = '#dff0d8'; // verde para materia seleccionada
                             }
                             tr.appendChild(td);
                         });
@@ -230,46 +231,46 @@
             });
         }
     
-        // Validar y guardar la materia seleccionada
-        document.getElementById('confirmAdvisory').addEventListener('click', function () {
-            const currentUser = firebase.auth().currentUser;
+        // Selección de la fila de materia
+        function selectSubject(row, subjectName, data) {
+            const allRows = document.querySelectorAll('.subject-row');
+            allRows.forEach(r => r.classList.remove('selected'));
     
-            if (currentUser) {
-                const selectedCells = document.querySelectorAll('.advisory-table .selected');
-                if (!selectedCells.length) {
-                    alert('Por favor selecciona un horario.');
-                    return;
-                }
+            row.classList.add('selected');
     
-                selectedCells.forEach(cell => {
-                    const subjectName = cell.textContent;
-                    const day = cell.dataset.day; // Debes asignar data-day a cada celda en la tabla
-                    const time = cell.dataset.time; // Debes asignar data-time a cada celda en la tabla
+            document.getElementById('confirmAdvisory').addEventListener('click', () => {
+                const currentUser = firebase.auth().currentUser;
     
-                    if (time === "1000") {
-                        alert("No se pueden asignar materias a la hora de las 10:00.");
+                if (currentUser) {
+                    const selectedCells = row.querySelectorAll('td');
+                    const selectedTime = selectedCells[0].textContent; // Asumiendo que la hora se extrae de la celda correspondiente
+    
+                    if (selectedTime === "10:00") {
+                        alert("No se pueden asignar materias a las 10:00.");
                         return;
                     }
     
-                    const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario/${day}/${time}`);
+                    const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
                     userScheduleRef.once('value').then(snapshot => {
-                        if (snapshot.exists()) {
-                            alert(`Ya existe una materia asignada a las ${time.substring(0, 2)}:${time.substring(2)}.`);
+                        const existingSchedule = snapshot.val() || {};
+    
+                        if (existingSchedule[selectedTime]) {
+                            alert(`Ya tienes una materia asignada a las ${selectedTime}.`);
                         } else {
-                            userScheduleRef.set(subjectName).then(() => {
-                                alert('Horario confirmado y guardado!');
+                            userScheduleRef.child(selectedTime).set(subjectName).then(() => {
+                                alert('Horario confirmado y guardado.');
                             }).catch(error => {
                                 alert('Error al guardar el horario: ' + error.message);
                             });
                         }
                     });
-                });
-            } else {
-                alert('Por favor inicia sesión.');
-            }
-        });
+                } else {
+                    alert('Por favor inicia sesión.');
+                }
+            });
+        }
     
         loadSubjects();
-    </script>
+    </script>    
 </body>
 </html>
