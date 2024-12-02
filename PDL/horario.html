@@ -241,8 +241,8 @@
         const currentUser = firebase.auth().currentUser;
         if (currentUser) {
             const selectedCells = row.querySelectorAll('td');
-            const selectedTime = selectedCells[0].textContent; // Suponiendo que la hora se extrae de la celda correspondiente
-            const selectedDay = selectedCells[1].textContent; // Día de la selección (se puede ajustar según la implementación)
+            const selectedTime = selectedCells[0].textContent; // Hora seleccionada
+            const selectedDay = selectedCells[1].textContent; // Día de la selección
 
             // Verificar si es la hora 10:00
             if (selectedTime === "10:00") {
@@ -261,6 +261,7 @@
                 } else {
                     // Mostrar opción de confirmar si el horario está libre
                     if (confirm(`¿Deseas asignar "${subjectName}" a las ${selectedTime} del ${selectedDay}?`)) {
+                        // Guardar la materia en la ubicación correcta (día y hora) en el horario
                         userScheduleRef.child(`${selectedDay}/${selectedTime}`).set(subjectName).then(() => {
                             alert('Materia asignada correctamente.');
                         }).catch(error => {
@@ -276,5 +277,6 @@
 
     loadSubjects();
 </script>
+
 </body>
 </html>
