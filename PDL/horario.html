@@ -116,7 +116,7 @@
             subjectRef.once('value').then(snapshot => {
                 const subjects = snapshot.val();
                 const subjectBody = document.getElementById('subjectBody');
-                subjectBody.innerHTML = '';
+                subjectBody.innerHTML = ''; // Limpiar la tabla antes de cargar nuevas materias
 
                 for (let semester in subjects) {
                     for (let group in subjects[semester]) {
@@ -154,7 +154,7 @@
                                 });
                                 hoursTable.appendChild(headerRow);
 
-                                // Rellenar la mini tabla
+                                // Rellenar la mini tabla con los días y horas
                                 times.forEach(time => {
                                     const tr = document.createElement('tr');
                                     const timeCell = document.createElement('td');
