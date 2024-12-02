@@ -9,78 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .schedule-table th, .schedule-table td {
-            border: 1px solid #dddddd;
-            padding: 10px;
-            text-align: center;
-        }
-        .schedule-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .schedule-table tr:hover {
-            background-color: #7d7d7d;
-            cursor: pointer;
-        }
-        #searchBar {
-            margin-bottom: 20px;
-            padding: 10px;
-            width: 100%;
-            font-size: 16px;
-            border: 1px solid #ccc;
-        }
-        .hours-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            border: 1px solid #dddddd;
-        }
-        .hours-table th, .hours-table td {
-            padding: 5px;
-            border: 1px solid #dddddd;
-            text-align: center;
-        }
-        .hours-table th {
-            background-color: #f0f0f0;
-        }
-        .hours-table td {
-            background-color: #ffffff;
-        }
-        .hours-table td.selected {
-            background-color: #dff0d8; /* Verde para horas seleccionadas */
-        }
+        /* Tu CSS aquí */
     </style>
 </head>
 <body>
@@ -204,43 +133,52 @@
             });
         }
 
-function saveToSchedule(subjectName, semester, group, selectedDay, selectedHour) {
-    const userScheduleRef = firebase.database().ref('users/' + currentUserId + '/horario');
+        // Función para guardar la materia en el horario del usuario
+        function saveToSchedule(subjectName, semester, group, selectedDay, selectedHour) {
+            const currentUser = firebase.auth().currentUser;
+            const currentUserId = currentUser ? currentUser.uid : null;
 
-    userScheduleRef.once('value').then(snapshot => {
-        const existingSchedule = snapshot.val() || {};
-
-        // Verificación de colisiones de horario
-        let isConflict = false;
-        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-        days.forEach(day => {
-            if (existingSchedule[day] && existingSchedule[day][selectedHour]) {
-                isConflict = true; // Ya hay una materia en ese horario
+            if (!currentUserId) {
+                alert("Por favor, inicia sesión.");
+                return;
             }
-        });
 
-        if (isConflict) {
-            alert(`Ya tienes una materia asignada el ${selectedDay} a las ${selectedHour.substring(0, 2)}:${selectedHour.substring(2)}.`);
-            return;
-        }
+            const userScheduleRef = firebase.database().ref('users/' + currentUserId + '/horario');
 
-        // Asignar la materia a todos los días correspondientes
-        if (!existingSchedule[selectedDay]) {
-            existingSchedule[selectedDay] = {};
-        }
+            userScheduleRef.once('value').then(snapshot => {
+                const existingSchedule = snapshot.val() || {};
 
-        existingSchedule[selectedDay][selectedHour] = subjectName;
+                // Verificación de colisiones de horario
+                let isConflict = false;
+                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                days.forEach(day => {
+                    if (existingSchedule[day] && existingSchedule[day][selectedHour]) {
+                        isConflict = true; // Ya hay una materia en ese horario
+                    }
+                });
 
-        userScheduleRef.set(existingSchedule)
-            .then(() => {
-                alert('Materia asignada con éxito.');
-                // Redirigir o actualizar la interfaz según sea necesario
-            })
-            .catch(error => {
-                alert('Error al guardar la materia: ' + error.message);
+                if (isConflict) {
+                    alert(`Ya tienes una materia asignada el ${selectedDay} a las ${selectedHour.substring(0, 2)}:${selectedHour.substring(2)}.`);
+                    return;
+                }
+
+                // Asignar la materia a todos los días correspondientes
+                if (!existingSchedule[selectedDay]) {
+                    existingSchedule[selectedDay] = {};
+                }
+
+                existingSchedule[selectedDay][selectedHour] = subjectName;
+
+                userScheduleRef.set(existingSchedule)
+                    .then(() => {
+                        alert('Materia asignada con éxito.');
+                        // Redirigir o actualizar la interfaz según sea necesario
+                    })
+                    .catch(error => {
+                        alert('Error al guardar la materia: ' + error.message);
+                    });
             });
-    });
-}
+        }
 
         loadSubjects();
     </script>
