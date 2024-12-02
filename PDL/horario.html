@@ -134,15 +134,17 @@
     </main>
 
 <script>
+    // Función para cargar las materias
     function loadSubjects() {
         const subjectRef = firebase.database().ref('classSchedules');
         subjectRef.once('value').then(snapshot => {
             const subjects = snapshot.val();
             const subjectBody = document.getElementById('subjectBody');
-            subjectBody.innerHTML = '';
+            subjectBody.innerHTML = '';  // Limpiar la tabla antes de cargar los datos
 
-            const uniqueSubjects = {};
+            const uniqueSubjects = {};  // Para evitar duplicados
 
+            // Filtrar las materias y preparar la estructura
             for (let semester in subjects) {
                 for (let group in subjects[semester]) {
                     for (let day in subjects[semester][group]) {
@@ -168,6 +170,7 @@
                 }
             }
 
+            // Crear las filas con las materias
             for (const subjectName in uniqueSubjects) {
                 const data = uniqueSubjects[subjectName];
 
@@ -211,7 +214,7 @@
                         const td = document.createElement('td');
                         if (data.schedule[day] && data.schedule[day].includes(time)) {
                             td.textContent = subjectName;
-                            td.style.backgroundColor = '#dff0d8'; // verde para materia seleccionada
+                            td.style.backgroundColor = '#dff0d8'; // Verde para la materia seleccionada
                         }
                         tr.appendChild(td);
                     });
@@ -230,7 +233,7 @@
         });
     }
 
-    // Selección de la fila de materia
+    // Función para seleccionar y guardar la materia
     function selectSubject(row, subjectName, data) {
         const allRows = document.querySelectorAll('.subject-row');
         allRows.forEach(r => r.classList.remove('selected'));
@@ -258,14 +261,13 @@
                 if (daySchedule[selectedTime]) {
                     alert(`¡ERROR! Ya tienes una materia asignada a las ${selectedTime} del ${selectedDay}.`);
                 } else {
-                    // Mostrar opción de confirmar si el horario está libre
+                    // Confirmar y guardar la materia en el día y hora correspondiente
                     if (confirm(`¿Deseas asignar "${subjectName}" a las ${selectedTime} del ${selectedDay}?`)) {
-                        // Guardar la materia en la ubicación correcta (día y hora) en el horario
                         const newSchedule = {};
                         newSchedule[selectedTime] = subjectName;
 
                         // Actualizar el horario en la ubicación correcta (día y hora)
-                        userScheduleRef.child(`${selectedDay}`).update(newSchedule).then(() => {
+                        userScheduleRef.child(selectedDay).update(newSchedule).then(() => {
                             alert('Materia asignada correctamente.');
                         }).catch(error => {
                             alert('Error al guardar la materia: ' + error.message);
@@ -278,8 +280,7 @@
         }
     }
 
-    loadSubjects();
+    loadSubjects();  // Cargar las materias al iniciar
 </script>
-
 </body>
 </html>
