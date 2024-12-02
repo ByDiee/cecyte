@@ -183,7 +183,7 @@
                                 row.appendChild(hoursCell);
 
                                 row.addEventListener('click', () => {
-                                    saveToSchedule(subjectName, day, hour);
+                                    saveToSchedule(subjectName, semester, group, day, hour);
                                 });
 
                                 subjectBody.appendChild(row);
@@ -195,7 +195,7 @@
         }
 
         // Guardar materia seleccionada en Firebase
-        function saveToSchedule(subjectName, day, hour) {
+        function saveToSchedule(subjectName, semester, group, selectedDay, selectedHour) {
             const currentUser = firebase.auth().currentUser;
 
             if (!currentUser) {
@@ -203,7 +203,7 @@
                 return;
             }
 
-            if (hour === "1000") {
+            if (selectedHour === "1000") {
                 alert("No se pueden asignar materias a las 10:00.");
                 return;
             }
@@ -212,25 +212,27 @@
 
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
-
-                // Verificación de choques en el horario
+                
+                // Verificación de colisiones de horario: revisar todos los días y horas
                 let isConflict = false;
-                for (let checkDay in existingSchedule) {
-                    if (existingSchedule[checkDay][hour]) {
-                        alert(`Ya tienes una materia asignada el ${checkDay} a las ${hour.substring(0, 2)}:${hour.substring(2)}.`);
+                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                days.forEach(day => {
+                    if (existingSchedule[day] && existingSchedule[day][selectedHour]) {
                         isConflict = true;
-                        break;
                     }
+                });
+
+                if (isConflict) {
+                    alert(`Ya tienes una materia asignada a las ${selectedHour.substring(0, 2)}:${selectedHour.substring(2)}.`);
+                    return;
                 }
 
-                if (isConflict) return;
-
-                // Asignación de la materia para todos los días y horas
-                if (!existingSchedule[day]) {
-                    existingSchedule[day] = {};
+                // Si no hay conflictos, agregar la materia a todos los días y horas
+                if (!existingSchedule[selectedDay]) {
+                    existingSchedule[selectedDay] = {};
                 }
 
-                existingSchedule[day][hour] = subjectName;
+                existingSchedule[selectedDay][selectedHour] = subjectName;
 
                 userScheduleRef.set(existingSchedule)
                     .then(() => {
