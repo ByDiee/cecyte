@@ -120,17 +120,22 @@
 
                 const loadedSubjects = {}; // Control para evitar duplicados
 
+                // Iterar sobre todos los semestres, grupos, días y horas
                 for (let semester in subjects) {
                     for (let group in subjects[semester]) {
                         for (let day in subjects[semester][group]) {
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
+                                
                                 if (!subjectName || hour === "1000") continue; // Ignorar materias vacías y la hora de receso
 
-                                // Controlar que no se repita la materia para el mismo semestre y grupo
-                                if (!loadedSubjects[subjectName]) {
-                                    loadedSubjects[subjectName] = true; // Marcamos la materia como cargada
-                                    
+                                // Crear un identificador único para la combinación de materia, semestre y grupo
+                                const subjectKey = `${subjectName}-${semester}-${group}`;
+                                
+                                // Si esta combinación ya se ha cargado, no la cargamos nuevamente
+                                if (!loadedSubjects[subjectKey]) {
+                                    loadedSubjects[subjectKey] = true; // Marcamos esta combinación como cargada
+
                                     const row = document.createElement('tr');
                                     row.classList.add('subject-row');
 
