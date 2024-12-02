@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtrar Materias</title>
+    <title>Horario de Materias</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -11,26 +11,15 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #ffffff;
+            background-color: #f4f4f4;
             margin: 0;
             padding: 0;
         }
         header {
-            background-color: #28a745;
+            background-color: #007bff;
             color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        nav {
-            background-color: #ff851b;
             padding: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
+            text-align: center;
         }
         main {
             padding: 20px;
@@ -39,131 +28,150 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .schedule-table th, .schedule-table td {
-            border: 1px solid #dddddd;
-            padding: 10px;
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: center;
         }
         .schedule-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
+            background-color: #007bff;
+            color: white;
         }
-        .schedule-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
+        .mini-table td {
+            width: 40px;
+            height: 40px;
+            background-color: #f0f0f0;
         }
-        .schedule-table tr:hover {
-            background-color: #7d7d7d;
+        .mini-table td.selected {
+            background-color: #28a745;
+        }
+        .mini-table td:hover {
             cursor: pointer;
+            background-color: #cce5ff;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Buscar Materias</h1>
+        <h1>Horario de Materias</h1>
     </header>
-    <nav>
-        <a href="perfilmaestro.html">Editar Perfil</a>
-        <a href="#">Registro de Asistencias</a>
-    </nav>
     <main>
         <table class="schedule-table">
             <thead>
                 <tr>
                     <th>Materia</th>
-                    <th>Semestre</th>
-                    <th>Grupo</th>
+                    <th>Hora</th>
+                    <th>Día</th>
+                    <th>Acción</th>
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Se cargan las materias desde Firebase -->
+                <!-- Las materias se cargarán dinámicamente -->
             </tbody>
         </table>
     </main>
-
     <script>
-        // Referencia al usuario actual
-        let currentUser;
+        document.addEventListener('DOMContentLoaded', function() {
+            const db = firebase.database();
+            const currentUser = firebase.auth().currentUser;
 
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                currentUser = user;
-                initializeRecess(user.uid);
-                loadSubjects();
-            } else {
-                alert("Por favor, inicia sesión.");
-                window.location.href = "login.html";
-            }
-        });
+            // Función para cargar materias
+            function loadSubjects() {
+                const subjectsRef = db.ref('users/' + currentUser.uid + '/horario');
+                subjectsRef.once('value').then(snapshot => {
+                    const horario = snapshot.val() || {};
+                    const subjectBody = document.getElementById('subjectBody');
+                    subjectBody.innerHTML = '';
 
-        // Agregar automáticamente "Receso" a las 10:00 para todos los días
-        function initializeRecess(userId) {
-            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-            const updates = {};
+                    // Generar tabla
+                    for (const dia in horario) {
+                        for (const hora in horario[dia]) {
+                            const row = document.createElement('tr');
+                            const materiaCell = document.createElement('td');
+                            const horaCell = document.createElement('td');
+                            const diaCell = document.createElement('td');
+                            const actionCell = document.createElement('td');
+                            const deleteButton = document.createElement('button');
 
-            days.forEach(day => {
-                updates[`users/${userId}/horario/${day}/1000`] = "Receso";
-            });
+                            materiaCell.textContent = horario[dia][hora] || '(Sin materia)';
+                            horaCell.textContent = hora;
+                            diaCell.textContent = dia;
 
-            firebase.database().ref().update(updates)
-                .then(() => console.log("Recesos inicializados correctamente"))
-                .catch(error => console.error("Error al inicializar los recesos:", error));
-        }
+                            deleteButton.textContent = 'Eliminar';
+                            deleteButton.addEventListener('click', () => {
+                                removeSubject(dia, hora);
+                            });
 
-        // Cargar materias desde Firebase y filtrarlas
-        function loadSubjects() {
-            const subjectRef = firebase.database().ref("classSchedules");
-            subjectRef.once("value").then(snapshot => {
-                const subjects = snapshot.val();
-                const subjectBody = document.getElementById("subjectBody");
-                subjectBody.innerHTML = "";
+                            actionCell.appendChild(deleteButton);
+                            row.appendChild(materiaCell);
+                            row.appendChild(horaCell);
+                            row.appendChild(diaCell);
+                            row.appendChild(actionCell);
 
-                for (let semester in subjects) {
-                    for (let group in subjects[semester]) {
-                        for (let day in subjects[semester][group]) {
-                            for (let hour in subjects[semester][group][day]) {
-                                if (hour === "1000") continue; // Filtrar materias a las 10:00
-
-                                const subjectName = subjects[semester][group][day][hour];
-                                if (subjectName === "") continue;
-
-                                const row = document.createElement("tr");
-                                row.addEventListener("click", () => selectSubject(subjectName, day, hour));
-
-                                const subjectCell = document.createElement("td");
-                                const semesterCell = document.createElement("td");
-                                const groupCell = document.createElement("td");
-
-                                subjectCell.textContent = subjectName;
-                                semesterCell.textContent = semester;
-                                groupCell.textContent = group;
-
-                                row.appendChild(subjectCell);
-                                row.appendChild(semesterCell);
-                                row.appendChild(groupCell);
-
-                                subjectBody.appendChild(row);
-                            }
+                            subjectBody.appendChild(row);
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        // Seleccionar una materia y guardarla en Firebase
-        function selectSubject(subjectName, day, hour) {
-            const scheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario/${day}/${hour}`);
-            scheduleRef.once("value").then(snapshot => {
-                if (snapshot.exists()) {
-                    alert("Este horario ya está ocupado. Por favor selecciona otro.");
+            // Función para guardar materia
+            function saveSubject(dia, hora, materia) {
+                if (hora === "1000") {
+                    alert("No puedes seleccionar esta hora porque está reservada para el receso.");
+                    return;
+                }
+
+                const horarioRef = db.ref('users/' + currentUser.uid + '/horario/' + dia + '/' + hora);
+
+                horarioRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        alert("Ya hay una materia registrada en este horario.");
+                    } else {
+                        horarioRef.set(materia).then(() => {
+                            alert("Materia registrada con éxito.");
+                            loadSubjects();
+                        });
+                    }
+                });
+            }
+
+            // Función para eliminar materia
+            function removeSubject(dia, hora) {
+                const horarioRef = db.ref('users/' + currentUser.uid + '/horario/' + dia + '/' + hora);
+
+                horarioRef.remove().then(() => {
+                    alert("Materia eliminada.");
+                    loadSubjects();
+                });
+            }
+
+            // Función para inicializar el receso a las 10:00
+            function initializeRecess() {
+                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                const updates = {};
+
+                days.forEach(day => {
+                    updates[`${day}/1000`] = "Receso";
+                });
+
+                const horarioRef = db.ref('users/' + currentUser.uid + '/horario');
+                horarioRef.update(updates).then(() => {
+                    console.log("Receso inicializado.");
+                    loadSubjects();
+                });
+            }
+
+            // Inicializar receso y cargar materias
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    initializeRecess();
+                    loadSubjects();
                 } else {
-                    scheduleRef.set(subjectName)
-                        .then(() => alert("Materia registrada correctamente."))
-                        .catch(error => alert("Error al registrar la materia: " + error.message));
+                    console.error("No hay usuario autenticado.");
                 }
             });
-        }
+        });
     </script>
 </body>
 </html>
