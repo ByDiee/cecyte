@@ -35,28 +35,22 @@
         main {
             padding: 20px;
         }
-        .schedule-table, .advisory-table {
+        .schedule-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .schedule-table th, .schedule-table td, .advisory-table th, .advisory-table td {
+        .schedule-table th, .schedule-table td {
             border: 1px solid #dddddd;
             padding: 10px;
             text-align: center;
         }
-        .schedule-table th, .advisory-table th {
+        .schedule-table th {
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .schedule-table td, .advisory-table td {
-            background-color: #ffffff;
-        }
-        .schedule-table tr:nth-child(odd) td, .advisory-table tr:nth-child(odd) td {
-            background-color: #f9f9f9;
-        }
-        .schedule-table tr:hover, .advisory-table tr:hover {
+        .schedule-table tr:hover {
             background-color: #7d7d7d;
             cursor: pointer;
         }
@@ -69,9 +63,9 @@
         }
         .hours-table {
             width: 100%;
-            border: 1px solid #dddddd;
             border-collapse: collapse;
             margin-top: 10px;
+            border: 1px solid #dddddd;
         }
         .hours-table th, .hours-table td {
             padding: 5px;
@@ -85,7 +79,7 @@
             background-color: #ffffff;
         }
         .hours-table td.selected {
-            background-color: #dff0d8; /* green background for selected time */
+            background-color: #dff0d8; /* Verde para horas seleccionadas */
         }
     </style>
 </head>
@@ -198,7 +192,7 @@
                                     row.appendChild(hoursCell);
 
                                     row.addEventListener('click', () => {
-                                        saveToSchedule(subjectName, semester, group, day, hour);
+                                        saveToSchedule(subjectName, semester, group, subjects[semester][group]);
                                     });
 
                                     subjectBody.appendChild(row);
@@ -210,46 +204,50 @@
             });
         }
 
-        // Función para guardar la materia en el horario del usuario
-        function saveToSchedule(subjectName, semester, group, selectedDay, selectedHour) {
+        // Guardar materia seleccionada en Firebase
+        function saveToSchedule(subjectName, semester, group, schedule) {
             const currentUser = firebase.auth().currentUser;
-            const currentUserId = currentUser ? currentUser.uid : null;
 
-            if (!currentUserId) {
-                alert("Por favor, inicia sesión.");
+            if (!currentUser) {
+                alert('Por favor inicia sesión.');
                 return;
             }
 
-            const userScheduleRef = firebase.database().ref('users/' + currentUserId + '/horario');
+            const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
 
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
 
-                // Verificación de colisiones de horario
                 let isConflict = false;
                 const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
                 days.forEach(day => {
-                    if (existingSchedule[day] && existingSchedule[day][selectedHour]) {
-                        isConflict = true; // Ya hay una materia en ese horario
+                    // Verificar conflicto de horarios
+                    for (let hour in schedule[day]) {
+                        if (existingSchedule[day] && existingSchedule[day][hour]) {
+                            isConflict = true; // Ya hay una materia en ese horario
+                        }
                     }
                 });
 
                 if (isConflict) {
-                    alert(`Ya tienes una materia asignada el ${selectedDay} a las ${selectedHour.substring(0, 2)}:${selectedHour.substring(2)}.`);
+                    alert('Ya tienes una materia asignada en este horario.');
                     return;
                 }
 
                 // Asignar la materia a todos los días correspondientes
-                if (!existingSchedule[selectedDay]) {
-                    existingSchedule[selectedDay] = {};
+                for (let day in schedule) {
+                    if (!existingSchedule[day]) {
+                        existingSchedule[day] = {};
+                    }
+                    for (let hour in schedule[day]) {
+                        existingSchedule[day][hour] = subjectName;
+                    }
                 }
-
-                existingSchedule[selectedDay][selectedHour] = subjectName;
 
                 userScheduleRef.set(existingSchedule)
                     .then(() => {
                         alert('Materia asignada con éxito.');
-                        // Redirigir o actualizar la interfaz según sea necesario
+                        window.location.href = 'pagina1.html'; // Redirigir
                     })
                     .catch(error => {
                         alert('Error al guardar la materia: ' + error.message);
