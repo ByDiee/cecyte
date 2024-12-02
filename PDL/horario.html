@@ -54,7 +54,7 @@
             background-color: #f9f9f9;
         }
         .schedule-table tr:hover {
-            background-color: #7d7d7d;
+            background-color: #7d7d7d !important; /* Hover universal */
             cursor: pointer;
         }
         #searchBar {
@@ -166,8 +166,8 @@
 
                                     days.forEach(day => {
                                         const td = document.createElement('td');
-                                        if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
-                                            td.classList.add('selected'); // Marcar en verde
+                                        if (subjects[semester][group][day] && subjects[semester][group][day][time]) {
+                                            td.classList.add('selected'); // Marcar en verde siempre que haya dato
                                         }
                                         tr.appendChild(td);
                                     });
