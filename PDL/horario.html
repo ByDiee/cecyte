@@ -262,7 +262,10 @@
                     // Mostrar opción de confirmar si el horario está libre
                     if (confirm(`¿Deseas asignar "${subjectName}" a las ${selectedTime} del ${selectedDay}?`)) {
                         // Guardar la materia en la ubicación correcta (día y hora) en el horario
-                        userScheduleRef.child(`${selectedDay}/${selectedTime}`).set(subjectName).then(() => {
+                        const newSchedule = {};
+                        newSchedule[selectedTime] = subjectName;
+
+                        userScheduleRef.child(`${selectedDay}`).update(newSchedule).then(() => {
                             alert('Materia asignada correctamente.');
                         }).catch(error => {
                             alert('Error al guardar la materia: ' + error.message);
@@ -277,6 +280,5 @@
 
     loadSubjects();
 </script>
-
 </body>
 </html>
