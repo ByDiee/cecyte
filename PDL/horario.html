@@ -227,6 +227,7 @@ function saveToSchedule(subjectName, semester, group) {
         // Verificar si hay conflictos en cualquier día y hora
         days.forEach(day => {
             times.forEach(time => {
+                // Comprobamos si esta materia está programada en este día y hora
                 if (existingSchedule[day] && existingSchedule[day][time]) {
                     isConflict = true; // Ya hay una materia asignada en esa hora
                 }
@@ -238,11 +239,12 @@ function saveToSchedule(subjectName, semester, group) {
             return;
         }
 
-        // Si no hay conflictos, asignamos todas las clases de la materia en todos los días y horas correspondientes
+        // Asignamos todas las clases de la materia en todos los días y horas correspondientes
         days.forEach(day => {
             times.forEach(time => {
                 // Comprobamos si esta materia está programada en este día y hora
-                if (subjectSchedules[semester] && subjectSchedules[semester][group] && subjectSchedules[semester][group][day] && subjectSchedules[semester][group][day][time] === subjectName) {
+                if (existingSchedule[day] && existingSchedule[day][time] === "") {
+                    // Si la hora está disponible (vacía), asignamos la materia
                     if (!existingSchedule[day]) {
                         existingSchedule[day] = {};  // Crear el día si no existe
                     }
