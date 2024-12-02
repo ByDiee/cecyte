@@ -213,11 +213,19 @@
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
 
-                if (existingSchedule[day] && existingSchedule[day][hour]) {
-                    alert(`Ya tienes una materia asignada el ${day} a las ${hour.substring(0, 2)}:${hour.substring(2)}.`);
-                    return;
+                // Verificación de choques en el horario
+                let isConflict = false;
+                for (let checkDay in existingSchedule) {
+                    if (existingSchedule[checkDay][hour]) {
+                        alert(`Ya tienes una materia asignada el ${checkDay} a las ${hour.substring(0, 2)}:${hour.substring(2)}.`);
+                        isConflict = true;
+                        break;
+                    }
                 }
 
+                if (isConflict) return;
+
+                // Asignación de la materia para todos los días y horas
                 if (!existingSchedule[day]) {
                     existingSchedule[day] = {};
                 }
