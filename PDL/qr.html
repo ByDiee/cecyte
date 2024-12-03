@@ -16,6 +16,14 @@
         <p id="qr-info"></p>
         <canvas id="qr-code"></canvas>
     </div>
+    <div>
+        <label for="horaSimulada">Hora Simulada (Formato HHMM):</label>
+        <input type="text" id="horaSimulada" placeholder="Ejemplo: 0830">
+        <label for="diaSimulado">Día Simulado:</label>
+        <input type="text" id="diaSimulado" placeholder="Ejemplo: lunes">
+        <button onclick="simularHorario()">Simular Clase</button>
+    </div>
+
     <script>
         // Listener para cambios en el estado de autenticación
         firebase.auth().onAuthStateChanged(async (user) => {
@@ -61,26 +69,37 @@
             return null; // No hay módulo válido
         }
 
-        // Función principal para buscar la clase y generar el QR
-        async function buscarClaseYGenerarQR(userId) {
+        // Función para simular la hora y el día de la semana
+        function simularHorario() {
+            const horaSimulada = document.getElementById('horaSimulada').value;
+            const diaSimulado = document.getElementById('diaSimulado').value.toLowerCase();
+            const minutosSimulados = horaEnMinutos(Number(horaSimulada));
+
+            console.log("Hora simulada:", horaSimulada, ", Día simulado:", diaSimulado);
+
+            if (!horaSimulada || !diaSimulado) {
+                alert("Por favor, ingresa una hora simulada y un día.");
+                return;
+            }
+
+            // Verificar el día y hora simulados
+            buscarClaseYGenerarQRSimulado(diaSimulado, minutosSimulados);
+        }
+
+        // Función principal para buscar la clase y generar el QR (con hora simulada)
+        async function buscarClaseYGenerarQRSimulado(diaSimulado, minutosSimulados) {
             try {
-                console.log("Buscando clases para el usuario:", userId);
+                console.log("Buscando clases para el usuario:");
 
-                // SIMULAR día y hora
-                const diaSemanaSimulado = "lunes"; // Cambia esto por el día que desees simular
-                const horaSimulada = 0840; // 14:00, por ejemplo, se representa como 1400
-
-                console.log("Día simulado:", diaSemanaSimulado, ", Hora simulada:", horaSimulada);
-
-                // Convertir hora simulada a minutos y determinar módulo
-                const minutosActuales = horaSimulada; // Directamente los minutos simulados
-                const moduloActual = obtenerModuloActual(minutosActuales);
+                // Determinar el módulo con la hora simulada
+                const moduloActual = obtenerModuloActual(minutosSimulados);
                 if (moduloActual === null) {
                     document.getElementById('qr-info').textContent = "No estás en un horario de clase.";
                     return;
                 }
 
                 // Buscar la clase correspondiente en Firebase
+                const userId = firebase.auth().currentUser.uid;
                 const dbRef = firebase.database().ref(`users/${userId}/horario`);
                 const snapshot = await dbRef.get();
 
@@ -93,9 +112,9 @@
                 console.log("Horario obtenido:", horario);
 
                 // Verificar si hay clase para el módulo actual
-                const clasesDelDia = horario[diaSemanaSimulado.charAt(0).toUpperCase() + diaSemanaSimulado.slice(1)];
+                const clasesDelDia = horario[diaSimulado.charAt(0).toUpperCase() + diaSimulado.slice(1)];
                 if (!clasesDelDia) {
-                    document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaSemanaSimulado}.`;
+                    document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaSimulado}.`;
                     return;
                 }
 
@@ -111,7 +130,7 @@
                 // Generar el QR con la información de la clase
                 const qrData = {
                     profesorId: userId,
-                    dia: diaSemanaSimulado,
+                    dia: diaSimulado,
                     modulo: moduloActual,
                     clase: claseActual,
                 };
