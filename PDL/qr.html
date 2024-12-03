@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar QR de Clase</title>
+    <title>Generar QR de Clase Simulada</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -11,20 +11,10 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
-    <h1>Generar QR para la Clase Actual</h1>
+    <h1>Generar QR para Clase Simulada</h1>
     <div id="qr-container">
         <p id="qr-info"></p>
         <canvas id="qr-code"></canvas>
-    </div>
-
-    <!-- Controles para simulación -->
-    <div>
-        <h3>Simulación</h3>
-        <label for="dia-simulado">Día (ejemplo: lunes):</label>
-        <input type="text" id="dia-simulado" placeholder="Escribe el día (lunes, martes, etc.)">
-        <label for="hora-simulada">Hora (formato HHMM):</label>
-        <input type="text" id="hora-simulada" placeholder="Ejemplo: 0920">
-        <button id="simular-btn">Simular Clase</button>
     </div>
 
     <script>
@@ -42,7 +32,7 @@
             { inicio: 855, fin: 899 }, // 14:15 - 14:59
         ];
 
-        // Convierte una hora en formato HHMM a minutos desde la medianoche
+        // Función para convertir hora en formato HHMM a minutos desde la medianoche
         function horaEnMinutos(hora) {
             const horas = Math.floor(hora / 100);
             const minutos = hora % 100;
@@ -60,7 +50,7 @@
             return null; // No hay módulo válido
         }
 
-        // Función para buscar la clase y generar el QR
+        // Función principal para buscar la clase y generar el QR
         async function buscarClaseYGenerarQRSimulado(userId, diaSimulado, horaSimulada) {
             try {
                 console.log("Buscando clases para el usuario:", userId);
@@ -73,7 +63,7 @@
                     return;
                 }
 
-                // Buscar la clase correspondiente en Firebase
+                // Obtener el horario del usuario desde Firebase
                 const dbRef = firebase.database().ref(`users/${userId}/horario`);
                 const snapshot = await dbRef.get();
 
@@ -85,17 +75,32 @@
                 const horario = snapshot.val();
                 console.log("Horario obtenido:", horario);
 
-                // Verificar si hay clase para el módulo actual
-                const clasesDelDia = horario[diaSimulado.charAt(0).toUpperCase() + diaSimulado.slice(1)];
+                // Normalizar el día simulado
+                const diaNormalizado = diaSimulado.charAt(0).toUpperCase() + diaSimulado.slice(1);
+                const clasesDelDia = horario[diaNormalizado];
+
                 if (!clasesDelDia) {
                     document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaSimulado}.`;
                     return;
                 }
 
+                // Buscar la clase para el módulo actual
                 const horaInicioModulo = MODULOS[moduloActual].inicio;
-                const claseActual = clasesDelDia[horaInicioModulo];
-                if (!claseActual || claseActual === "") {
-                    document.getElementById('qr-info').textContent = "No hay clases programadas para este horario.";
+
+                // Comparar flexible: Buscar la hora más cercana dentro del margen del módulo
+                let claseActual = null;
+                Object.keys(clasesDelDia).forEach(horaClave => {
+                    const horaEnMinutosClave = horaEnMinutos(parseInt(horaClave));
+                    if (
+                        horaEnMinutosClave >= MODULOS[moduloActual].inicio &&
+                        horaEnMinutosClave <= MODULOS[moduloActual].fin
+                    ) {
+                        claseActual = clasesDelDia[horaClave];
+                    }
+                });
+
+                if (!claseActual) {
+                    document.getElementById('qr-info').textContent = `No hay clases programadas para este horario (${horaInicioModulo}).`;
                     return;
                 }
 
@@ -126,21 +131,17 @@
             });
         }
 
-        // Listener para simulación
-        document.getElementById("simular-btn").addEventListener("click", async () => {
-            const diaSimulado = document.getElementById("dia-simulado").value.toLowerCase();
-            const horaSimulada = document.getElementById("hora-simulada").value;
+        // Simulación: día y hora
+        const diaSimulado = "martes"; // Cambia esto para simular otro día
+        const horaSimulada = "0915";  // Cambia esto para simular otra hora
 
-            if (!diaSimulado || !horaSimulada) {
-                document.getElementById("qr-info").textContent = "Por favor, introduce un día y una hora válidos.";
-                return;
-            }
-
-            const user = firebase.auth().currentUser;
+        // Ejecutar la búsqueda con datos simulados
+        firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
-                console.log("Hora simulada:", horaSimulada, ", Día simulado:", diaSimulado);
+                console.log("Usuario autenticado:", user.uid);
                 await buscarClaseYGenerarQRSimulado(user.uid, diaSimulado, horaSimulada);
             } else {
+                console.log("No estás autenticado.");
                 document.getElementById("qr-info").textContent = "No estás autenticado. Por favor, inicia sesión.";
             }
         });
