@@ -49,57 +49,59 @@
             }
         });
 
-        // Obtener el horario del profesor
-        function getProfessorSchedule(userId, currentTime) {
-            const classRef = firebase.database().ref(`users/${userId}/horario`);
-            const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase(); // Día actual (lunes, martes, etc.)
-            const currentHour = currentTime.getHours() * 100 + currentTime.getMinutes(); // Formato HHMM (por ejemplo 1030 para las 10:30)
+// Obtener el horario del profesor
+function getProfessorSchedule(userId, currentTime) {
+    const classRef = firebase.database().ref(`users/${userId}/horario`);
+    const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase(); // Día actual (lunes, martes, etc.)
+    const currentHour = currentTime.getHours() * 100 + currentTime.getMinutes(); // Formato HHMM (por ejemplo 1030 para las 10:30)
 
-            console.log(`Buscando clases para el usuario: ${userId}`);
-            console.log(`Día actual: ${currentDay}, Hora actual: ${currentHour}`);
+    console.log(`Buscando clases para el usuario: ${userId}`);
+    console.log(`Día actual: ${currentDay}, Hora actual: ${currentHour}`);
 
-            classRef.once('value').then(snapshot => {
-                let classData = snapshot.val();
-                if (!classData) {
-                    console.error('No se encontraron horarios en la base de datos para este usuario.');
-                    alert('No se encontró un horario asociado a este usuario.');
-                    return;
-                }
-
-                console.log('Datos de horario obtenidos:', classData);
-
-                let currentClass = null;
-
-                // Buscar la clase correspondiente al día y hora actual
-                if (classData[currentDay]) {
-                    for (let hour in classData[currentDay]) {
-                        if (parseInt(hour) <= currentHour && parseInt(hour) + 45 > currentHour) {
-                            currentClass = {
-                                materia: classData[currentDay][hour],
-                                hora: hour
-                            };
-                            break;
-                        }
-                    }
-                }
-
-                if (currentClass) {
-                    // Mostrar el mensaje de asistencia
-                    document.getElementById('attendanceMessage').innerHTML = 
-                        `Asistencia de ${currentClass.materia} a las ${currentClass.hora}`;
-
-                    console.log('Clase encontrada:', currentClass);
-
-                    // Generar el QR con la información de la clase
-                    generateQR(currentClass);
-                } else {
-                    console.log('No se encontró clase para la hora actual.');
-                    alert('No hay clases programadas para este horario.');
-                }
-            }).catch(error => {
-                console.error('Error al leer los datos de la base de datos:', error);
-            });
+    classRef.once('value').then(snapshot => {
+        let classData = snapshot.val();
+        if (!classData) {
+            console.error('No se encontraron horarios en la base de datos para este usuario.');
+            alert('No se encontró un horario asociado a este usuario.');
+            return;
         }
+
+        console.log('Datos de horario obtenidos:', classData);
+
+        let currentClass = null;
+
+        // Buscar la clase correspondiente al día y hora actual
+        if (classData[currentDay]) {
+            for (let hour in classData[currentDay]) {
+                // Usar un rango de tiempo de ±45 minutos para buscar la clase
+                const hourInt = parseInt(hour);
+                if (hourInt <= currentHour && currentHour < hourInt + 45) {
+                    currentClass = {
+                        materia: classData[currentDay][hour],
+                        hora: hour
+                    };
+                    break;
+                }
+            }
+        }
+
+        if (currentClass) {
+            // Mostrar el mensaje de asistencia
+            document.getElementById('attendanceMessage').innerHTML = 
+                `Asistencia de ${currentClass.materia} a las ${currentClass.hora}`;
+
+            console.log('Clase encontrada:', currentClass);
+
+            // Generar el QR con la información de la clase
+            generateQR(currentClass);
+        } else {
+            console.log('No se encontró clase para la hora actual.');
+            alert('No hay clases programadas para este horario.');
+        }
+    }).catch(error => {
+        console.error('Error al leer los datos de la base de datos:', error);
+    });
+}
 
         // Generar el código QR con los datos de la clase
         function generateQR(currentClass) {
