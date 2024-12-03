@@ -177,6 +177,8 @@
                                             // Si existe la materia en ese día y hora, marcar como seleccionada
                                             if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
                                                 td.classList.add('selected'); // Marcar en verde
+                                                td.dataset.day = day; // Almacenar el día
+                                                td.dataset.time = time; // Almacenar la hora
                                             }
                                             tr.appendChild(td);
                                         });
@@ -192,7 +194,13 @@
                                     row.appendChild(hoursCell);
 
                                     row.addEventListener('click', () => {
-                                        saveToSchedule(subjectName, semester, group);
+                                        // Obtener el día y la hora de la celda seleccionada
+                                        const selectedCell = row.querySelector('.hours-table td.selected');
+                                        if (selectedCell) {
+                                            const day = selectedCell.dataset.day;
+                                            const time = selectedCell.dataset.time;
+                                            saveToSchedule(subjectName, semester, group, day, time);
+                                        }
                                     });
 
                                     subjectBody.appendChild(row);
@@ -205,7 +213,7 @@
         }
 
         // Guardar materia seleccionada en Firebase
-        function saveToSchedule(subjectName, semester, group) {
+        function saveToSchedule(subjectName, semester, group, day, time) {
             const currentUser = firebase.auth().currentUser;
 
             if (!currentUser) {
@@ -217,38 +225,19 @@
 
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
-                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-                const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-                
-                // Verificar conflictos en el horario
-                let isConflict = false;
-                days.forEach(day => {
-                    times.forEach(time => {
-                        if (existingSchedule[day] && existingSchedule[day][time]) {
-                            if (existingSchedule[day][time] !== subjectName) {
-                                isConflict = true;
-                            }
-                        }
-                    });
-                });
 
-                if (isConflict) {
-                    alert('Conflicto de horarios con otra materia.');
+                // Verificar si ya existe una materia en ese día y hora
+                if (existingSchedule[day] && existingSchedule[day][time]) {
+                    alert('Ya tienes una clase en ese horario.');
                     return;
                 }
 
-                // Asignar todas las horas de la materia seleccionada
-                days.forEach(day => {
-                    if (!existingSchedule[day]) {
-                        existingSchedule[day] = {};
-                    }
+                // Asignar solo la hora específica de la materia seleccionada
+                if (!existingSchedule[day]) {
+                    existingSchedule[day] = {};
+                }
 
-                    times.forEach(time => {
-                        if (existingSchedule[day][time] === undefined) {
-                            existingSchedule[day][time] = (existingSchedule[day][time] === undefined) ? subjectName : existingSchedule[day][time];
-                        }
-                    });
-                });
+                existingSchedule[day][time] = subjectName;
 
                 // Guardar el horario actualizado en Firebase
                 userScheduleRef.set(existingSchedule).then(() => {
