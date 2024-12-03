@@ -45,9 +45,23 @@
         // Obtener el horario del profesor
         function getProfessorSchedule(userId) {
             const classRef = firebase.database().ref(`users/${userId}/classSchedules`);
-            const currentTime = new Date();
-            const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
-            const currentHour = currentTime.getHours() * 100 + currentTime.getMinutes();
+            
+            // Modificar aquí la hora actual para pruebas
+
+
+            
+            const simulatedTime = new Date(); // Usar el reloj del sistema
+            simulatedTime.setHours(10);  // Cambia la hora que desees para pruebas
+            simulatedTime.setMinutes(30); // Cambia los minutos que necesites para las pruebas
+
+
+
+
+            
+
+            // Obtener el día de la semana y la hora simulada
+            const currentDay = simulatedTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase();
+            const currentHour = simulatedTime.getHours() * 100 + simulatedTime.getMinutes();
 
             console.log(`Buscando clases para el usuario: ${userId}`);
             console.log(`Día actual: ${currentDay}, Hora actual: ${currentHour}`);
@@ -71,6 +85,7 @@
                         console.log(`Horario para el grupo ${group} en el semestre ${semester}:`, daySchedule);
 
                         for (let hour in daySchedule) {
+                            // Verificar si la hora de la clase se ajusta al horario simulado
                             if (parseInt(hour) <= currentHour && parseInt(hour) + 45 > currentHour) {
                                 currentClass = {
                                     materia: daySchedule[hour],
