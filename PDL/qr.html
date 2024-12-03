@@ -20,16 +20,17 @@
         // Función principal para buscar la clase y generar el QR
         async function buscarClaseYGenerarQR() {
             try {
-                // Obtener ID del usuario autenticado
-                const userId = await getCurrentUserId(); // Función de auth.js
-                if (!userId) {
+                // Obtener el usuario autenticado directamente desde Firebase
+                const user = firebase.auth().currentUser;
+                if (!user) {
                     document.getElementById('qr-info').textContent = 'No estás autenticado.';
                     return;
                 }
 
+                const userId = user.uid; // ID del usuario autenticado
                 console.log("Buscando clases para el usuario:", userId);
 
-                // Simular día y hora actuales (puedes cambiar estos valores para probar)
+                // Día y hora actuales (puedes simular o usar valores dinámicos)
                 const diaActual = "Lunes"; // Simula un día (puedes ajustar)
                 const horaActual = "1030"; // Simula una hora en formato de 24 horas sin ":"
                 console.log("Día actual:", diaActual, ", Hora actual:", horaActual);
@@ -46,7 +47,7 @@
                 const horario = snapshot.val();
                 console.log("Horario obtenido:", horario);
 
-                // Buscar la clase correspondiente al día y hora simulados
+                // Buscar la clase correspondiente al día y hora actuales
                 const clasesDelDia = horario[diaActual];
                 if (!clasesDelDia) {
                     document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaActual}.`;
