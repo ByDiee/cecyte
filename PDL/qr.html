@@ -51,12 +51,12 @@
         }
 
         // Función principal para buscar la clase y generar el QR
-        async function buscarClaseYGenerarQRSimulado(userId, diaSimulado, horaSimulada) {
+        async function buscarClaseYGenerarQR(userId, dia, hora) {
             try {
                 console.log("Buscando clases para el usuario:", userId);
 
-                // Convertir hora simulada a minutos y determinar módulo
-                const minutosActuales = horaEnMinutos(parseInt(horaSimulada));
+                // Convertir hora simulada o real a minutos y determinar módulo
+                const minutosActuales = horaEnMinutos(parseInt(hora));
                 const moduloActual = obtenerModuloActual(minutosActuales);
                 if (moduloActual === null) {
                     document.getElementById('qr-info').textContent = "No estás en un horario de clase.";
@@ -75,19 +75,18 @@
                 const horario = snapshot.val();
                 console.log("Horario obtenido:", horario);
 
-                // Normalizar el día simulado
-                const diaNormalizado = diaSimulado.charAt(0).toUpperCase() + diaSimulado.slice(1);
+                // Normalizar el día
+                const diaNormalizado = dia.charAt(0).toUpperCase() + dia.slice(1);
                 const clasesDelDia = horario[diaNormalizado];
 
                 if (!clasesDelDia) {
-                    document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaSimulado}.`;
+                    document.getElementById('qr-info').textContent = `No hay clases programadas para ${dia}.`;
                     return;
                 }
 
                 // Buscar la clase para el módulo actual
                 const horaInicioModulo = MODULOS[moduloActual].inicio;
 
-                // Comparar flexible: Buscar la hora más cercana dentro del margen del módulo
                 let claseActual = null;
                 Object.keys(clasesDelDia).forEach(horaClave => {
                     const horaEnMinutosClave = horaEnMinutos(parseInt(horaClave));
@@ -109,13 +108,13 @@
                 // Generar el QR con la información de la clase
                 const qrData = {
                     profesorId: userId,
-                    dia: diaSimulado,
+                    dia: dia,
                     modulo: moduloActual,
                     clase: claseActual,
                 };
 
                 generarCodigoQR(qrData);
-                document.getElementById('qr-info').textContent = `Clase simulada: ${claseActual}`;
+                document.getElementById('qr-info').textContent = `Clase: ${claseActual}`;
             } catch (error) {
                 console.error("Error al buscar la clase:", error);
                 document.getElementById('qr-info').textContent = "Ocurrió un error al buscar la clase.";
@@ -131,15 +130,25 @@
             });
         }
 
-        // Simulación: día y hora
+        // Configuración para simulación
+        const esSimulacion = true; // Cambiar a false para ejecutar en tiempo real
         const diaSimulado = "martes"; // Cambia esto para simular otro día
-        const horaSimulada = "0956";  // Cambia esto para simular otra hora
+        const horaSimulada = "0955";  // Cambia esto para simular otra hora
 
-        // Ejecutar la búsqueda con datos simulados
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 console.log("Usuario autenticado:", user.uid);
-                await buscarClaseYGenerarQRSimulado(user.uid, diaSimulado, horaSimulada);
+
+                if (esSimulacion) {
+                    console.log("Simulación activada: Día:", diaSimulado, ", Hora:", horaSimulada);
+                    await buscarClaseYGenerarQR(user.uid, diaSimulado, horaSimulada);
+                } else {
+                    const fecha = new Date();
+                    const diaReal = fecha.toLocaleDateString("es-ES", { weekday: "long" }).toLowerCase();
+                    const horaReal = (fecha.getHours() * 100 + fecha.getMinutes()).toString().padStart(4, "0");
+                    console.log("Ejecutando en tiempo real: Día:", diaReal, ", Hora:", horaReal);
+                    await buscarClaseYGenerarQR(user.uid, diaReal, horaReal);
+                }
             } else {
                 console.log("No estás autenticado.");
                 document.getElementById("qr-info").textContent = "No estás autenticado. Por favor, inicia sesión.";
