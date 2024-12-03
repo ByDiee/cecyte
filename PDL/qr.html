@@ -1,149 +1,141 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar Código QR de Asistencia</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <title>QR Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js"></script>
     <script src="auth.js"></script>
-
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        #qrcode {
+            margin: 20px auto;
             text-align: center;
-            margin-top: 50px;
         }
-        #qrContainer {
+        #attendanceMessage {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
             margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Generar Código QR para Asistencia</h1>
-
-    <div id="attendanceMessage"></div> <!-- Aquí se mostrará el mensaje de asistencia -->
-    <div id="qrContainer"></div> <!-- Aquí se generará el código QR -->
-
+    <h1 style="text-align: center;">Generador de Código QR</h1>
+    <div id="attendanceMessage">Buscando clase actual...</div>
+    <div id="qrcode"></div>
     <script>
-        // Simulación de la fecha y hora (comenta o descomenta para probar)
-        const simulatedDate = new Date("2024-12-02T10:30:00"); // Puedes cambiar esta fecha y hora para simular diferentes casos
-        // const simulatedDate = new Date("2024-12-02T11:15:00"); // Otro ejemplo de hora simulada
+        // Inicializa Firebase (usar configuración en auth.js)
 
-        // Descomenta para usar la hora actual en vez de la simulada
-        // const simulatedDate = new Date();
+        // Simulación de día y hora para pruebas
+        const simulateDay = "lunes"; // Cambiar a otro día: lunes, martes, etc.
+        const simulateHour = 1030; // Cambiar a otra hora: 0830, 1115, etc.
 
-        // Observar cambios en la autenticación del usuario
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                console.log('Usuario autenticado:', user.uid);
-                // Llamar a la función para obtener el horario
-                getProfessorSchedule(user.uid, simulatedDate);
-            } else {
-                console.error('No hay usuario autenticado.');
-                alert('Debes iniciar sesión para generar el QR.');
-            }
-        });
+        // Función principal para obtener el horario y generar el QR
+        function getProfessorSchedule(userId) {
+            const classRef = firebase.database().ref(`users/${userId}/horario`);
 
-// Obtener el horario del profesor
-function getProfessorSchedule(userId, currentTime) {
-    const classRef = firebase.database().ref(`users/${userId}/horario`);
-    const currentDay = currentTime.toLocaleString('es-ES', { weekday: 'long' }).toLowerCase(); // Día actual (lunes, martes, etc.)
-    const currentHour = currentTime.getHours() * 100 + currentTime.getMinutes(); // Formato HHMM (por ejemplo 1030 para las 10:30)
+            // Usar simulación para pruebas o datos reales
+            const currentDay = simulateDay.toLowerCase(); // Día simulado
+            const currentHour = simulateHour; // Hora simulada en formato HHMM
 
-    console.log(`Buscando clases para el usuario: ${userId}`);
-    console.log(`Día actual: ${currentDay}, Hora actual: ${currentHour}`);
+            console.log(`Buscando clases para el usuario: ${userId}`);
+            console.log(`Día actual: ${currentDay}, Hora actual: ${currentHour}`);
 
-    classRef.once('value').then(snapshot => {
-        let classData = snapshot.val();
-        if (!classData) {
-            console.error('No se encontraron horarios en la base de datos para este usuario.');
-            alert('No se encontró un horario asociado a este usuario.');
-            return;
-        }
-
-        console.log('Datos de horario obtenidos:', classData);
-
-        let currentClass = null;
-
-        // Buscar la clase correspondiente al día y hora actual
-        if (classData[currentDay]) {
-            console.log(`Horario del día ${currentDay}:`, classData[currentDay]);
-
-            for (let hour in classData[currentDay]) {
-                const hourInt = parseInt(hour); // Convertir la hora registrada a entero (ej. '1030' se convierte en 1030)
-                
-                // Mostrar en consola la comparación
-                console.log(`Comparando hora actual ${currentHour} con la clase a las ${hourInt}:`);
-
-                // Usar un rango de tiempo de ±45 minutos para buscar la clase
-                if (hourInt <= currentHour && currentHour < hourInt + 45) {
-                    currentClass = {
-                        materia: classData[currentDay][hour],
-                        hora: hour
-                    };
-                    break;
+            classRef.once('value').then(snapshot => {
+                const classData = snapshot.val();
+                if (!classData) {
+                    console.error('No se encontraron horarios en la base de datos para este usuario.');
+                    alert('No se encontró un horario asociado a este usuario.');
+                    return;
                 }
-            }
-        }
 
-        if (currentClass) {
-            // Mostrar el mensaje de asistencia
-            document.getElementById('attendanceMessage').innerHTML = 
-                `Asistencia de ${currentClass.materia} a las ${currentClass.hora}`;
+                console.log('Datos de horario obtenidos:', classData);
 
-            console.log('Clase encontrada:', currentClass);
+                let currentClass = null;
 
-            // Generar el QR con la información de la clase
-            generateQR(currentClass);
-        } else {
-            console.log('No se encontró clase para la hora actual.');
-            alert('No hay clases programadas para este horario.');
-        }
-    }).catch(error => {
-        console.error('Error al leer los datos de la base de datos:', error);
-    });
-}
+                // Verificar si hay clase en el día actual
+                if (classData[currentDay]) {
+                    console.log(`Horario del día ${currentDay}:`, classData[currentDay]);
 
-        // Generar el código QR con los datos de la clase
-        function generateQR(currentClass) {
-            const qrData = JSON.stringify(currentClass); // Datos de la materia y la hora
-            console.log('Generando QR con los siguientes datos:', qrData);
-            QRCode.toCanvas(document.getElementById('qrContainer'), qrData, function (error) {
-                if (error) {
-                    console.error('Error al generar el código QR:', error);
+                    // Comprobar si existe una clase a la hora exacta
+                    if (classData[currentDay][currentHour]) {
+                        currentClass = {
+                            materia: classData[currentDay][currentHour],
+                            hora: currentHour
+                        };
+                    }
+                }
+
+                if (currentClass) {
+                    console.log('Clase encontrada:', currentClass);
+                    // Mostrar el mensaje de la clase actual
+                    document.getElementById('attendanceMessage').innerHTML = 
+                        `Asistencia de la clase: ${currentClass.materia} a las ${formatTime(currentClass.hora)}`;
+
+                    // Generar el QR con la información de la clase
+                    generateQR(currentClass, userId, currentDay);
                 } else {
-                    console.log('Código QR generado con éxito.');
+                    console.log('No se encontró clase para la hora actual.');
+                    alert('No hay clases programadas para este horario.');
                 }
+            }).catch(error => {
+                console.error('Error al leer los datos de la base de datos:', error);
             });
         }
 
-        // Función para registrar la asistencia cuando el alumno escanea el QR
-        function registerAttendance(qrData, userId) {
-            const currentDate = new Date().toISOString().split('T')[0]; // Fecha actual en formato "YYYY-MM-DD"
-            const attendanceRef = firebase.database().ref(`attendance/${qrData.materia}/${currentDate}/${userId}`);
+        // Función para generar el QR con la información de la clase
+        function generateQR(classInfo, userId, day) {
+            const qrData = {
+                profesorId: userId,
+                materia: classInfo.materia,
+                hora: classInfo.hora,
+                dia: day
+            };
 
-            // Verificar si el alumno ya registró asistencia
+            // Generar el QR
+            const qrcodeElement = document.getElementById('qrcode');
+            qrcodeElement.innerHTML = ""; // Limpiar cualquier QR previo
+            new QRCode(qrcodeElement, {
+                text: JSON.stringify(qrData),
+                width: 256,
+                height: 256,
+            });
+
+            console.log('QR generado con los datos:', qrData);
+
+            // Registrar la asistencia en Firebase cuando el QR sea escaneado
+            setupAttendance(qrData);
+        }
+
+        // Función para registrar la asistencia en Firebase
+        function setupAttendance(qrData) {
+            const attendanceRef = firebase.database().ref(`attendance/${qrData.dia}/${qrData.materia}`);
             attendanceRef.once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    alert("Ya registraste tu asistencia.");
-                } else {
-                    // Registrar asistencia
+                if (!snapshot.exists()) {
+                    // Crear un registro vacío si no existe
                     attendanceRef.set({
-                        name: userId, // Suponiendo que el userId es el nombre del alumno (o puedes usar otro campo)
-                        attended: true
-                    }).then(() => {
-                        alert("Asistencia registrada correctamente.");
-                    }).catch(error => {
-                        console.error('Error al registrar la asistencia:', error);
+                        createdAt: new Date().toISOString(),
+                        estudiantes: {}
                     });
+                    console.log('Registro de asistencia creado.');
+                } else {
+                    console.log('El registro de asistencia ya existe.');
                 }
             });
         }
+
+        // Función para formatear la hora (de 1030 a 10:30)
+        function formatTime(hour) {
+            const hours = Math.floor(hour / 100);
+            const minutes = hour % 100;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        // Obtener el ID del usuario autenticado
+        const userId = "ICFZFW6trcVIVRC378DlNVK0B1r2"; // Reemplazar con el ID real del usuario autenticado
+        getProfessorSchedule(userId);
     </script>
 </body>
 </html>
