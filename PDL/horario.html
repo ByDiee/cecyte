@@ -192,7 +192,7 @@
                                     row.appendChild(hoursCell);
 
                                     row.addEventListener('click', () => {
-                                        saveToSchedule(subjectName, semester, group, subjects[semester][group]);
+                                        saveToSchedule(subjectName, semester, group);
                                     });
 
                                     subjectBody.appendChild(row);
@@ -205,7 +205,7 @@
         }
 
         // Guardar materia seleccionada en Firebase
-        function saveToSchedule(subjectName, semester, group, schedule) {
+        function saveToSchedule(subjectName, semester, group) {
             const currentUser = firebase.auth().currentUser;
 
             if (!currentUser) {
@@ -217,45 +217,54 @@
 
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
-
-                let isConflict = false;
                 const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+                
+                // Verificar conflictos en el horario
+                let isConflict = false;
                 days.forEach(day => {
-                    // Verificar conflicto de horarios
-                    for (let hour in schedule[day]) {
-                        if (existingSchedule[day] && existingSchedule[day][hour]) {
-                            isConflict = true; // Ya hay una materia en ese horario
+                    times.forEach(time => {
+                        if (existingSchedule[day] && existingSchedule[day][time]) {
+                            if (existingSchedule[day][time] !== subjectName) {
+                                isConflict = true;
+                            }
                         }
-                    }
+                    });
                 });
 
                 if (isConflict) {
-                    alert('Ya tienes una materia asignada en este horario.');
+                    alert('Conflicto de horarios con otra materia.');
                     return;
                 }
 
-                // Asignar la materia a todos los días correspondientes
-                for (let day in schedule) {
+                // Asignar todas las horas de la materia seleccionada
+                days.forEach(day => {
                     if (!existingSchedule[day]) {
                         existingSchedule[day] = {};
                     }
-                    for (let hour in schedule[day]) {
-                        existingSchedule[day][hour] = subjectName;
-                    }
-                }
 
-                userScheduleRef.set(existingSchedule)
-                    .then(() => {
-                        alert('Materia asignada con éxito.');
-                        window.location.href = 'pagina1.html'; // Redirigir
-                    })
-                    .catch(error => {
-                        alert('Error al guardar la materia: ' + error.message);
+                    times.forEach(time => {
+                        if (existingSchedule[day][time] === undefined) {
+                            existingSchedule[day][time] = (existingSchedule[day][time] === undefined) ? subjectName : existingSchedule[day][time];
+                        }
                     });
+                });
+
+                // Guardar el horario actualizado en Firebase
+                userScheduleRef.set(existingSchedule).then(() => {
+                    alert('Horario actualizado con éxito.');
+                    loadSubjects(); // Recargar las materias después de la actualización
+                }).catch(error => {
+                    alert('Error al guardar horario: ' + error.message);
+                });
             });
         }
 
-        loadSubjects();
+        // Iniciar la carga de materias al cargar la página
+        window.onload = function() {
+            loadSubjects();
+        };
+
     </script>
 </body>
 </html>
