@@ -194,13 +194,8 @@
                                     row.appendChild(hoursCell);
 
                                     row.addEventListener('click', () => {
-                                        // Obtener el día y la hora de la celda seleccionada
-                                        const selectedCell = row.querySelector('.hours-table td.selected');
-                                        if (selectedCell) {
-                                            const day = selectedCell.dataset.day;
-                                            const time = selectedCell.dataset.time;
-                                            saveToSchedule(subjectName, semester, group, day, time);
-                                        }
+                                        // Asignar todas las horas de la materia seleccionada
+                                        assignAllHours(subjectName, semester, group, subjects);
                                     });
 
                                     subjectBody.appendChild(row);
@@ -212,8 +207,8 @@
             });
         }
 
-        // Guardar materia seleccionada en Firebase
-        function saveToSchedule(subjectName, semester, group, day, time) {
+        // Asignar todas las horas de la materia seleccionada
+        function assignAllHours(subjectName, semester, group, subjects) {
             const currentUser = firebase.auth().currentUser;
 
             if (!currentUser) {
@@ -226,18 +221,24 @@
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
 
-                // Verificar si ya existe una materia en ese día y hora
-                if (existingSchedule[day] && existingSchedule[day][time]) {
-                    alert('Ya tienes una clase en ese horario.');
-                    return;
-                }
+                // Iterar sobre todos los días y horas para asignar la materia seleccionada
+                for (let semester in subjects) {
+                    for (let group in subjects[semester]) {
+                        for (let day in subjects[semester][group]) {
+                            for (let hour in subjects[semester][group][day]) {
+                                const subjectInSchedule = subjects[semester][group][day][hour];
 
-                // Asignar solo la hora específica de la materia seleccionada
-                if (!existingSchedule[day]) {
-                    existingSchedule[day] = {};
+                                // Si la materia coincide, la asignamos
+                                if (subjectInSchedule === subjectName) {
+                                    if (!existingSchedule[day]) {
+                                        existingSchedule[day] = {};
+                                    }
+                                    existingSchedule[day][hour] = subjectName;
+                                }
+                            }
+                        }
+                    }
                 }
-
-                existingSchedule[day][time] = subjectName;
 
                 // Guardar el horario actualizado en Firebase
                 userScheduleRef.set(existingSchedule).then(() => {
@@ -253,7 +254,6 @@
         window.onload = function() {
             loadSubjects();
         };
-
     </script>
 </body>
 </html>
