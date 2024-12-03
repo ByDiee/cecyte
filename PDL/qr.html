@@ -17,17 +17,21 @@
         <canvas id="qr-code"></canvas>
     </div>
     <script>
-        // Función principal para buscar la clase y generar el QR
-        async function buscarClaseYGenerarQR() {
-            try {
-                // Obtener el usuario autenticado directamente desde Firebase
-                const user = firebase.auth().currentUser;
-                if (!user) {
-                    document.getElementById('qr-info').textContent = 'No estás autenticado.';
-                    return;
-                }
+        // Listener para cambios en el estado de autenticación
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                console.log("Usuario autenticado:", user.uid);
+                document.getElementById("qr-info").textContent = "Autenticado. Buscando clase...";
+                await buscarClaseYGenerarQR(user.uid);
+            } else {
+                console.log("No estás autenticado.");
+                document.getElementById("qr-info").textContent = "No estás autenticado. Por favor, inicia sesión.";
+            }
+        });
 
-                const userId = user.uid; // ID del usuario autenticado
+        // Función principal para buscar la clase y generar el QR
+        async function buscarClaseYGenerarQR(userId) {
+            try {
                 console.log("Buscando clases para el usuario:", userId);
 
                 // Día y hora actuales (puedes simular o usar valores dinámicos)
@@ -86,9 +90,6 @@
                 console.log("Código QR generado exitosamente.");
             });
         }
-
-        // Ejecutar la función al cargar la página
-        buscarClaseYGenerarQR();
     </script>
 </body>
 </html>
