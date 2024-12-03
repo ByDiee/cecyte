@@ -72,9 +72,15 @@ function getProfessorSchedule(userId, currentTime) {
 
         // Buscar la clase correspondiente al día y hora actual
         if (classData[currentDay]) {
+            console.log(`Horario del día ${currentDay}:`, classData[currentDay]);
+
             for (let hour in classData[currentDay]) {
+                const hourInt = parseInt(hour); // Convertir la hora registrada a entero (ej. '1030' se convierte en 1030)
+                
+                // Mostrar en consola la comparación
+                console.log(`Comparando hora actual ${currentHour} con la clase a las ${hourInt}:`);
+
                 // Usar un rango de tiempo de ±45 minutos para buscar la clase
-                const hourInt = parseInt(hour);
                 if (hourInt <= currentHour && currentHour < hourInt + 45) {
                     currentClass = {
                         materia: classData[currentDay][hour],
