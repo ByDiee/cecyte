@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script> <!-- Biblioteca para generar QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
     <h1>Generar QR para la Clase Actual</h1>
@@ -29,17 +29,58 @@
             }
         });
 
+        // Módulos de tiempo en minutos
+        const MODULOS = [
+            { inicio: 420, fin: 464 }, // 07:00 - 07:44
+            { inicio: 465, fin: 509 }, // 07:45 - 08:29
+            { inicio: 510, fin: 554 }, // 08:30 - 09:14
+            { inicio: 555, fin: 599 }, // 09:15 - 09:59
+            { inicio: 630, fin: 674 }, // 10:30 - 11:14
+            { inicio: 675, fin: 719 }, // 11:15 - 11:59
+            { inicio: 720, fin: 764 }, // 12:00 - 12:44
+            { inicio: 765, fin: 809 }, // 12:45 - 13:29
+            { inicio: 810, fin: 854 }, // 13:30 - 14:14
+            { inicio: 855, fin: 899 }, // 14:15 - 14:59
+        ];
+
+        // Convierte una hora en formato HHMM a minutos desde la medianoche
+        function horaEnMinutos(hora) {
+            const horas = Math.floor(hora / 100);
+            const minutos = hora % 100;
+            return horas * 60 + minutos;
+        }
+
+        // Determina el módulo actual basado en la hora en minutos
+        function obtenerModuloActual(horaEnMinutos) {
+            for (let i = 0; i < MODULOS.length; i++) {
+                const { inicio, fin } = MODULOS[i];
+                if (horaEnMinutos >= inicio && horaEnMinutos <= fin) {
+                    return i;
+                }
+            }
+            return null; // No hay módulo válido
+        }
+
         // Función principal para buscar la clase y generar el QR
         async function buscarClaseYGenerarQR(userId) {
             try {
                 console.log("Buscando clases para el usuario:", userId);
 
-                // Día y hora actuales (puedes simular o usar valores dinámicos)
-                const diaActual = "Lunes"; // Simula un día (puedes ajustar)
-                const horaActual = "1035"; // Simula una hora en formato de 24 horas sin ":"
-                console.log("Día actual:", diaActual, ", Hora actual:", horaActual);
+                // Día y hora actuales
+                const fecha = new Date();
+                const diaSemana = fecha.toLocaleDateString("es-ES", { weekday: "long" }).toLowerCase();
+                const horaActual = fecha.getHours() * 100 + fecha.getMinutes();
+                console.log("Día actual:", diaSemana, ", Hora actual:", horaActual);
 
-                // Referencia al horario del profesor en Firebase
+                // Convertir hora actual a minutos y determinar módulo
+                const minutosActuales = horaEnMinutos(horaActual);
+                const moduloActual = obtenerModuloActual(minutosActuales);
+                if (moduloActual === null) {
+                    document.getElementById('qr-info').textContent = "No estás en un horario de clase.";
+                    return;
+                }
+
+                // Buscar la clase correspondiente en Firebase
                 const dbRef = firebase.database().ref(`users/${userId}/horario`);
                 const snapshot = await dbRef.get();
 
@@ -51,14 +92,15 @@
                 const horario = snapshot.val();
                 console.log("Horario obtenido:", horario);
 
-                // Buscar la clase correspondiente al día y hora actuales
-                const clasesDelDia = horario[diaActual];
+                // Verificar si hay clase para el módulo actual
+                const clasesDelDia = horario[diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)];
                 if (!clasesDelDia) {
-                    document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaActual}.`;
+                    document.getElementById('qr-info').textContent = `No hay clases programadas para ${diaSemana}.`;
                     return;
                 }
 
-                const claseActual = clasesDelDia[horaActual];
+                const horaInicioModulo = MODULOS[moduloActual].inicio;
+                const claseActual = clasesDelDia[horaInicioModulo];
                 if (!claseActual || claseActual === "") {
                     document.getElementById('qr-info').textContent = "No hay clases programadas para este horario.";
                     return;
@@ -69,8 +111,8 @@
                 // Generar el QR con la información de la clase
                 const qrData = {
                     profesorId: userId,
-                    dia: diaActual,
-                    hora: horaActual,
+                    dia: diaSemana,
+                    modulo: moduloActual,
                     clase: claseActual,
                 };
 
@@ -82,7 +124,7 @@
             }
         }
 
-        // Función para generar el QR
+        // Generar el QR con la información de la clase
         function generarCodigoQR(data) {
             const canvas = document.getElementById("qr-code");
             QRCode.toCanvas(canvas, JSON.stringify(data), function (error) {
