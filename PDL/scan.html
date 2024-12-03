@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear QR para Asistencia</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="auth.js"></script> <!-- Este es tu archivo de autenticación -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #qr-canvas { width: 100%; height: auto; }
+        #notification { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Escanear QR para Asistencia</h1>
+    <video id="video" width="100%" height="auto" style="max-width: 600px;"></video>
+    <canvas id="qr-canvas" style="display:none;"></canvas>
+    <div id="notification" style="display:none; color: green;">
+        ¡Asistencia registrada correctamente!
+    </div>
+
+    <script>
+
+        // Variables para el video y el canvas
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('qr-canvas');
+        const ctx = canvas.getContext('2d');
+        const notification = document.getElementById('notification');
+
+        // Acceder a la cámara del dispositivo móvil
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.setAttribute('playsinline', true); // Necesario para Safari
+                video.play();
+                requestAnimationFrame(scanQRCode); // Iniciar escaneo
+            }).catch(err => {
+                console.error('Error al acceder a la cámara:', err);
+            });
+
+        // Función para escanear el QR
+        function scanQRCode() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                if (code) {
+                    // Si se detecta el QR, procesamos la información
+                    processQRCodeData(code.data);
+                }
+            }
+            requestAnimationFrame(scanQRCode); // Continuar escaneando
+        }
+
+        // Procesar la información del QR
+        async function processQRCodeData(data) {
+            try {
+                const qrData = JSON.parse(data);
+                const { profesorId, dia, modulo, clase } = qrData;
+                
+                // Comprobar si el usuario está autenticado
+                firebase.auth().onAuthStateChanged(async user => {
+                    if (user) {
+                        // Registrar la asistencia en Firebase
+                        await registerAttendance(user.uid, profesorId, dia, modulo, clase);
+                    } else {
+                        // Si no está autenticado, mostrar un mensaje
+                        alert("Por favor, inicia sesión para registrar tu asistencia.");
+                    }
+                });
+            } catch (error) {
+                console.error('Error al procesar el QR:', error);
+            }
+        }
+
+        // Registrar la asistencia en Firebase
+        async function registerAttendance(studentId, profesorId, dia, modulo, clase) {
+            try {
+                const dbRef = firebase.database().ref(`asistencias/${dia}/${modulo}/${clase}`);
+                const attendanceRecord = {
+                    studentId,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                };
+
+                await dbRef.push(attendanceRecord); // Registrar la asistencia en Firebase
+
+                // Mostrar notificación de éxito
+                notification.style.display = 'block';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                console.error('Error al registrar la asistencia:', error);
+            }
+        }
+    </script>
+</body>
+</html>
