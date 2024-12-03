@@ -16,22 +16,38 @@
   <p id="qr">Código QR: No generado</p>
 
   <script>
-    // Firebase y autenticación
+    // Función para obtener el ID del usuario después de un tiempo de espera
+    function getCurrentUserId() {
+      return new Promise((resolve, reject) => {
+        const user = firebase.auth().currentUser;
+        if (user) {
+          resolve(user.uid);
+        } else {
+          reject('Usuario no autenticado');
+        }
+      });
+    }
+
+    // Función principal para buscar clase y generar QR
     async function buscarClaseYGenerarQR() {
       try {
-        const userId = getCurrentUserId(); // Obtener ID del usuario autenticado
+        // Esperar hasta que el usuario esté autenticado
+        const userId = await getCurrentUserId();
         const rolUsuario = await getUserRole(userId); // Obtener rol del usuario
-        if (!userId || rolUsuario !== 'admin') {
-          document.getElementById('estado-usuario').textContent = 'Estado del usuario: No autenticado o sin permisos';
+        if (rolUsuario !== 'admin') {
+          document.getElementById('estado-usuario').textContent = 'Estado del usuario: No autorizado';
           return;
         }
-        
+
         document.getElementById('estado-usuario').textContent = `Estado del usuario: Autenticado (${rolUsuario})`;
 
         // Configurar hora simulada
         const horaSimulada = "1031"; // Modificar esta hora para pruebas (formato HHmm)
 
-        const claseActual = await obtenerClaseActual(userId, horaSimulada);
+        // Simulación de día (puedes modificar el día para probar)
+        const diaSimulado = "lunes";  // Cambiar aquí el día (ejemplo: "lunes", "martes", etc.)
+
+        const claseActual = await obtenerClaseActual(userId, horaSimulada, diaSimulado);
         if (claseActual) {
           document.getElementById('clase-actual').textContent = `Clase actual: ${claseActual}`;
           generarQRCode(claseActual);
@@ -40,11 +56,12 @@
         }
       } catch (error) {
         console.error('Error al buscar la clase:', error);
+        document.getElementById('estado-usuario').textContent = 'Estado del usuario: No autenticado';
       }
     }
 
-    // Obtener la clase actual basada en la hora simulada
-    async function obtenerClaseActual(userId, horaSimulada) {
+    // Obtener la clase actual basada en la hora simulada y día simulado
+    async function obtenerClaseActual(userId, horaSimulada, diaSimulado) {
       const db = firebase.database();
       const snapshot = await db.ref(`users/${userId}/horario`).once('value');
       const horario = snapshot.val();
@@ -53,10 +70,6 @@
         console.warn('No se encontraron horarios en la base de datos.');
         return null;
       }
-
-      // Simular día y hora
-      const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-      const diaSimulado = diasSemana[new Date().getDay()]; // Cambiar si necesitas simular otro día
 
       console.log(`Día simulado: ${diaSimulado}, Hora simulada: ${horaSimulada}`);
       const clasesDia = horario[diaSimulado.charAt(0).toUpperCase() + diaSimulado.slice(1)];
@@ -96,7 +109,11 @@
     }
 
     // Llamar a la función al cargar la página
-    buscarClaseYGenerarQR();
+    window.onload = async function() {
+      setTimeout(() => {
+        buscarClaseYGenerarQR();
+      }, 3000); // Retraso de 3 segundos para asegurar autenticación
+    };
   </script>
 </body>
 </html>
