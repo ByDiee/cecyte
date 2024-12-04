@@ -3,22 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar QR para Clase Simulada</title>
+    <title>Generar QR para Clase</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #004085;
+            margin-bottom: 20px;
+        }
+
+        #qr-container {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        #qr-info {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+
+        canvas {
+            margin: 10px auto;
+        }
+
+        .logo {
+            width: 100px;
+            height: auto;
+            margin-top: 20px;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
 </head>
 <body>
-    <h1>Generar QR para Clase Simulada</h1>
+    <h1>Generar QR para Clase</h1>
     <div id="qr-container">
-        <p id="qr-info"></p>
+        <p id="qr-info">Generando información...</p>
         <canvas id="qr-code"></canvas>
+        <img id="logo" class="logo" src="logo.png" alt="Logo de la Institución" />
     </div>
+    <footer>Escuela Secundaria | Todos los derechos reservados</footer>
 
     <script>
-        // Definición de módulos de horario (minutos desde medianoche)
         const MODULOS = [
             { inicio: 420, fin: 464 }, // 07:00 - 07:44
             { inicio: 465, fin: 509 }, // 07:45 - 08:29
@@ -32,19 +83,16 @@
             { inicio: 855, fin: 899 }, // 14:15 - 14:59
         ];
 
-        // Función para convertir hora en formato HHMM a minutos desde medianoche
         const horaEnMinutos = (hora) => {
             const horas = Math.floor(hora / 100);
             const minutos = hora % 100;
             return horas * 60 + minutos;
         };
 
-        // Determina el módulo actual basado en la hora en minutos
         const obtenerModuloActual = (horaMinutos) => {
             return MODULOS.findIndex(({ inicio, fin }) => horaMinutos >= inicio && horaMinutos <= fin);
         };
 
-        // Función para buscar la clase en Firebase y generar QR
         const buscarClaseYGenerarQR = async (userId, dia, hora) => {
             try {
                 const minutosActuales = horaEnMinutos(parseInt(hora));
@@ -55,7 +103,6 @@
                     return;
                 }
 
-                // Obtener horario del usuario
                 const dbRef = firebase.database().ref(`users/${userId}/horario`);
                 const snapshot = await dbRef.get();
 
@@ -73,55 +120,49 @@
                     return;
                 }
 
-                // Buscar la clase actual
-                const horaInicioModulo = MODULOS[moduloActual].inicio;
                 const claseActual = Object.entries(clasesDelDia).find(([horaClave]) => {
                     const minutosClave = horaEnMinutos(parseInt(horaClave));
                     return minutosClave >= MODULOS[moduloActual].inicio && minutosClave <= MODULOS[moduloActual].fin;
                 });
 
                 if (!claseActual) {
-                    actualizarInfo(`No hay clases programadas para este horario (${horaInicioModulo}).`);
+                    actualizarInfo(`No hay clases programadas para este horario.`);
                     return;
                 }
 
                 const [_, datosClase] = claseActual;
-
-                // Generar QR
                 const qrData = {
                     materia: datosClase.materia,
                     grado: datosClase.grado,
                     grupo: datosClase.grupo,
-                    hora,
+                    hora: `${hora.slice(0, 2)}:${hora.slice(2)}`, // Formato HH:MM
                     dia,
                 };
 
                 generarCodigoQR(qrData);
-                actualizarInfo(`Materia: ${datosClase.materia}, Hora: ${hora}, Día: ${dia}`);
+                actualizarInfo(`Materia: ${datosClase.materia}, Hora: ${qrData.hora}, Día: ${dia}`);
             } catch (error) {
                 console.error("Error al buscar la clase:", error);
                 actualizarInfo("Ocurrió un error al buscar la clase.");
             }
         };
 
-        // Generar QR
         const generarCodigoQR = (data) => {
             const canvas = document.getElementById("qr-code");
-            QRCode.toCanvas(canvas, JSON.stringify(data), (error) => {
-                if (error) {
-                    console.error("Error al generar el QR:", error);
-                } else {
-                    console.log("Código QR generado exitosamente.");
+            QRCode.toCanvas(
+                canvas,
+                JSON.stringify(data),
+                { width: 200, margin: 1 },
+                (error) => {
+                    if (error) console.error("Error al generar el QR:", error);
                 }
-            });
+            );
         };
 
-        // Actualizar la información en pantalla
         const actualizarInfo = (mensaje) => {
             document.getElementById("qr-info").textContent = mensaje;
         };
 
-        // Configuración de simulación
         const esSimulacion = true;
         const diaSimulado = "martes";
         const horaSimulada = "0955";
