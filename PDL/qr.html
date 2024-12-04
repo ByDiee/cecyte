@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar QR de Clase Simulada</title>
+    <title>Generar QR para Clase Simulada</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -107,14 +107,15 @@
 
                 // Generar el QR con la información de la clase
                 const qrData = {
-                    profesorId: userId,
+                    materia: claseActual.materia,
+                    grado: claseActual.grado,
+                    grupo: claseActual.grupo,
+                    hora: hora,
                     dia: dia,
-                    modulo: moduloActual,
-                    clase: claseActual,
                 };
 
                 generarCodigoQR(qrData);
-                document.getElementById('qr-info').textContent = `Clase: ${claseActual}`;
+                document.getElementById('qr-info').textContent = `Materia: ${claseActual.materia}, Hora: ${hora}, Día: ${dia}`;
             } catch (error) {
                 console.error("Error al buscar la clase:", error);
                 document.getElementById('qr-info').textContent = "Ocurrió un error al buscar la clase.";
