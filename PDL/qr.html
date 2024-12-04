@@ -29,21 +29,26 @@
     const recesoFin = 1029;    // 10:30
     const diasHabiles = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 
-    // Verificar si es día hábil
-    if (!diasHabiles.includes(currentDay)) {
-      console.error('No hay clases los fines de semana.');
-      return;
-    }
+    // Función para validar el día y horario
+    function validarHorario() {
+      // Verificar si es día hábil
+      if (!diasHabiles.includes(currentDay)) {
+        console.error('No hay clases los fines de semana.');
+        return false;
+      }
 
-    // Verificar si es horario válido
-    if (currentTime >= recesoInicio && currentTime < recesoFin) {
-      console.error('Es hora de receso, no hay clases.');
-      return;
-    }
+      // Verificar si es horario válido
+      if (currentTime >= recesoInicio && currentTime < recesoFin) {
+        console.error('Es hora de receso, no hay clases.');
+        return false;
+      }
 
-    if (currentTime < horarioInicio || currentTime >= horarioFin) {
-      console.error('Fuera del horario escolar.');
-      return;
+      if (currentTime < horarioInicio || currentTime >= horarioFin) {
+        console.error('Fuera del horario escolar.');
+        return false;
+      }
+
+      return true;
     }
 
     // Calcular la hora del módulo
@@ -53,74 +58,76 @@
       return inicioMinutos + diferencia * moduloDuracion;
     };
 
-    const horaModulo = calcularModulo(horarioInicio);
-    const horaClave = String(horaModulo).padStart(4, '0');
+    if (validarHorario()) {
+      const horaModulo = calcularModulo(horarioInicio);
+      const horaClave = String(horaModulo).padStart(4, '0');
 
-    // Identificar la materia actual del maestro
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        const userId = user.uid;
-        const userRef = firebaseDatabase.ref(`users/${userId}`);
-        const snapshot = await userRef.once('value');
-        const userData = snapshot.val();
+      // Identificar la materia actual del maestro
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+          const userId = user.uid;
+          const userRef = firebaseDatabase.ref(`users/${userId}`);
+          const snapshot = await userRef.once('value');
+          const userData = snapshot.val();
 
-        if (!userData || !userData.horario || !userData.horario[currentDay] || !userData.horario[currentDay][horaClave]) {
-          console.error('No se encontró la materia en el horario del maestro.');
-          return;
-        }
+          if (!userData || !userData.horario || !userData.horario[currentDay] || !userData.horario[currentDay][horaClave]) {
+            console.error('No se encontró la materia en el horario del maestro.');
+            return;
+          }
 
-        const materia = userData.horario[currentDay][horaClave];
-        if (!materia) {
-          console.error('No hay materia asignada en esta hora.');
-          return;
-        }
+          const materia = userData.horario[currentDay][horaClave];
+          if (!materia) {
+            console.error('No hay materia asignada en esta hora.');
+            return;
+          }
 
-        // Buscar el grupo y grado que corresponde a la materia
-        const classSchedulesRef = firebaseDatabase.ref('classSchedules');
-        const classSchedulesSnapshot = await classSchedulesRef.once('value');
-        const classSchedules = classSchedulesSnapshot.val();
+          // Buscar el grupo y grado que corresponde a la materia
+          const classSchedulesRef = firebaseDatabase.ref('classSchedules');
+          const classSchedulesSnapshot = await classSchedulesRef.once('value');
+          const classSchedules = classSchedulesSnapshot.val();
 
-        let grado = null;
-        let grupo = null;
+          let grado = null;
+          let grupo = null;
 
-        outerLoop:
-        for (const nivel in classSchedules) {
-          for (const grupoKey in classSchedules[nivel]) {
-            const diaHorario = classSchedules[nivel][grupoKey][currentDay];
-            if (diaHorario && diaHorario[horaClave] === materia) {
-              grado = nivel;
-              grupo = grupoKey;
-              break outerLoop;
+          outerLoop:
+          for (const nivel in classSchedules) {
+            for (const grupoKey in classSchedules[nivel]) {
+              const diaHorario = classSchedules[nivel][grupoKey][currentDay];
+              if (diaHorario && diaHorario[horaClave] === materia) {
+                grado = nivel;
+                grupo = grupoKey;
+                break outerLoop;
+              }
             }
           }
+
+          if (!grado || !grupo) {
+            console.error('No se encontró un grado y grupo que coincida con la materia.');
+            return;
+          }
+
+          // Generar el contenido del QR
+          const qrData = {
+            materia,
+            dia: currentDay,
+            hora: horaClave,
+            grado,
+            grupo,
+          };
+
+          // Generar código QR
+          const qrCode = new QRious({
+            element: document.getElementById('qr-code'),
+            size: 250,
+            value: JSON.stringify(qrData),
+          });
+
+          console.log('QR generado con éxito:', qrData);
+        } else {
+          console.error('Usuario no autenticado.');
         }
-
-        if (!grado || !grupo) {
-          console.error('No se encontró un grado y grupo que coincida con la materia.');
-          return;
-        }
-
-        // Generar el contenido del QR
-        const qrData = {
-          materia,
-          dia: currentDay,
-          hora: horaClave,
-          grado,
-          grupo,
-        };
-
-        // Generar código QR
-        const qrCode = new QRious({
-          element: document.getElementById('qr-code'),
-          size: 250,
-          value: JSON.stringify(qrData),
-        });
-
-        console.log('QR generado con éxito:', qrData);
-      } else {
-        console.error('Usuario no autenticado.');
-      }
-    });
+      });
+    }
   </script>
 </body>
 </html>
