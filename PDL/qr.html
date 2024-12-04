@@ -3,124 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generar QR de Asistencia</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <title>Generador de QR para Asistencias</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/umd/qrious.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="auth.js"></script>
 </head>
 <body>
-  <h1>Generar QR de Asistencia</h1>
-  <button id="generateQR">Generar QR</button>
-  <div id="qrContainer"></div>
-
+  <h1>Generador de QR para Asistencias</h1>
+  <canvas id="qr-code"></canvas>
   <script>
-    // Firebase config y referencia a la base de datos ya configurados en auth.js
+    const firebaseDatabase = firebase.database();
 
-    async function getCurrentClassAndGroup() {
-      const db = firebase.database();
-      const auth = firebase.auth();
+    // Simulación de fecha y hora (para pruebas)
+    const simulatedDate = new Date('2024-12-04T11:20:00'); // Cambiar según pruebas
+    const currentDay = simulatedDate.toLocaleString('es-MX', { weekday: 'long' }).toLowerCase();
+    const currentTime = simulatedDate.toTimeString().substring(0, 5).replace(':', '');
 
-      // Obtener usuario actual
-      const user = auth.currentUser;
-      if (!user) {
-        alert("Inicia sesión para continuar");
-        return;
-      }
+    // Configuración de horarios
+    const horarioInicio = 700; // 07:00
+    const horarioFin = 1500;  // 15:00
+    const moduloDuracion = 44; // Duración de cada módulo en minutos
+    const recesoInicio = 1000; // 10:00
+    const recesoFin = 1029;    // 10:30
+    const diasHabiles = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 
-      const userId = user.uid;
+    // Verificar si es día hábil
+    if (!diasHabiles.includes(currentDay)) {
+      console.error('No hay clases los fines de semana.');
+      return;
+    }
 
-      // Obtener datos del horario del maestro
-      const userSnapshot = await db.ref(`users/${userId}`).once("value");
-      const userData = userSnapshot.val();
+    // Verificar si es horario válido
+    if (currentTime >= recesoInicio && currentTime < recesoFin) {
+      console.error('Es hora de receso, no hay clases.');
+      return;
+    }
 
-      if (!userData.horario) {
-        alert("No tienes horario registrado.");
-        return;
-      }
+    if (currentTime < horarioInicio || currentTime >= horarioFin) {
+      console.error('Fuera del horario escolar.');
+      return;
+    }
 
-      const horario = userData.horario;
+    // Calcular la hora del módulo
+    const calcularModulo = (hora) => {
+      const inicioMinutos = Math.floor(hora / 100) * 60 + (hora % 100);
+      const diferencia = Math.floor((simulatedDate.getHours() * 60 + simulatedDate.getMinutes() - inicioMinutos) / moduloDuracion);
+      return inicioMinutos + diferencia * moduloDuracion;
+    };
 
-      // Obtener el día y hora actual
-      const now = new Date();
-      const currentDay = [
-        "Domingo",
-        "Lunes",
-        "Martes",
-        "Miercoles",
-        "Jueves",
-        "Viernes",
-        "Sábado",
-      ][now.getDay()];
-      const currentTime =
-        String(now.getHours()).padStart(2, "0") +
-        String(now.getMinutes()).padStart(2, "0");
+    const horaModulo = calcularModulo(horarioInicio);
+    const horaClave = String(horaModulo).padStart(4, '0');
 
-      // Obtener la materia actual según el horario del maestro
-      const currentClass = horario[currentDay]?.[currentTime];
+    // Identificar la materia actual del maestro
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        const userId = user.uid;
+        const userRef = firebaseDatabase.ref(`users/${userId}`);
+        const snapshot = await userRef.once('value');
+        const userData = snapshot.val();
 
-      if (!currentClass) {
-        alert("No tienes clases programadas en este momento.");
-        return;
-      }
+        if (!userData || !userData.horario || !userData.horario[currentDay] || !userData.horario[currentDay][horaClave]) {
+          console.error('No se encontró la materia en el horario del maestro.');
+          return;
+        }
 
-      // Buscar grado y grupo que tienen esta materia en la base de datos
-      const classSchedulesSnapshot = await db.ref("classSchedules").once("value");
-      const classSchedules = classSchedulesSnapshot.val();
+        const materia = userData.horario[currentDay][horaClave];
+        if (!materia) {
+          console.error('No hay materia asignada en esta hora.');
+          return;
+        }
 
-      let foundGroup = null;
-      let foundGrade = null;
+        // Buscar el grupo y grado que corresponde a la materia
+        const classSchedulesRef = firebaseDatabase.ref('classSchedules');
+        const classSchedulesSnapshot = await classSchedulesRef.once('value');
+        const classSchedules = classSchedulesSnapshot.val();
 
-      for (const [grade, groups] of Object.entries(classSchedules)) {
-        for (const [group, schedule] of Object.entries(groups)) {
-          const groupSchedule = schedule[currentDay];
-          if (groupSchedule && groupSchedule[currentTime] === currentClass) {
-            foundGrade = grade;
-            foundGroup = group;
-            break;
+        let grado = null;
+        let grupo = null;
+
+        outerLoop:
+        for (const nivel in classSchedules) {
+          for (const grupoKey in classSchedules[nivel]) {
+            const diaHorario = classSchedules[nivel][grupoKey][currentDay];
+            if (diaHorario && diaHorario[horaClave] === materia) {
+              grado = nivel;
+              grupo = grupoKey;
+              break outerLoop;
+            }
           }
         }
-        if (foundGroup && foundGrade) break;
-      }
 
-      if (!foundGroup || !foundGrade) {
-        alert("No se encontró un grado y grupo para la materia actual.");
-        return;
-      }
-
-      return {
-        materia: currentClass,
-        dia: currentDay,
-        hora: currentTime,
-        grado: foundGrade,
-        grupo: foundGroup,
-      };
-    }
-
-    async function generateQR() {
-      const classInfo = await getCurrentClassAndGroup();
-      if (!classInfo) return;
-
-      // Crear el contenido del QR
-      const qrData = JSON.stringify(classInfo);
-      console.log("QR Data:", qrData);
-
-      // Generar el QR
-      const qrContainer = document.getElementById("qrContainer");
-      qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
-      QRCode.toCanvas(
-        qrContainer,
-        qrData,
-        { width: 256 },
-        (error) => {
-          if (error) console.error(error);
+        if (!grado || !grupo) {
+          console.error('No se encontró un grado y grupo que coincida con la materia.');
+          return;
         }
-      );
-    }
 
-    // Evento al hacer clic en el botón
-    document.getElementById("generateQR").addEventListener("click", generateQR);
+        // Generar el contenido del QR
+        const qrData = {
+          materia,
+          dia: currentDay,
+          hora: horaClave,
+          grado,
+          grupo,
+        };
+
+        // Generar código QR
+        const qrCode = new QRious({
+          element: document.getElementById('qr-code'),
+          size: 250,
+          value: JSON.stringify(qrData),
+        });
+
+        console.log('QR generado con éxito:', qrData);
+      } else {
+        console.error('Usuario no autenticado.');
+      }
+    });
   </script>
 </body>
 </html>
