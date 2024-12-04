@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escanear QR para Asistencia</title>
+    <title>Escanear QR para Asistencia 1</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -63,8 +63,16 @@
         async function processQRCodeData(data) {
             try {
                 const qrData = JSON.parse(data);
+                console.log(qrData);  // Verificar qué datos están llegando del QR
+
                 const { grado, grupo, materia, hora, fecha, studentId, alumnoNombre } = qrData;
-                
+
+                // Comprobar si los valores esenciales no son undefined
+                if (!grado || !grupo || !materia || !hora || !fecha || !studentId || !alumnoNombre) {
+                    console.error('Faltan datos esenciales en el QR:', qrData);
+                    return; // Detener la ejecución si falta alguno de los datos necesarios
+                }
+
                 // Comprobar si el usuario está autenticado
                 firebase.auth().onAuthStateChanged(async user => {
                     if (user) {
@@ -84,7 +92,7 @@
         async function registerAttendance(studentId, grado, grupo, materia, hora, fecha, alumnoNombre) {
             try {
                 // Referencia en Firebase para la clase, día, hora y fecha de asistencia
-                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${materia}/asistencias/${fecha}/${hora}`);
+                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${materia}/asistencias/${fecha}`);
                 
                 // Verificar si el alumno ya ha registrado asistencia
                 const snapshot = await dbRef.once('value');
