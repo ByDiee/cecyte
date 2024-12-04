@@ -115,25 +115,35 @@
                     const user = userCredential.user;
                     const userId = user.uid;
 
-                    // Check user role
+                    // Check if user exists in the database
+                    database.ref('users/' + userId).once('value').then((snapshot) => {
+                        if (!snapshot.exists()) {
+                            // Save basic user data if it doesn't exist
+                            database.ref('users/' + userId).set({
+                                email: user.email,
+                                role: 'student',
+                                firstName: '',
+                                lastNameP: '',
+                                lastNameM: '',
+                                Grupo: '',
+                                Semestre: '',
+                                enrollment: ''
+                            });
+                        }
+                    });
+
+                    // Redirect based on role
                     database.ref('users/' + userId).once('value')
                         .then((snapshot) => {
                             const userData = snapshot.val();
-                            if (userData) {
-                                const role = userData.role;
-                                if (role === 'admin') {
-                                    window.location.href = 'pagina1.html';
-                                } else if (role === 'student') {
-                                    window.location.href = 'pagina2.html';
-                                } else {
-                                    alert('Role not assigned yet');
-                                }
+                            const role = userData.role;
+                            if (role === 'admin') {
+                                window.location.href = 'pagina1.html';
+                            } else if (role === 'student') {
+                                window.location.href = 'pagina2.html';
                             } else {
-                                alert('User not found in database');
+                                alert('Role not assigned yet');
                             }
-                        })
-                        .catch((error) => {
-                            console.error('Error retrieving user data:', error.message);
                         });
                 })
                 .catch((error) => {
@@ -147,24 +157,36 @@
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
+
+                    // Check if user exists in the database
+                    database.ref('users/' + user.uid).once('value').then((snapshot) => {
+                        if (!snapshot.exists()) {
+                            // Save basic user data if it doesn't exist
+                            database.ref('users/' + user.uid).set({
+                                email: user.email,
+                                role: 'student',
+                                firstName: user.displayName ? user.displayName.split(' ')[0] : '',
+                                lastNameP: user.displayName ? user.displayName.split(' ')[1] : '',
+                                lastNameM: '',
+                                Grupo: '',
+                                Semestre: '',
+                                enrollment: ''
+                            });
+                        }
+                    });
+
+                    // Redirect based on role
                     database.ref('users/' + user.uid).once('value')
                         .then((snapshot) => {
                             const userData = snapshot.val();
-                            if (userData) {
-                                const role = userData.role;
-                                if (role === 'admin') {
-                                    window.location.href = 'pagina1.html';
-                                } else if (role === 'student') {
-                                    window.location.href = 'pagina2.html';
-                                } else {
-                                    alert('Role not assigned yet');
-                                }
+                            const role = userData.role;
+                            if (role === 'admin') {
+                                window.location.href = 'pagina1.html';
+                            } else if (role === 'student') {
+                                window.location.href = 'pagina2.html';
                             } else {
-                                alert('User not found in database');
+                                alert('Role not assigned yet');
                             }
-                        })
-                        .catch((error) => {
-                            console.error('Error retrieving user data:', error.message);
                         });
                 })
                 .catch((error) => {
