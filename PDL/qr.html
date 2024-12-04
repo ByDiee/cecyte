@@ -144,6 +144,14 @@
                     dia,
                 };
 
+                // Mostrar los datos en consola
+                console.log("Información de la clase:");
+                console.log(`Materia: ${qrData.materia}`);
+                console.log(`Grado: ${qrData.grado}`);
+                console.log(`Grupo: ${qrData.grupo}`);
+                console.log(`Hora: ${qrData.hora}`);
+                console.log(`Día: ${qrData.dia}`);
+
                 generarCodigoQR(qrData);
                 actualizarInfo(`Materia: ${datosClase.materia}, Hora: ${qrData.hora}, Día: ${dia}`);
             } catch (error) {
