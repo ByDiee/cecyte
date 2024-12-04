@@ -63,13 +63,13 @@
         async function processQRCodeData(data) {
             try {
                 const qrData = JSON.parse(data);
-                const { profesorId, dia, modulo, clase } = qrData;
+                const { grado, grupo, materia, hora, fecha, studentId, alumnoNombre } = qrData;
                 
                 // Comprobar si el usuario está autenticado
                 firebase.auth().onAuthStateChanged(async user => {
                     if (user) {
-                        // Registrar la asistencia en Firebase
-                        await registerAttendance(user.uid, profesorId, dia, modulo, clase);
+                        // Verificar si ya ha registrado asistencia para esta clase
+                        await registerAttendance(user.uid, grado, grupo, materia, hora, fecha, alumnoNombre);
                     } else {
                         // Si no está autenticado, mostrar un mensaje
                         alert("Por favor, inicia sesión para registrar tu asistencia.");
@@ -81,15 +81,31 @@
         }
 
         // Registrar la asistencia en Firebase
-        async function registerAttendance(studentId, profesorId, dia, modulo, clase) {
+        async function registerAttendance(studentId, grado, grupo, materia, hora, fecha, alumnoNombre) {
             try {
-                const dbRef = firebase.database().ref(`asistencias/${dia}/${modulo}/${clase}`);
-                const attendanceRecord = {
-                    studentId,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                // Referencia en Firebase para la clase, día, hora y fecha de asistencia
+                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${materia}/asistencias/${fecha}`);
+                
+                // Verificar si el alumno ya ha registrado asistencia
+                const snapshot = await dbRef.once('value');
+                const asistencias = snapshot.val();
+
+                // Si el alumno ya tiene una asistencia registrada, no registrar nuevamente
+                if (asistencias && asistencias[studentId]) {
+                    console.log('El alumno ya ha registrado su asistencia.');
+                    return;
+                }
+
+                // Si no existe el registro, agregamos la asistencia
+                const asistenciaData = {
+                    [studentId]: {
+                        nombre: alumnoNombre,
+                        presente: true, // Puedes cambiar esto a 'false' si no está presente
+                    }
                 };
 
-                await dbRef.push(attendanceRecord); // Registrar la asistencia en Firebase
+                // Actualizamos la base de datos con la nueva asistencia
+                await dbRef.update(asistenciaData);
 
                 // Mostrar notificación de éxito
                 notification.style.display = 'block';
