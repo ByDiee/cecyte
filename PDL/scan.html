@@ -84,7 +84,7 @@
         async function registerAttendance(studentId, grado, grupo, materia, hora, fecha, alumnoNombre) {
             try {
                 // Referencia en Firebase para la clase, día, hora y fecha de asistencia
-                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${materia}/asistencias/${fecha}`);
+                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${materia}/asistencias/${fecha}/${hora}`);
                 
                 // Verificar si el alumno ya ha registrado asistencia
                 const snapshot = await dbRef.once('value');
