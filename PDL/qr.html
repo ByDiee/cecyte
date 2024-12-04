@@ -3,197 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar QR para Clase</title>
+    <title>Horario de Clase</title>
+</head>
+<body>
+    <h1>Materia Actual</h1>
+    <p id="materia">Cargando...</p>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: #f5f5f5;
-            color: #333;
-            min-height: 100vh;
-        }
-
-        h1 {
-            color: #1f7a1f; /* Verde */
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-
-        #qr-container {
-            background: white;
-            border: 2px solid #ff7f00; /* Naranja */
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        #qr-info {
-            margin-bottom: 20px;
-            font-size: 18px;
-            color: #555;
-            font-weight: bold;
-        }
-
-        canvas {
-            margin: 10px auto;
-            border-radius: 5px;
-        }
-
-        .logo {
-            width: 100px;
-            height: auto;
-            margin-top: 20px;
-        }
-
-        footer {
-            margin-top: 30px;
-            font-size: 14px;
-            color: #888;
-        }
-    </style>
-</head>
-<body>
-    <h1>Generar QR para Clase asco</h1>
-    <div id="qr-container">
-        <p id="qr-info">Generando información...</p>
-        <canvas id="qr-code"></canvas>
-        <img id="logo" class="logo" src="logo.png" alt="Logo de la Institución" />
-    </div>
-    <footer>Escuela Secundaria CECYTE | Todos los derechos reservados</footer>
-
     <script>
-        const MODULOS = [
-            { inicio: 420, fin: 464 }, // 07:00 - 07:44
-            { inicio: 465, fin: 509 }, // 07:45 - 08:29
-            { inicio: 510, fin: 554 }, // 08:30 - 09:14
-            { inicio: 555, fin: 599 }, // 09:15 - 09:59
-            { inicio: 630, fin: 674 }, // 10:30 - 11:14
-            { inicio: 675, fin: 719 }, // 11:15 - 11:59
-            { inicio: 720, fin: 764 }, // 12:00 - 12:44
-            { inicio: 765, fin: 809 }, // 12:45 - 13:29
-            { inicio: 810, fin: 854 }, // 13:30 - 14:14
-            { inicio: 855, fin: 899 }, // 14:15 - 14:59
-        ];
 
-        const horaEnMinutos = (hora) => {
-            const horas = Math.floor(hora / 100);
-            const minutos = hora % 100;
-            return horas * 60 + minutos;
-        };
+        // Función para obtener el horario del profesor, la materia, y su grado/grupo desde Firebase
+        function getMateriaYHorario() {
+            // Obtener el ID del usuario (profesor)
+            const userId = firebase.auth().currentUser.uid;  // Asumiendo que el usuario ya está autenticado
 
-        const obtenerModuloActual = (horaMinutos) => {
-            return MODULOS.findIndex(({ inicio, fin }) => horaMinutos >= inicio && horaMinutos <= fin);
-        };
+            // Obtener la hora actual
+            const currentDate = new Date();
+            const dayOfWeek = currentDate.toLocaleString('es-ES', { weekday: 'long' }).toUpperCase(); // Lunes, Martes, etc.
+            const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();  // Formato de hora en 24h, ej: 1130 para 11:30 AM
 
-        const buscarClaseYGenerarQR = async (userId, dia, hora) => {
-            try {
-                const minutosActuales = horaEnMinutos(parseInt(hora));
-                const moduloActual = obtenerModuloActual(minutosActuales);
+            // Obtener el horario de clases del profesor desde Firebase
+            const userScheduleRef = database.ref(`users/${userId}/horario/${dayOfWeek}`);
 
-                if (moduloActual === -1) {
-                    actualizarInfo("No estás en un horario de clase.");
-                    return;
+            userScheduleRef.once('value').then(snapshot => {
+                const schedule = snapshot.val();
+
+                if (schedule) {
+                    let materia = '';
+                    for (let time in schedule) {
+                        if (parseInt(time) <= currentTime && schedule[time] !== "") {
+                            materia = schedule[time];  // Encontramos la materia actual
+                            break;
+                        }
+                    }
+
+                    if (materia) {
+                        // Buscar el grado y grupo en la base de datos de clases
+                        const classRef = database.ref('classSchedules');
+                        
+                        classRef.once('value').then(snapshot => {
+                            snapshot.forEach(gradeSnapshot => {
+                                gradeSnapshot.forEach(groupSnapshot => {
+                                    groupSnapshot.forEach(daySnapshot => {
+                                        daySnapshot.forEach(timeSnapshot => {
+                                            if (timeSnapshot.val() === materia) {
+                                                // Cuando encontramos la materia, obtenemos el grado y grupo
+                                                const grade = gradeSnapshot.key;  // Ejemplo: "1", "2", etc.
+                                                const group = groupSnapshot.key;  // Ejemplo: "A", "B", etc.
+                                                
+                                                // Mostrar la materia y los detalles en el HTML y consola
+                                                document.getElementById("materia").innerText = `Materia: ${materia}`;
+                                                console.log(`Materia: ${materia}`);
+                                                console.log(`Grado: ${grade}`);
+                                                console.log(`Grupo: ${group}`);
+                                                console.log(`Día: ${dayOfWeek}`);
+                                                console.log(`Hora: ${currentTime}`);
+                                                return;  // Ya encontramos la materia, grado y grupo, salimos
+                                            }
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    } else {
+                        console.log("No hay materia actual para el horario.");
+                        document.getElementById("materia").innerText = "Materia no encontrada para el horario actual";
+                    }
                 }
+            }).catch(error => {
+                console.error("Error al acceder al horario del profesor:", error);
+            });
+        }
 
-                const dbRef = firebase.database().ref(`users/${userId}/horario`);
-                const snapshot = await dbRef.get();
-
-                if (!snapshot.exists()) {
-                    actualizarInfo("No se encontraron horarios en la base de datos.");
-                    return;
-                }
-
-                const horario = snapshot.val();
-                const diaNormalizado = dia.charAt(0).toUpperCase() + dia.slice(1);
-                const clasesDelDia = horario[diaNormalizado];
-
-                if (!clasesDelDia) {
-                    actualizarInfo(`No hay clases programadas para ${dia}.`);
-                    return;
-                }
-
-                const claseActual = Object.entries(clasesDelDia).find(([horaClave]) => {
-                    const minutosClave = horaEnMinutos(parseInt(horaClave));
-                    return minutosClave >= MODULOS[moduloActual].inicio && minutosClave <= MODULOS[moduloActual].fin;
-                });
-
-                if (!claseActual) {
-                    actualizarInfo(`No hay clases programadas para este horario.`);
-                    return;
-                }
-
-                const [_, datosClase] = claseActual;
-                const qrData = {
-                    materia: datosClase.materia,
-                    grado: datosClase.grado,
-                    grupo: datosClase.grupo,
-                    hora: `${hora.slice(0, 2)}:${hora.slice(2)}`, // Formato HH:MM
-                    dia,
-                };
-
-                // Mostrar los datos en consola
-                console.log("Información de la clase:");
-                console.log(`Materia: ${qrData.materia}`);
-                console.log(`Grado: ${qrData.grado}`);
-                console.log(`Grupo: ${qrData.grupo}`);
-                console.log(`Hora: ${qrData.hora}`);
-                console.log(`Día: ${qrData.dia}`);
-
-                generarCodigoQR(qrData);
-                actualizarInfo(`Materia: ${datosClase.materia}, Hora: ${qrData.hora}, Día: ${dia}`);
-            } catch (error) {
-                console.error("Error al buscar la clase:", error);
-                actualizarInfo("Ocurrió un error al buscar la clase.");
-            }
-        };
-
-        const generarCodigoQR = (data) => {
-            const canvas = document.getElementById("qr-code");
-            QRCode.toCanvas(
-                canvas,
-                JSON.stringify(data),
-                { width: 200, margin: 1 },
-                (error) => {
-                    if (error) console.error("Error al generar el QR:", error);
-                }
-            );
-        };
-
-        const actualizarInfo = (mensaje) => {
-            document.getElementById("qr-info").textContent = mensaje;
-        };
-
-        const esSimulacion = true;
-        const diaSimulado = "martes";
-        const horaSimulada = "0955";
-
-        firebase.auth().onAuthStateChanged(async (user) => {
-            if (user) {
-                if (esSimulacion) {
-                    await buscarClaseYGenerarQR(user.uid, diaSimulado, horaSimulada);
-                } else {
-                    const fecha = new Date();
-                    const diaReal = fecha.toLocaleDateString("es-ES", { weekday: "long" }).toLowerCase();
-                    const horaReal = (fecha.getHours() * 100 + fecha.getMinutes()).toString().padStart(4, "0");
-                    await buscarClaseYGenerarQR(user.uid, diaReal, horaReal);
-                }
-            } else {
-                actualizarInfo("No estás autenticado. Por favor, inicia sesión.");
-            }
-        });
+        // Llamamos a la función para obtener la materia y sus detalles
+        getMateriaYHorario();
     </script>
 </body>
 </html>
