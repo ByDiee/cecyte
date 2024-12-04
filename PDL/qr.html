@@ -24,27 +24,32 @@
         }
 
         h1 {
-            color: #004085;
+            color: #1f7a1f; /* Verde */
             margin-bottom: 20px;
+            font-size: 2em;
         }
 
         #qr-container {
             background: white;
-            border: 1px solid #ddd;
+            border: 2px solid #ff7f00; /* Naranja */
             border-radius: 10px;
-            padding: 20px;
+            padding: 30px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
+            max-width: 400px;
+            width: 100%;
         }
 
         #qr-info {
             margin-bottom: 20px;
-            font-size: 16px;
+            font-size: 18px;
             color: #555;
+            font-weight: bold;
         }
 
         canvas {
             margin: 10px auto;
+            border-radius: 5px;
         }
 
         .logo {
@@ -67,7 +72,7 @@
         <canvas id="qr-code"></canvas>
         <img id="logo" class="logo" src="logo.png" alt="Logo de la Institución" />
     </div>
-    <footer>Escuela Secundaria | Todos los derechos reservados</footer>
+    <footer>Escuela Secundaria CECYTE | Todos los derechos reservados</footer>
 
     <script>
         const MODULOS = [
