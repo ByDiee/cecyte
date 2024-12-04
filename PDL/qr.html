@@ -1,84 +1,126 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horario de Clase</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generar QR de Asistencia</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="auth.js"></script>
 </head>
 <body>
-    <h1>Materia Actual</h1>
-    <p id="materia">Cargando...</p>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script>
-    <script>
+  <h1>Generar QR de Asistencia</h1>
+  <button id="generateQR">Generar QR</button>
+  <div id="qrContainer"></div>
 
-        // Función para obtener el horario del profesor, la materia, y su grado/grupo desde Firebase
-        function getMateriaYHorario() {
-            // Obtener el ID del usuario (profesor)
-            const userId = firebase.auth().currentUser.uid;  // Asumiendo que el usuario ya está autenticado
+  <script>
+    // Firebase config y referencia a la base de datos ya configurados en auth.js
 
-            // Obtener la hora actual
-            const currentDate = new Date();
-            const dayOfWeek = currentDate.toLocaleString('es-ES', { weekday: 'long' }).toUpperCase(); // Lunes, Martes, etc.
-            const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();  // Formato de hora en 24h, ej: 1130 para 11:30 AM
+    async function getCurrentClassAndGroup() {
+      const db = firebase.database();
+      const auth = firebase.auth();
 
-            // Obtener el horario de clases del profesor desde Firebase
-            const userScheduleRef = database.ref(`users/${userId}/horario/${dayOfWeek}`);
+      // Obtener usuario actual
+      const user = auth.currentUser;
+      if (!user) {
+        alert("Inicia sesión para continuar");
+        return;
+      }
 
-            userScheduleRef.once('value').then(snapshot => {
-                const schedule = snapshot.val();
+      const userId = user.uid;
 
-                if (schedule) {
-                    let materia = '';
-                    for (let time in schedule) {
-                        if (parseInt(time) <= currentTime && schedule[time] !== "") {
-                            materia = schedule[time];  // Encontramos la materia actual
-                            break;
-                        }
-                    }
+      // Obtener datos del horario del maestro
+      const userSnapshot = await db.ref(`users/${userId}`).once("value");
+      const userData = userSnapshot.val();
 
-                    if (materia) {
-                        // Buscar el grado y grupo en la base de datos de clases
-                        const classRef = database.ref('classSchedules');
-                        
-                        classRef.once('value').then(snapshot => {
-                            snapshot.forEach(gradeSnapshot => {
-                                gradeSnapshot.forEach(groupSnapshot => {
-                                    groupSnapshot.forEach(daySnapshot => {
-                                        daySnapshot.forEach(timeSnapshot => {
-                                            if (timeSnapshot.val() === materia) {
-                                                // Cuando encontramos la materia, obtenemos el grado y grupo
-                                                const grade = gradeSnapshot.key;  // Ejemplo: "1", "2", etc.
-                                                const group = groupSnapshot.key;  // Ejemplo: "A", "B", etc.
-                                                
-                                                // Mostrar la materia y los detalles en el HTML y consola
-                                                document.getElementById("materia").innerText = `Materia: ${materia}`;
-                                                console.log(`Materia: ${materia}`);
-                                                console.log(`Grado: ${grade}`);
-                                                console.log(`Grupo: ${group}`);
-                                                console.log(`Día: ${dayOfWeek}`);
-                                                console.log(`Hora: ${currentTime}`);
-                                                return;  // Ya encontramos la materia, grado y grupo, salimos
-                                            }
-                                        });
-                                    });
-                                });
-                            });
-                        });
-                    } else {
-                        console.log("No hay materia actual para el horario.");
-                        document.getElementById("materia").innerText = "Materia no encontrada para el horario actual";
-                    }
-                }
-            }).catch(error => {
-                console.error("Error al acceder al horario del profesor:", error);
-            });
+      if (!userData.horario) {
+        alert("No tienes horario registrado.");
+        return;
+      }
+
+      const horario = userData.horario;
+
+      // Obtener el día y hora actual
+      const now = new Date();
+      const currentDay = [
+        "Domingo",
+        "Lunes",
+        "Martes",
+        "Miercoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+      ][now.getDay()];
+      const currentTime =
+        String(now.getHours()).padStart(2, "0") +
+        String(now.getMinutes()).padStart(2, "0");
+
+      // Obtener la materia actual según el horario del maestro
+      const currentClass = horario[currentDay]?.[currentTime];
+
+      if (!currentClass) {
+        alert("No tienes clases programadas en este momento.");
+        return;
+      }
+
+      // Buscar grado y grupo que tienen esta materia en la base de datos
+      const classSchedulesSnapshot = await db.ref("classSchedules").once("value");
+      const classSchedules = classSchedulesSnapshot.val();
+
+      let foundGroup = null;
+      let foundGrade = null;
+
+      for (const [grade, groups] of Object.entries(classSchedules)) {
+        for (const [group, schedule] of Object.entries(groups)) {
+          const groupSchedule = schedule[currentDay];
+          if (groupSchedule && groupSchedule[currentTime] === currentClass) {
+            foundGrade = grade;
+            foundGroup = group;
+            break;
+          }
         }
+        if (foundGroup && foundGrade) break;
+      }
 
-        // Llamamos a la función para obtener la materia y sus detalles
-        getMateriaYHorario();
-    </script>
+      if (!foundGroup || !foundGrade) {
+        alert("No se encontró un grado y grupo para la materia actual.");
+        return;
+      }
+
+      return {
+        materia: currentClass,
+        dia: currentDay,
+        hora: currentTime,
+        grado: foundGrade,
+        grupo: foundGroup,
+      };
+    }
+
+    async function generateQR() {
+      const classInfo = await getCurrentClassAndGroup();
+      if (!classInfo) return;
+
+      // Crear el contenido del QR
+      const qrData = JSON.stringify(classInfo);
+      console.log("QR Data:", qrData);
+
+      // Generar el QR
+      const qrContainer = document.getElementById("qrContainer");
+      qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
+      QRCode.toCanvas(
+        qrContainer,
+        qrData,
+        { width: 256 },
+        (error) => {
+          if (error) console.error(error);
+        }
+      );
+    }
+
+    // Evento al hacer clic en el botón
+    document.getElementById("generateQR").addEventListener("click", generateQR);
+  </script>
 </body>
 </html>
