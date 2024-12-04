@@ -3,46 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escanear QR para Asistencia 1</title>
+    <title>Escanear QR para Asistencia</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script> <!-- Este es tu archivo de autenticación -->
+    <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #qr-canvas { width: 100%; height: auto; }
-        #notification { margin-top: 20px; }
+        #notification { margin-top: 20px; color: green; display: none; }
+        #error { margin-top: 20px; color: red; display: none; }
     </style>
 </head>
 <body>
     <h1>Escanear QR para Asistencia</h1>
     <video id="video" width="100%" height="auto" style="max-width: 600px;"></video>
     <canvas id="qr-canvas" style="display:none;"></canvas>
-    <div id="notification" style="display:none; color: green;">
-        ¡Asistencia registrada correctamente!
-    </div>
+    <div id="notification">¡Asistencia registrada correctamente!</div>
+    <div id="error">No se pudo registrar la asistencia.</div>
 
     <script>
+        // Configuración de módulos
+        const MODULOS = [
+            { inicio: 420, fin: 464, hora: "0700" }, // 07:00 - 07:44
+            { inicio: 465, fin: 509, hora: "0745" }, // 07:45 - 08:29
+            { inicio: 510, fin: 554, hora: "0830" }, // 08:30 - 09:14
+            { inicio: 555, fin: 599, hora: "0915" }, // 09:15 - 09:59
+            { inicio: 630, fin: 674, hora: "1030" }, // 10:30 - 11:14
+        ];
 
-        // Variables para el video y el canvas
         const video = document.getElementById('video');
         const canvas = document.getElementById('qr-canvas');
         const ctx = canvas.getContext('2d');
         const notification = document.getElementById('notification');
+        const error = document.getElementById('error');
 
-        // Acceder a la cámara del dispositivo móvil
+        // Simulación de día y hora
+        const SIMULAR = true; // Cambia a false para usar la hora real
+        const DIA_SIMULADO = "Martes"; // Cambia según lo necesites
+        const HORA_SIMULADA = "0958"; // Hora simulada (HH:mm)
+
+        // Escaneo del QR
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
             .then(stream => {
                 video.srcObject = stream;
-                video.setAttribute('playsinline', true); // Necesario para Safari
                 video.play();
-                requestAnimationFrame(scanQRCode); // Iniciar escaneo
-            }).catch(err => {
-                console.error('Error al acceder a la cámara:', err);
-            });
+                requestAnimationFrame(scanQRCode);
+            }).catch(err => console.error('Error al acceder a la cámara:', err));
 
-        // Función para escanear el QR
         function scanQRCode() {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.height = video.videoHeight;
@@ -50,79 +58,80 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-                if (code) {
-                    // Si se detecta el QR, procesamos la información
-                    processQRCodeData(code.data);
-                }
+                if (code) processQRCodeData(code.data);
             }
-            requestAnimationFrame(scanQRCode); // Continuar escaneando
+            requestAnimationFrame(scanQRCode);
         }
 
-        // Procesar la información del QR
         async function processQRCodeData(data) {
             try {
                 const qrData = JSON.parse(data);
-                console.log(qrData);  // Verificar qué datos están llegando del QR
+                const { grado, grupo } = qrData;
 
-                const { grado, grupo, materia, hora, fecha, studentId, alumnoNombre } = qrData;
+                if (!grado || !grupo) return;
 
-                // Comprobar si los valores esenciales no son undefined
-                if (!grado || !grupo || !materia || !hora || !fecha || !studentId || !alumnoNombre) {
-                    console.error('Faltan datos esenciales en el QR:', qrData);
-                    return; // Detener la ejecución si falta alguno de los datos necesarios
-                }
+                const fechaActual = new Date();
+                const diaSemana = SIMULAR ? DIA_SIMULADO : fechaActual.toLocaleDateString("es-ES", { weekday: "long" }).toLowerCase();
+                const horaActual = SIMULAR
+                    ? parseHoraSimulada(HORA_SIMULADA)
+                    : fechaActual.getHours() * 60 + fechaActual.getMinutes();
 
-                // Comprobar si el usuario está autenticado
-                firebase.auth().onAuthStateChanged(async user => {
-                    if (user) {
-                        // Verificar si ya ha registrado asistencia para esta clase
-                        await registerAttendance(user.uid, grado, grupo, materia, hora, fecha, alumnoNombre);
-                    } else {
-                        // Si no está autenticado, mostrar un mensaje
-                        alert("Por favor, inicia sesión para registrar tu asistencia.");
-                    }
-                });
-            } catch (error) {
-                console.error('Error al procesar el QR:', error);
-            }
-        }
-
-        // Registrar la asistencia en Firebase
-        async function registerAttendance(studentId, grado, grupo, materia, hora, fecha, alumnoNombre) {
-            try {
-                // Referencia en Firebase para la clase, día, hora y fecha de asistencia
-                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${materia}/asistencias/${fecha}`);
-                
-                // Verificar si el alumno ya ha registrado asistencia
-                const snapshot = await dbRef.once('value');
-                const asistencias = snapshot.val();
-
-                // Si el alumno ya tiene una asistencia registrada, no registrar nuevamente
-                if (asistencias && asistencias[studentId]) {
-                    console.log('El alumno ya ha registrado su asistencia.');
+                if (horaActual >= 600 && horaActual <= 629) {
+                    console.log("Es hora de receso, no se permite registrar asistencia.");
                     return;
                 }
 
-                // Si no existe el registro, agregamos la asistencia
-                const asistenciaData = {
-                    [studentId]: {
-                        nombre: alumnoNombre,
-                        presente: true, // Puedes cambiar esto a 'false' si no está presente
+                const moduloActual = MODULOS.find(
+                    m => horaActual >= m.inicio && horaActual <= m.fin
+                );
+
+                if (!moduloActual) {
+                    console.log("No estás dentro de un módulo válido.");
+                    return;
+                }
+
+                firebase.auth().onAuthStateChanged(async user => {
+                    if (user) {
+                        await registerAttendance(
+                            grado,
+                            grupo,
+                            diaSemana,
+                            moduloActual.hora,
+                            fechaActual.toISOString().split('T')[0],
+                            user.uid,
+                            user.displayName
+                        );
+                    } else {
+                        console.log("Usuario no autenticado.");
                     }
-                };
-
-                // Actualizamos la base de datos con la nueva asistencia
-                await dbRef.update(asistenciaData);
-
-                // Mostrar notificación de éxito
-                notification.style.display = 'block';
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 3000);
+                });
             } catch (error) {
-                console.error('Error al registrar la asistencia:', error);
+                console.error("Error al procesar el QR:", error);
             }
+        }
+
+        async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre) {
+            try {
+                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${dia}/${hora}/asistencias/${fecha}`);
+                const snapshot = await dbRef.child(studentId).get();
+
+                if (snapshot.exists()) {
+                    console.log("Asistencia ya registrada.");
+                    return;
+                }
+
+                await dbRef.child(studentId).set({ nombre, presente: true });
+                notification.style.display = "block";
+                setTimeout(() => notification.style.display = "none", 3000);
+            } catch (error) {
+                error.style.display = "block";
+                console.error("Error al registrar la asistencia:", error);
+            }
+        }
+
+        function parseHoraSimulada(hora) {
+            const [hh, mm] = hora.split(':').map(Number);
+            return hh * 60 + mm;
         }
     </script>
 </body>
