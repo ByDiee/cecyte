@@ -7,12 +7,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="auth.js"></script>
+  <script src="auth.js"></script> <!-- Incluye tu archivo de autenticación -->
 </head>
 <body>
   <h1>Generador de QR para Asistencias</h1>
   <img id="qr-image" alt="QR Code" style="max-width: 300px;">
-  
+
   <script>
     // Simulación simple (día y hora)
     const simulatedDay = "Martes"; // Cambia según el día que quieras probar (sin acentos)
@@ -21,7 +21,7 @@
     // Configuración de horarios
     const recesoInicio = "1000"; // 10:00
     const recesoFin = "1030";    // 10:30
-    const diasHabiles = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+    const diasHabiles = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
     const moduloDuracion = 44;   // Duración del módulo en minutos
 
     console.log("Simulación: Día =", simulatedDay, "Hora =", simulatedTime);
@@ -55,7 +55,7 @@
           const userId = user.uid;
           console.log("Usuario autenticado:", userId);
 
-          const userRef = database.ref(`users/${userId}`);
+          const userRef = firebase.database().ref(`users/${userId}`);
           const snapshot = await userRef.once("value");
           const userData = snapshot.val();
 
@@ -90,7 +90,7 @@
           console.log("Materia encontrada:", materiaEncontrada, "Hora exacta:", horaExacta);
 
           // Buscar el grupo y grado en la base de datos
-          const classSchedulesRef = database.ref("classSchedules");
+          const classSchedulesRef = firebase.database().ref("classSchedules");
           const classSchedulesSnapshot = await classSchedulesRef.once("value");
           const classSchedules = classSchedulesSnapshot.val();
 
@@ -136,7 +136,7 @@
             grupo,
           };
 
-          // Generar el QR usando The QR Code Generator API (sin necesidad de API Key)
+          // Generar el QR usando la librería de JavaScript directamente (no necesidad de servicios externos)
           const qrUrl = `https://api.qr-code-generator.com/v1/create?data=${encodeURIComponent(JSON.stringify(qrData))}&size=300x300`;
 
           // Establecer la imagen del QR en el canvas
