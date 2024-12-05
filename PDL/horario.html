@@ -9,7 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-        /* Estilos */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
@@ -55,26 +54,37 @@
             background-color: #7d7d7d;
             cursor: pointer;
         }
-        #searchBar {
-            margin-bottom: 20px;
-            padding: 10px;
+        .hours-table {
             width: 100%;
-            font-size: 16px;
-            border: 1px solid #ccc;
+            border-collapse: collapse;
+            margin-top: 10px;
+            border: 1px solid #dddddd;
+        }
+        .hours-table th, .hours-table td {
+            padding: 5px;
+            border: 1px solid #dddddd;
+            text-align: center;
+        }
+        .hours-table th {
+            background-color: #f0f0f0;
+        }
+        .hours-table td {
+            background-color: #ffffff;
+        }
+        .hours-table td.selected {
+            background-color: #dff0d8; /* Verde para horas seleccionadas */
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Buscar Materias</h1>
+        <h1>Filtrar Materias</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
         <a href="#">Registro de Asistencias</a>
-        <a href="#">Editar Horario</a> <!-- Botón añadido -->
     </nav>
     <main>
-        <input type="text" id="searchBar" placeholder="Buscar materia, semestre o grupo...">
         <table class="schedule-table">
             <thead>
                 <tr>
@@ -85,14 +95,14 @@
                 </tr>
             </thead>
             <tbody id="subjectBody">
-                <!-- Materias cargadas dinámicamente -->
+                <!-- Las materias se cargarán aquí desde Firebase -->
             </tbody>
         </table>
     </main>
 
 <script>
-    // Cargar materias desde Firebase con filtro en tiempo real
-    function loadSubjects(searchTerm = '') {
+    // Cargar materias desde Firebase
+    function loadSubjects() {
         const subjectRef = firebase.database().ref('classSchedules');
         subjectRef.once('value').then(snapshot => {
             const subjects = snapshot.val();
@@ -119,13 +129,6 @@
                             // Si esta combinación ya se ha cargado, no la cargamos nuevamente
                             if (!loadedSubjects[subjectKey]) {
                                 loadedSubjects[subjectKey] = true; // Marcamos esta combinación como cargada
-
-                                // Filtrar con el término de búsqueda
-                                if (!subjectName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                                    !semester.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                                    !group.toLowerCase().includes(searchTerm.toLowerCase())) {
-                                    continue; // Omitir si no coincide con la búsqueda
-                                }
 
                                 const row = document.createElement('tr');
                                 row.classList.add('subject-row');
@@ -198,23 +201,17 @@
         });
     }
 
-    // Función para agregar "RECESO" a las 10:00 si no existe
-    function addRecessIfNotExists(existingSchedule) {
-        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-        let added = false;
-
-        days.forEach(day => {
-            if (!existingSchedule[day]) {
-                existingSchedule[day] = {};
+    // Validar si hay conflicto de horarios antes de asignar
+    function isScheduleConflict(subjectName, semester, group, subjects, existingSchedule) {
+        for (let day in subjects[semester][group]) {
+            for (let hour in subjects[semester][group][day]) {
+                const currentSubject = subjects[semester][group][day][hour];
+                if (existingSchedule[day]?.[hour] && existingSchedule[day][hour] !== subjectName) {
+                    return true;
+                }
             }
-
-            if (!existingSchedule[day]["1000"]) {
-                existingSchedule[day]["1000"] = "RECESO";
-                added = true;
-            }
-        });
-
-        return added;
+        }
+        return false;
     }
 
     // Asignar todas las horas de la materia seleccionada
@@ -230,54 +227,49 @@
 
         userScheduleRef.once('value').then(snapshot => {
             const existingSchedule = snapshot.val() || {};
+            let firstAssignment = Object.keys(existingSchedule).length === 0; // Si no hay horario previo
+            let updatedSchedule = { ...existingSchedule }; // Copiar horario existente
 
-            // Validar si hay conflicto de horarios
-            if (isScheduleConflict(subjectName, semester, group, subjects, existingSchedule)) {
-                alert('Conflicto de horario: ya existe una clase asignada en ese horario.');
-                return;
-            }
-
-            // Agregar "RECESO" si no está en el horario
-            const recessAdded = addRecessIfNotExists(existingSchedule);
-
-            // Iterar sobre todos los días y horas para asignar la materia seleccionada
             for (let day in subjects[semester][group]) {
                 for (let hour in subjects[semester][group][day]) {
                     const subjectInSchedule = subjects[semester][group][day][hour];
-
-                    // Si la materia coincide, la asignamos
                     if (subjectInSchedule === subjectName) {
-                        if (!existingSchedule[day]) {
-                            existingSchedule[day] = {};
+                        if (!updatedSchedule[day]) {
+                            updatedSchedule[day] = {};
                         }
-                        existingSchedule[day][hour] = subjectName;
+                        updatedSchedule[day][hour] = subjectName;
                     }
                 }
             }
 
-            // Guardar el horario actualizado en Firebase
-            userScheduleRef.set(existingSchedule).then(() => {
-                const message = recessAdded
-                    ? 'Horario actualizado con éxito y se agregó "RECESO".'
-                    : 'Horario actualizado con éxito.';
-                alert(message);
-                loadSubjects(); // Recargar las materias después de la actualización
+            if (firstAssignment) {
+                const recesoHour = "1000";
+                for (let day of ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]) {
+                    if (!updatedSchedule[day]) {
+                        updatedSchedule[day] = {};
+                    }
+                    updatedSchedule[day][recesoHour] = "Receso";
+                }
+                alert('Receso agregado automáticamente a las 10:00 en todos los días.');
+            }
+
+            userScheduleRef.set(updatedSchedule).then(() => {
+                alert('Horario actualizado con éxito.');
+                loadSubjects(); // Recargar materias
             }).catch(error => {
                 alert('Error al guardar horario: ' + error.message);
             });
         });
     }
 
-    // Buscar en tiempo real
-    document.getElementById('searchBar').addEventListener('input', function () {
-        const searchTerm = this.value;
-        loadSubjects(searchTerm);
+    // Cargar materias al cargar la página
+    firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+            loadSubjects();
+        } else {
+            alert('Por favor inicia sesión.');
+        }
     });
-
-    // Iniciar la carga de materias al cargar la página
-    window.onload = function() {
-        loadSubjects();
-    };
 </script>
 </body>
 </html>
