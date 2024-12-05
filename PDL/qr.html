@@ -145,19 +145,25 @@
 
           console.log("Datos del QR:", qrData);
 
-          // Generar el QR de forma nativa usando QRCode.js
-          const qrContainer = document.getElementById("qr-container");
-          qrContainer.innerHTML = ""; // Limpiar contenido anterior
-          QRCode.toCanvas(qrContainer, JSON.stringify(qrData), {
-            width: 300,
-            margin: 2,
-          }, function (error) {
-            if (error) {
-              console.error("Error generando el QR:", error);
-            } else {
-              console.log("QR generado con éxito.");
-            }
-          });
+  // Generar el QR de forma nativa usando QRCode.js
+  const qrContainer = document.getElementById("qr-container");
+  qrContainer.innerHTML = ""; // Limpiar contenido anterior
+
+  // Crear un canvas dinámicamente
+  const canvas = document.createElement("canvas");
+  qrContainer.appendChild(canvas); // Agregarlo al contenedor
+
+  // Generar el QR en el canvas
+  QRCode.toCanvas(canvas, JSON.stringify(qrData), {
+    width: 300,
+    margin: 2,
+  }, function (error) {
+    if (error) {
+      console.error("Error generando el QR:", error);
+    } else {
+      console.log("QR generado con éxito.");
+    }
+  });
         } else {
           console.error("Usuario no autenticado.");
         }
