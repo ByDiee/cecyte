@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script>
+    <script src="auth.js"></script> <!-- Aquí se maneja la autenticación -->
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -39,16 +39,20 @@
     </div>
 
     <script>
-        // Función para recuperar asistencias
-        async function fetchAttendances() {
-            try {
-                const user = firebase.auth().currentUser;
-                if (!user) {
-                    alert("No estás autenticado. Por favor, inicia sesión.");
-                    window.location.href = "login.html"; // Redirigir si no está autenticado
-                    return;
-                }
+        // Función para verificar si el usuario está autenticado
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) {
+                // Si no está autenticado, redirigir al login
+                window.location.href = "login.html";
+            } else {
+                // Si está autenticado, llamar a la función para obtener las asistencias
+                fetchAttendances(user);
+            }
+        });
 
+        // Función para recuperar asistencias
+        async function fetchAttendances(user) {
+            try {
                 const dbRef = firebase.database().ref('classSchedules');
                 const snapshot = await dbRef.once('value');
                 const data = snapshot.val();
@@ -101,9 +105,6 @@
                 document.getElementById('loading').textContent = 'Hubo un error al cargar los datos.';
             }
         }
-
-        // Llamar a la función para recuperar las asistencias
-        fetchAttendances();
     </script>
 </body>
 </html>
