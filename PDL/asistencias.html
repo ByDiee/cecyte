@@ -20,12 +20,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>Asistencias Registradas de Cultura Digital I</h1>
+        <h1>Asistencias Registradas</h1>
         <div id="loading">Cargando...</div>
         <table id="attendanceTable">
             <thead>
                 <tr>
-                    <th>Materia</th>
                     <th>Nombre del Alumno</th>
                     <th>Hora de Escaneo</th>
                 </tr>
@@ -37,7 +36,7 @@
     </div>
 
     <script>
-        // Función para recuperar las asistencias de la materia "Cultura Digital I"
+        // Función para recuperar las asistencias sin filtros
         async function fetchAttendances() {
             try {
                 const dbRef = firebase.database().ref('classSchedules');
@@ -54,10 +53,8 @@
                     for (let grupo in data[grado]) {
                         for (let dia in data[grado][grupo]) {
                             for (let hora in data[grado][grupo][dia]) {
-                                const materia = data[grado][grupo][dia][hora];
-                                
-                                // Verificamos si la materia es "Cultura Digital I"
-                                if (materia === "Cultura Digital I" && data[grado][grupo][dia][hora].hasOwnProperty("asistencias")) {
+                                // Si hay asistencias
+                                if (data[grado][grupo][dia][hora].hasOwnProperty("asistencias")) {
                                     const asistencias = data[grado][grupo][dia][hora]["asistencias"];
 
                                     // Iterar por las asistencias
@@ -65,10 +62,8 @@
                                         for (let studentId in asistencias[fecha]) {
                                             const alumno = asistencias[fecha][studentId];
                                             
-                                            // Crear la fila de la tabla
                                             const fila = document.createElement('tr');
                                             fila.innerHTML = `
-                                                <td>${materia}</td>
                                                 <td>${alumno.nombre}</td>
                                                 <td>${alumno.horaEscaneo}</td>
                                             `;
@@ -85,7 +80,7 @@
                 // Si no se encuentran resultados, mostrar un mensaje
                 if (noResults) {
                     const fila = document.createElement('tr');
-                    fila.innerHTML = "<td colspan='3' style='text-align: center;'>No se encontraron asistencias para Cultura Digital I.</td>";
+                    fila.innerHTML = "<td colspan='2' style='text-align: center;'>No se encontraron asistencias.</td>";
                     tableBody.appendChild(fila);
                 }
 
