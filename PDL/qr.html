@@ -7,16 +7,23 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="auth.js"></script> <!-- Incluye tu archivo de autenticación -->
+  <script src="auth.js"></script> <!-- Tu configuración de Firebase -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script> <!-- Librería nativa para generar QR -->
+  <style>
+    #qr-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
   <h1>Generador de QR para Asistencias</h1>
-  <img id="qr-image" alt="QR Code" style="max-width: 300px;">
+  <div id="qr-container"></div> <!-- Aquí se generará el QR -->
 
   <script>
     // Simulación simple (día y hora)
-    const simulatedDay = "Martes"; // Cambia según el día que quieras probar (sin acentos)
-    const simulatedTime = "0759"; // Cambia según la hora que quieras probar
+    const simulatedDay = "Martes"; // Cambia según el día que quieras probar
+    const simulatedTime = "0756"; // Cambia según la hora que quieras probar
 
     // Configuración de horarios
     const recesoInicio = "1000"; // 10:00
@@ -136,13 +143,21 @@
             grupo,
           };
 
-          // Generar el QR usando la librería de JavaScript directamente (no necesidad de servicios externos)
-          const qrUrl = `https://api.qr-code-generator.com/v1/create?data=${encodeURIComponent(JSON.stringify(qrData))}&size=300x300`;
+          console.log("Datos del QR:", qrData);
 
-          // Establecer la imagen del QR en el canvas
-          document.getElementById("qr-image").src = qrUrl;
-
-          console.log("QR generado con éxito:", qrData);
+          // Generar el QR de forma nativa usando QRCode.js
+          const qrContainer = document.getElementById("qr-container");
+          qrContainer.innerHTML = ""; // Limpiar contenido anterior
+          QRCode.toCanvas(qrContainer, JSON.stringify(qrData), {
+            width: 300,
+            margin: 2,
+          }, function (error) {
+            if (error) {
+              console.error("Error generando el QR:", error);
+            } else {
+              console.log("QR generado con éxito.");
+            }
+          });
         } else {
           console.error("Usuario no autenticado.");
         }
