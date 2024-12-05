@@ -1,146 +1,20 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ver Asistencias</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script> <!-- Aquí se maneja la autenticación -->
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: #f4f4f4; }
-        .container { max-width: 900px; margin: 0 auto; }
-        h1 { text-align: center; }
-        .filters { margin-bottom: 20px; }
-        .filter-label { margin-right: 10px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Asistencias Registradas</h1>
-        
-        <!-- Filtros para fecha, grado, grupo y materia -->
-        <div class="filters">
-            <label for="filterFecha" class="filter-label">Fecha:</label>
-            <input type="date" id="filterFecha">
-            
-            <label for="filterGrado" class="filter-label">Grado:</label>
-            <select id="filterGrado">
-                <option value="">Todos</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-            </select>
-            
-            <label for="filterGrupo" class="filter-label">Grupo:</label>
-            <select id="filterGrupo">
-                <option value="">Todos</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="F">F</option>
-            </select>
-            
-            <label for="filterMateria" class="filter-label">Materia:</label>
-            <input type="text" id="filterMateria" placeholder="Ej. Educación Física I">
-            
-            <button onclick="fetchAttendances()">Filtrar</button>
-        </div>
-        
-        <div id="loading" style="text-align: center;">Cargando...</div>
-        
-        <table id="attendanceTable">
-            <thead>
-                <tr>
-                    <th>Nombre del Alumno</th>
-                    <th>Hora de Escaneo</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Las filas de asistencia se agregarán aquí -->
-            </tbody>
-        </table>
-    </div>
-
-    <script>
-        // Función para recuperar las asistencias con los filtros aplicados
-        async function fetchAttendances() {
-            const filterFecha = document.getElementById('filterFecha').value;
-            const filterGrado = document.getElementById('filterGrado').value;
-            const filterGrupo = document.getElementById('filterGrupo').value;
-            const filterMateria = document.getElementById('filterMateria').value;
-
-            console.log("Filtros aplicados:", { filterFecha, filterGrado, filterGrupo, filterMateria });
-
-            try {
-                const dbRef = firebase.database().ref('classSchedules');
-                const snapshot = await dbRef.once('value');
-                const data = snapshot.val();
-                const tableBody = document.getElementById('attendanceTable').getElementsByTagName('tbody')[0];
-
-                // Limpiar tabla antes de llenar
-                tableBody.innerHTML = '';
-
-                // Iterar por los datos de las asistencias
-                let noResults = true; // Variable para verificar si se muestran resultados
-                for (let grado in data) {
-                    if (filterGrado && filterGrado !== grado) continue; // Filtro por grado
-                    
-                    for (let grupo in data[grado]) {
-                        if (filterGrupo && filterGrupo !== grupo) continue; // Filtro por grupo
-                        
-                        for (let dia in data[grado][grupo]) {
-                            for (let hora in data[grado][grupo][dia]) {
-                                const materia = data[grado][grupo][dia][hora];
-                                if (filterMateria && !materia.includes(filterMateria)) continue; // Filtro por materia
-
-                                // Si hay asistencias
-                                if (data[grado][grupo][dia][hora].hasOwnProperty("asistencias")) {
-                                    const asistencias = data[grado][grupo][dia][hora]["asistencias"];
-
-                                    // Iterar por las asistencias
-                                    for (let fecha in asistencias) {
-                                        if (filterFecha && filterFecha !== fecha) continue; // Filtro por fecha
-                                        
-                                        for (let studentId in asistencias[fecha]) {
-                                            const alumno = asistencias[fecha][studentId];
-                                            
-                                            const fila = document.createElement('tr');
-                                            fila.innerHTML = `
-                                                <td>${alumno.nombre}</td>
-                                                <td>${alumno.horaEscaneo}</td>
-                                            `;
-                                            tableBody.appendChild(fila);
-                                            noResults = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Si no se encuentran resultados, mostrar un mensaje
-                if (noResults) {
-                    const fila = document.createElement('tr');
-                    fila.innerHTML = "<td colspan='2' style='text-align: center;'>No se encontraron asistencias con los filtros aplicados.</td>";
-                    tableBody.appendChild(fila);
-                }
-
-                // Ocultar mensaje de carga
-                document.getElementById('loading').style.display = 'none';
-
-            } catch (error) {
-                console.error("Error al recuperar las asistencias:", error);
-                document.getElementById('loading').textContent = 'Hubo un error al cargar los datos.';
+"classSchedules": {
+  "1": {
+    "A": {
+      "Martes": {
+        "0700": "Educación Física I",
+        "0745": "Cultura Digital I",
+        "asistencias": {
+          "2024-12-05": {
+            "zk4nKDnxE2MAT0ljU82f3FuiTZm2": {
+              "nombre": "Juan Pérez",
+              "presente": true,
+              "horaEscaneo": "07:50"
             }
-        }
-
-        // Llamar a la función para recuperar las asistencias al cargar la página
-        fetchAttendances();
-    </script>
-</body>
-</html>
+          }
+        },
+        "0830": "La Materia y sus Interacciones"
+      }
+    }
+  }
+}
