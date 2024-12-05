@@ -69,6 +69,7 @@
 
           // Buscar la materia según la hora simulada
           let materiaEncontrada = null;
+          let horaExacta = null;
           for (const horaInicio in horarioDia) {
             const materia = horarioDia[horaInicio];
             const horaInicioMin = horaATotalMinutos(horaInicio);
@@ -76,6 +77,7 @@
 
             if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
               materiaEncontrada = materia;
+              horaExacta = horaInicio; // Obtener la hora exacta de la base de datos
               break;
             }
           }
@@ -85,7 +87,7 @@
             return;
           }
 
-          console.log("Materia encontrada:", materiaEncontrada);
+          console.log("Materia encontrada:", materiaEncontrada, "Hora exacta:", horaExacta);
 
           // Buscar el grupo y grado en la base de datos
           const classSchedulesRef = database.ref("classSchedules");
@@ -129,13 +131,13 @@
           const qrData = {
             materia: materiaEncontrada,
             dia: simulatedDay,
-            hora: simulatedTime,
+            hora: horaExacta, // Usar la hora exacta de la base de datos
             grado,
             grupo,
           };
 
           // Generar el QR con logo usando la API de QR Monkey
-          const qrUrl = `https://api.qrmonkey.com//generate?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://cecytlax.edu.mx/wp-content/uploads/2023/10/cropped-LOGO-CECyTE-EMSaD-2022_Mesa-de-trabajo-1.png","size":300}`;
+          const qrUrl = `https://api.qrmonkey.com/generate?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://linktologo.com/logo.png","size":300}`;
 
           // Establecer la imagen del QR en el canvas
           document.getElementById("qr-image").src = qrUrl;
