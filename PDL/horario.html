@@ -206,6 +206,7 @@
         for (let day in subjects[semester][group]) {
             for (let hour in subjects[semester][group][day]) {
                 const currentSubject = subjects[semester][group][day][hour];
+                // Si ya existe una materia diferente a la actual, hay conflicto
                 if (existingSchedule[day]?.[hour] && existingSchedule[day][hour] !== subjectName) {
                     return true;
                 }
@@ -227,49 +228,40 @@
 
         userScheduleRef.once('value').then(snapshot => {
             const existingSchedule = snapshot.val() || {};
-            let firstAssignment = Object.keys(existingSchedule).length === 0; // Si no hay horario previo
-            let updatedSchedule = { ...existingSchedule }; // Copiar horario existente
 
+            // Validar si hay conflicto de horarios
+            if (isScheduleConflict(subjectName, semester, group, subjects, existingSchedule)) {
+                alert('Conflicto de horario: ya existe una clase asignada en ese horario.');
+                return;
+            }
+
+            // Iterar sobre todos los días y horas para asignar la materia seleccionada
             for (let day in subjects[semester][group]) {
                 for (let hour in subjects[semester][group][day]) {
                     const subjectInSchedule = subjects[semester][group][day][hour];
+
+                    // Si la materia coincide, la asignamos
                     if (subjectInSchedule === subjectName) {
-                        if (!updatedSchedule[day]) {
-                            updatedSchedule[day] = {};
+                        if (!existingSchedule[day]) {
+                            existingSchedule[day] = {};
                         }
-                        updatedSchedule[day][hour] = subjectName;
+                        existingSchedule[day][hour] = subjectName;
                     }
                 }
             }
 
-            if (firstAssignment) {
-                const recesoHour = "1000";
-                for (let day of ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]) {
-                    if (!updatedSchedule[day]) {
-                        updatedSchedule[day] = {};
-                    }
-                    updatedSchedule[day][recesoHour] = "Receso";
-                }
-                alert('Receso agregado automáticamente a las 10:00 en todos los días.');
-            }
-
-            userScheduleRef.set(updatedSchedule).then(() => {
+            // Guardar el horario actualizado en Firebase
+            userScheduleRef.set(existingSchedule).then(() => {
                 alert('Horario actualizado con éxito.');
                 loadSubjects(); // Recargar materias
             }).catch(error => {
-                alert('Error al guardar horario: ' + error.message);
+                alert('Error al guardar el horario: ' + error.message);
             });
         });
     }
 
-    // Cargar materias al cargar la página
-    firebase.auth().onAuthStateChanged(user => {
-        if (user) {
-            loadSubjects();
-        } else {
-            alert('Por favor inicia sesión.');
-        }
-    });
+    // Cargar materias al iniciar la página
+    window.onload = loadSubjects;
 </script>
 </body>
 </html>
