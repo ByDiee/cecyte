@@ -16,7 +16,7 @@
   <script>
     // Simulación simple (día y hora)
     const simulatedDay = "Martes"; // Cambia según el día que quieras probar (sin acentos)
-    const simulatedTime = "0755"; // Cambia según la hora que quieras probar
+    const simulatedTime = "0756"; // Cambia según la hora que quieras probar
 
     // Configuración de horarios
     const recesoInicio = "1000"; // 10:00
@@ -137,7 +137,7 @@
           };
 
           // Generar el QR con logo usando la API de QR Monkey
-          const qrUrl = `https://api.qrmonkey.com/generate?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://linktologo.com/logo.png","size":300}`;
+          const qrUrl = `https://api.qrmonkey.com/generate?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://cecytlax.edu.mx/wp-content/uploads/2023/10/cropped-LOGO-CECyTE-EMSaD-2022_Mesa-de-trabajo-1.png","size":300}`;
 
           // Establecer la imagen del QR en el canvas
           document.getElementById("qr-image").src = qrUrl;
