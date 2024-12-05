@@ -20,7 +20,7 @@
 
     // Configuración de horarios
     const recesoInicio = "1000"; // 10:00
-    const recesoFin = "1030";    // 10:30
+    const recesoFin = "1029";    // 10:30
     const diasHabiles = ["lunes", "martes", "miercoles", "jueves", "viernes"];
 
     console.log("Simulación: Día =", simulatedDay, "Hora =", simulatedTime);
@@ -47,7 +47,7 @@
           const userId = user.uid;
           console.log("Usuario autenticado:", userId);
 
-          const userRef = firebaseDatabase.ref(`users/${userId}`);
+          const userRef = database.ref(`users/${userId}`);
           const snapshot = await userRef.once("value");
           const userData = snapshot.val();
 
@@ -65,7 +65,7 @@
           }
 
           // Buscar el grupo y grado en la base de datos
-          const classSchedulesRef = firebaseDatabase.ref("classSchedules");
+          const classSchedulesRef = database.ref("classSchedules");
           const classSchedulesSnapshot = await classSchedulesRef.once("value");
           const classSchedules = classSchedulesSnapshot.val();
 
