@@ -1,135 +1,152 @@
-<script>
-  // Simulación simple (día y hora)
-  const simulatedDay = "martes"; // Cambia según el día que quieras probar (sin acentos)
-  const simulatedTime = "0745"; // Cambia según la hora que quieras probar
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de QR para Asistencias</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/umd/qrious.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+  <h1>Generador de QR para Asistencias</h1>
+  <canvas id="qr-code"></canvas>
+  <script>
+    // Simulación simple (día y hora)
+    const simulatedDay = "martes"; // Cambia según el día que quieras probar (sin acentos)
+    const simulatedTime = "0745"; // Cambia según la hora que quieras probar
 
-  // Configuración de horarios
-  const recesoInicio = "1000"; // 10:00
-  const recesoFin = "1030";    // 10:30
-  const diasHabiles = ["lunes", "martes", "miercoles", "jueves", "viernes"];
-  const moduloDuracion = 44;   // Duración del módulo en minutos
+    // Configuración de horarios
+    const recesoInicio = "1000"; // 10:00
+    const recesoFin = "1030";    // 10:30
+    const diasHabiles = ["lunes", "martes", "miercoles", "jueves", "viernes"];
+    const moduloDuracion = 44;   // Duración del módulo en minutos
 
-  console.log("Simulación: Día =", simulatedDay, "Hora =", simulatedTime);
+    console.log("Simulación: Día =", simulatedDay, "Hora =", simulatedTime);
 
-  // Convertir horas a minutos
-  function horaATotalMinutos(hora) {
-    const horas = parseInt(hora.substring(0, 2));
-    const minutos = parseInt(hora.substring(2, 4));
-    return horas * 60 + minutos;
-  }
-
-  // Validar si el día y la hora son válidos
-  function validarHorario(dia, hora) {
-    if (!diasHabiles.includes(dia)) {
-      console.error("Día no hábil. No hay clases.");
-      return false;
+    // Convertir horas a minutos
+    function horaATotalMinutos(hora) {
+      const horas = parseInt(hora.substring(0, 2));
+      const minutos = parseInt(hora.substring(2, 4));
+      return horas * 60 + minutos;
     }
 
-    if (hora >= recesoInicio && hora < recesoFin) {
-      console.error("Es hora de receso, no se registran clases.");
-      return false;
+    // Validar si el día y la hora son válidos
+    function validarHorario(dia, hora) {
+      if (!diasHabiles.includes(dia)) {
+        console.error("Día no hábil. No hay clases.");
+        return false;
+      }
+
+      if (hora >= recesoInicio && hora < recesoFin) {
+        console.error("Es hora de receso, no se registran clases.");
+        return false;
+      }
+
+      console.log("Día y hora válidos:", dia, hora);
+      return true;
     }
 
-    console.log("Día y hora válidos:", dia, hora);
-    return true;
-  }
+    if (validarHorario(simulatedDay, simulatedTime)) {
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+          const userId = user.uid;
+          console.log("Usuario autenticado:", userId);
 
-  if (validarHorario(simulatedDay, simulatedTime)) {
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        const userId = user.uid;
-        console.log("Usuario autenticado:", userId);
+          const userRef = database.ref(`users/${userId}`);
+          const snapshot = await userRef.once("value");
+          const userData = snapshot.val();
 
-        const userRef = database.ref(`users/${userId}`);
-        const snapshot = await userRef.once("value");
-        const userData = snapshot.val();
-
-        if (!userData || !userData.horario || !userData.horario[simulatedDay]) {
-          console.error("No se encontró horario para este día.");
-          return;
-        }
-
-        const horarioDia = userData.horario[simulatedDay];
-        const simulatedTimeMin = horaATotalMinutos(simulatedTime);
-
-        // Buscar la materia según la hora simulada
-        let materiaEncontrada = null;
-        for (const horaInicio in horarioDia) {
-          const materia = horarioDia[horaInicio];
-          const horaInicioMin = horaATotalMinutos(horaInicio);
-          const horaFinMin = horaInicioMin + moduloDuracion;
-
-          if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
-            materiaEncontrada = materia;
-            break;
+          if (!userData || !userData.horario || !userData.horario[simulatedDay]) {
+            console.error("No se encontró horario para este día.");
+            return;
           }
-        }
 
-        if (!materiaEncontrada) {
-          console.error("No se encontró la materia en el horario del maestro.");
-          return;
-        }
+          const horarioDia = userData.horario[simulatedDay];
+          const simulatedTimeMin = horaATotalMinutos(simulatedTime);
 
-        console.log("Materia encontrada:", materiaEncontrada);
+          // Buscar la materia según la hora simulada
+          let materiaEncontrada = null;
+          for (const horaInicio in horarioDia) {
+            const materia = horarioDia[horaInicio];
+            const horaInicioMin = horaATotalMinutos(horaInicio);
+            const horaFinMin = horaInicioMin + moduloDuracion;
 
-        // Buscar el grupo y grado en la base de datos
-        const classSchedulesRef = database.ref("classSchedules");
-        const classSchedulesSnapshot = await classSchedulesRef.once("value");
-        const classSchedules = classSchedulesSnapshot.val();
+            if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
+              materiaEncontrada = materia;
+              break;
+            }
+          }
 
-        let grado = null;
-        let grupo = null;
+          if (!materiaEncontrada) {
+            console.error("No se encontró la materia en el horario del maestro.");
+            return;
+          }
 
-        outerLoop:
-        for (const nivel in classSchedules) {
-          for (const grupoKey in classSchedules[nivel]) {
-            const diaHorario = classSchedules[nivel][grupoKey][simulatedDay];
-            if (diaHorario) {
-              for (const horaInicio in diaHorario) {
-                const horaInicioMin = horaATotalMinutos(horaInicio);
-                const horaFinMin = horaInicioMin + moduloDuracion;
+          console.log("Materia encontrada:", materiaEncontrada);
 
-                if (
-                  diaHorario[horaInicio] === materiaEncontrada &&
-                  simulatedTimeMin >= horaInicioMin &&
-                  simulatedTimeMin < horaFinMin
-                ) {
-                  grado = nivel;
-                  grupo = grupoKey;
-                  break outerLoop;
+          // Buscar el grupo y grado en la base de datos
+          const classSchedulesRef = database.ref("classSchedules");
+          const classSchedulesSnapshot = await classSchedulesRef.once("value");
+          const classSchedules = classSchedulesSnapshot.val();
+
+          let grado = null;
+          let grupo = null;
+
+          outerLoop:
+          for (const nivel in classSchedules) {
+            for (const grupoKey in classSchedules[nivel]) {
+              const diaHorario = classSchedules[nivel][grupoKey][simulatedDay];
+              if (diaHorario) {
+                for (const horaInicio in diaHorario) {
+                  const horaInicioMin = horaATotalMinutos(horaInicio);
+                  const horaFinMin = horaInicioMin + moduloDuracion;
+
+                  if (
+                    diaHorario[horaInicio] === materiaEncontrada &&
+                    simulatedTimeMin >= horaInicioMin &&
+                    simulatedTimeMin < horaFinMin
+                  ) {
+                    grado = nivel;
+                    grupo = grupoKey;
+                    break outerLoop;
+                  }
                 }
               }
             }
           }
+
+          if (!grado || !grupo) {
+            console.error("No se encontró un grado y grupo que coincida con la materia.");
+            return;
+          }
+
+          console.log("Grado y Grupo encontrados:", grado, grupo);
+
+          // Generar el contenido del QR
+          const qrData = {
+            materia: materiaEncontrada,
+            dia: simulatedDay,
+            hora: simulatedTime,
+            grado,
+            grupo,
+          };
+
+          // Generar el código QR
+          const qrCode = new QRious({
+            element: document.getElementById("qr-code"),
+            size: 250,
+            value: JSON.stringify(qrData),
+          });
+
+          console.log("QR generado con éxito:", qrData);
+        } else {
+          console.error("Usuario no autenticado.");
         }
-
-        if (!grado || !grupo) {
-          console.error("No se encontró un grado y grupo que coincida con la materia.");
-          return;
-        }
-
-        console.log("Grado y Grupo encontrados:", grado, grupo);
-
-        // Generar el contenido del QR
-        const qrData = {
-          materia: materiaEncontrada,
-          dia: simulatedDay,
-          hora: simulatedTime,
-          grado,
-          grupo,
-        };
-
-        // Generar el código QR
-        const qrCode = new QRious({
-          element: document.getElementById("qr-code"),
-          size: 250,
-          value: JSON.stringify(qrData),
-        });
-
-        console.log("QR generado con éxito:", qrData);
-      } else {
-        console.error("Usuario no autenticado.");
-      }
-    });
-  }
-</script>
+      });
+    }
+  </script>
+</body>
+</html>
