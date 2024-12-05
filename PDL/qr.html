@@ -55,7 +55,7 @@
           const userId = user.uid;
           console.log("Usuario autenticado:", userId);
 
-          const userRef = database.ref(`users/${userId}`);
+          const userRef = firebase.database().ref(`users/${userId}`);
           const snapshot = await userRef.once("value");
           const userData = snapshot.val();
 
@@ -88,7 +88,7 @@
           console.log("Materia encontrada:", materiaEncontrada);
 
           // Buscar el grupo y grado en la base de datos
-          const classSchedulesRef = database.ref("classSchedules");
+          const classSchedulesRef = firebase.database().ref("classSchedules");
           const classSchedulesSnapshot = await classSchedulesRef.once("value");
           const classSchedules = classSchedulesSnapshot.val();
 
