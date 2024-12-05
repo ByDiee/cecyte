@@ -136,8 +136,8 @@
             grupo,
           };
 
-          // Generar el QR con logo usando una API alternativa (qr-code-generator)
-          const qrUrl = `https://api.qr-code-generator.com/v1/create/?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://cecytlax.edu.mx/wp-content/uploads/2023/10/cropped-LOGO-CECyTE-EMSaD-2022_Mesa-de-trabajo-1.png","size":300}`;
+          // Generar el QR con logo usando la API de QR Monkey
+          const qrUrl = `https://api.qrmonkey.com/qr/custom?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://cecytlax.edu.mx/wp-content/uploads/2023/10/cropped-LOGO-CECyTE-EMSaD-2022_Mesa-de-trabajo-1.png","size":300}`;
 
           // Establecer la imagen del QR en el canvas
           document.getElementById("qr-image").src = qrUrl;
