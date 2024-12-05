@@ -15,19 +15,36 @@
         th { background-color: #f4f4f4; }
         .container { max-width: 900px; margin: 0 auto; }
         h1 { text-align: center; }
+        .filters { margin-bottom: 20px; }
+        .filter-label { margin-right: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Asistencias Registradas</h1>
+        
+        <!-- Filtros para fecha, grado, grupo y materia -->
+        <div class="filters">
+            <label for="filterFecha" class="filter-label">Fecha:</label>
+            <input type="date" id="filterFecha">
+            
+            <label for="filterGrado" class="filter-label">Grado:</label>
+            <input type="text" id="filterGrado" placeholder="Ej. 1">
+            
+            <label for="filterGrupo" class="filter-label">Grupo:</label>
+            <input type="text" id="filterGrupo" placeholder="Ej. A">
+            
+            <label for="filterMateria" class="filter-label">Materia:</label>
+            <input type="text" id="filterMateria" placeholder="Ej. Educación Física I">
+            
+            <button onclick="fetchAttendances()">Filtrar</button>
+        </div>
+        
         <div id="loading" style="text-align: center;">Cargando...</div>
+        
         <table id="attendanceTable">
             <thead>
                 <tr>
-                    <th>Fecha</th>
-                    <th>Grado</th>
-                    <th>Grupo</th>
-                    <th>Materia</th>
                     <th>Nombre del Alumno</th>
                     <th>Hora de Escaneo</th>
                 </tr>
@@ -39,8 +56,15 @@
     </div>
 
     <script>
-        // Función para recuperar asistencias
+        // Función para recuperar las asistencias con los filtros aplicados
         async function fetchAttendances() {
+            const filterFecha = document.getElementById('filterFecha').value;
+            const filterGrado = document.getElementById('filterGrado').value;
+            const filterGrupo = document.getElementById('filterGrupo').value;
+            const filterMateria = document.getElementById('filterMateria').value;
+
+            console.log("Filtros aplicados:", { filterFecha, filterGrado, filterGrupo, filterMateria });
+
             try {
                 const dbRef = firebase.database().ref('classSchedules');
                 const snapshot = await dbRef.once('value');
@@ -52,31 +76,32 @@
 
                 // Iterar por los datos de las asistencias
                 for (let grado in data) {
+                    if (filterGrado && filterGrado !== grado) continue; // Filtro por grado
+                    
                     for (let grupo in data[grado]) {
+                        if (filterGrupo && filterGrupo !== grupo) continue; // Filtro por grupo
+                        
                         for (let dia in data[grado][grupo]) {
                             for (let hora in data[grado][grupo][dia]) {
+                                const materia = data[grado][grupo][dia][hora];
+                                if (filterMateria && !materia.includes(filterMateria)) continue; // Filtro por materia
+
                                 // Si hay asistencias
                                 if (data[grado][grupo][dia][hora].hasOwnProperty("asistencias")) {
-                                    const materia = data[grado][grupo][dia][hora];
                                     const asistencias = data[grado][grupo][dia][hora]["asistencias"];
 
                                     // Iterar por las asistencias
                                     for (let fecha in asistencias) {
+                                        if (filterFecha && filterFecha !== fecha) continue; // Filtro por fecha
+                                        
                                         for (let studentId in asistencias[fecha]) {
                                             const alumno = asistencias[fecha][studentId];
+                                            
                                             const fila = document.createElement('tr');
-
-                                            // Crear las celdas con los datos
                                             fila.innerHTML = `
-                                                <td>${fecha}</td>
-                                                <td>${grado}</td>
-                                                <td>${grupo}</td>
-                                                <td>${materia}</td>
                                                 <td>${alumno.nombre}</td>
                                                 <td>${alumno.horaEscaneo}</td>
                                             `;
-
-                                            // Agregar la fila a la tabla
                                             tableBody.appendChild(fila);
                                         }
                                     }
@@ -84,6 +109,13 @@
                             }
                         }
                     }
+                }
+
+                // Si no se encuentran resultados, mostrar un mensaje
+                if (tableBody.rows.length === 0) {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = "<td colspan='2' style='text-align: center;'>No se encontraron asistencias con los filtros aplicados.</td>";
+                    tableBody.appendChild(fila);
                 }
 
                 // Ocultar mensaje de carga
@@ -95,8 +127,9 @@
             }
         }
 
-        // Llamar a la función para recuperar las asistencias una vez que se haya autenticado
+        // Llamar a la función para recuperar las asistencias al cargar la página
         fetchAttendances();
     </script>
 </body>
 </html>
+
