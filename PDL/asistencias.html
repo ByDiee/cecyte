@@ -39,19 +39,8 @@
     </div>
 
     <script>
-        // Función para verificar si el usuario está autenticado
-        firebase.auth().onAuthStateChanged(function(user) {
-            if (!user) {
-                // Si no está autenticado, redirigir al login
-                window.location.href = "login.html";
-            } else {
-                // Si está autenticado, llamar a la función para obtener las asistencias
-                fetchAttendances(user);
-            }
-        });
-
         // Función para recuperar asistencias
-        async function fetchAttendances(user) {
+        async function fetchAttendances() {
             try {
                 const dbRef = firebase.database().ref('classSchedules');
                 const snapshot = await dbRef.once('value');
@@ -105,6 +94,9 @@
                 document.getElementById('loading').textContent = 'Hubo un error al cargar los datos.';
             }
         }
+
+        // Llamar a la función para recuperar las asistencias una vez que se haya autenticado
+        fetchAttendances();
     </script>
 </body>
 </html>
