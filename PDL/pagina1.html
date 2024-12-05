@@ -81,6 +81,7 @@
         <a href="qr.html">Generar QR</a>
         <a href="perfilmaestro.html">Editar Perfil</a>
         <a href="asistencias.html">Ver Asistencias</a>
+        <a href="horario.html">Editar Horario</a> <!-- Botón movido aquí -->
     </nav>
     <main>
         <div class="welcome">
@@ -106,7 +107,6 @@
                     <!-- JavaScript poblará esta sección -->
                 </tbody>
             </table>
-            <button id="editScheduleBtn">Editar Horario</button>
         </div>
     </main>
 
@@ -198,11 +198,6 @@
                     console.error('Error al obtener el horario:', error);
                 });
             }
-
-            // Editar horario al hacer clic en el botón
-            document.getElementById('editScheduleBtn').addEventListener('click', () => {
-                window.location.href = 'horario.html';
-            });
         });
     </script>
 </body>
