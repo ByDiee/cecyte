@@ -3,114 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ver Asistencias</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script> <!-- Aquí se maneja la autenticación -->
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: #f4f4f4; }
-        .container { max-width: 900px; margin: 0 auto; }
-        h1 { text-align: center; }
-        #loading { text-align: center; font-size: 18px; }
-    </style>
+    <title>Recuperación de Asistencias</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Asistencias Registradas</h1>
-        <div id="loading">Cargando...</div>
-        <table id="attendanceTable">
-            <thead>
-                <tr>
-                    <th>Materia</th>
-                    <th>Nombre del Alumno</th>
-                    <th>Hora de Escaneo</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Las filas de asistencia se agregarán aquí -->
-            </tbody>
-        </table>
-    </div>
+    <h1>Asistencias por Hora</h1>
+
+    <div id="horarios"></div>
 
     <script>
-        // Función para recuperar las asistencias sin filtros
-        async function fetchAttendances() {
-            try {
-                console.log('Iniciando recuperación de datos...');
-                const dbRef = firebase.database().ref('classSchedules');
-                const snapshot = await dbRef.once('value');
-                const data = snapshot.val();
-                console.log('Datos recuperados:', data);
-
-                const tableBody = document.getElementById('attendanceTable').getElementsByTagName('tbody')[0];
-
-                // Limpiar tabla antes de llenar
-                tableBody.innerHTML = '';
-
-                let noResults = true; // Variable para verificar si se muestran resultados
-
-                // Iterar por los datos de las asistencias
-                for (let grado in data) {
-                    console.log(`Recorriendo grado: ${grado}`);
-                    for (let grupo in data[grado]) {
-                        console.log(`Recorriendo grupo: ${grupo}`);
-                        for (let dia in data[grado][grupo]) {
-                            console.log(`Recorriendo día: ${dia}`);
-                            for (let hora in data[grado][grupo][dia]) {
-                                console.log(`Recorriendo hora: ${hora}`);
-                                
-                                // Si hay asistencias
-                                if (data[grado][grupo][dia][hora].hasOwnProperty("asistencias")) {
-                                    console.log(`Asistencias encontradas para ${grado} - ${grupo} - ${dia} - ${hora}`);
-                                    
-                                    const asistencias = data[grado][grupo][dia][hora]["asistencias"];
-                                    // Iterar por las asistencias
-                                    for (let fecha in asistencias) {
-                                        console.log(`Recorriendo fecha: ${fecha}`);
-                                        for (let studentId in asistencias[fecha]) {
-                                            const alumno = asistencias[fecha][studentId];
-                                            const materia = data[grado][grupo][dia][hora]; // Obtener materia
-
-                                            console.log(`Alumno: ${alumno.nombre}, Hora de escaneo: ${alumno.horaEscaneo}, Materia: ${materia}`);
-
-                                            const fila = document.createElement('tr');
-                                            fila.innerHTML = `
-                                                <td>${materia}</td>
-                                                <td>${alumno.nombre}</td>
-                                                <td>${alumno.horaEscaneo}</td>
-                                            `;
-                                            tableBody.appendChild(fila);
-                                            noResults = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+        // Simulación de los datos de Firebase (classSchedules)
+        const classSchedules = {
+            "1": {
+                "A": {
+                    "Martes": {
+                        "0700": "Educación Física I",
+                        "0745": "Cultura Digital I",
+                        "0830": "La Materia y sus Interacciones",
+                        "1000": "Receso", // Excluir en el rango de receso
+                        "1030": "Matemáticas I",
+                        "1115": "Historia",
+                        "1200": "Lengua y Literatura",
+                        "1245": "Cultura Digital II",
+                        "1330": "Química",
+                        "1415": "Física",
+                        "1500": "Biología"
                     }
                 }
+            }
+        };
 
-                // Si no se encuentran resultados, mostrar un mensaje
-                if (noResults) {
-                    const fila = document.createElement('tr');
-                    fila.innerHTML = "<td colspan='3' style='text-align: center;'>No se encontraron asistencias.</td>";
-                    tableBody.appendChild(fila);
+        // Función para identificar la materia según el rango de hora
+        function identificarMateriaPorHora(hora, dia, grado, grupo) {
+            const horaInt = parseInt(hora, 10);
+            
+            // Verificar si existe clases para ese día
+            const clases = classSchedules[grado] && classSchedules[grado][grupo] && classSchedules[grado][grupo][dia];
+            if (!clases) {
+                console.log(`No se encontraron clases para el día ${dia} en el grado ${grado}, grupo ${grupo}`);
+                return;
+            }
+
+            // Excluir receso (10:00-10:30) y realizar la búsqueda dentro de los rangos
+            if (horaInt >= 1000 && horaInt <= 1030) {
+                console.log(`Hora ${horaInt} está en el rango de receso y no se procesará.`);
+                return;
+            }
+
+            let materia = null;
+            for (const horaClave in clases) {
+                const horaClase = parseInt(horaClave, 10);
+                
+                // Definir el rango de 44 minutos para identificar la materia correcta
+                if (horaInt >= horaClase && horaInt < horaClase + 45) {
+                    materia = clases[horaClave]; // Si está dentro del rango, asigna la materia
+                    break;
                 }
+            }
 
-                // Ocultar mensaje de carga
-                document.getElementById('loading').style.display = 'none';
+            return materia;
+        }
 
-            } catch (error) {
-                console.error("Error al recuperar las asistencias:", error);
-                document.getElementById('loading').textContent = 'Hubo un error al cargar los datos.';
+        // Simulación de carga de datos y prueba
+        function recuperarDatosAsistencias() {
+            const grado = 1; // Ejemplo de grado
+            const grupo = "A"; // Ejemplo de grupo
+            const dia = "Martes"; // Ejemplo de día
+            const horas = ["0700", "0745", "0830", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+            const divHorarios = document.getElementById('horarios');
+            divHorarios.innerHTML = ''; // Limpiar el div de horarios antes de cargar los nuevos
+
+            // Recorriendo las horas de clase
+            for (const hora of horas) {
+                const materia = identificarMateriaPorHora(hora, dia, grado, grupo);
+                const materiaHTML = materia ? `La materia para las ${hora} es: ${materia}` : `No se encontró materia para el horario ${hora}`;
+                console.log(materiaHTML);
+                
+                // Agregar al HTML el resultado de cada hora
+                const p = document.createElement('p');
+                p.textContent = materiaHTML;
+                divHorarios.appendChild(p);
             }
         }
 
-        // Llamar a la función para recuperar las asistencias al cargar la página
-        fetchAttendances();
+        // Llamamos a la función para probar el código al cargar la página
+        window.onload = recuperarDatosAsistencias;
     </script>
 </body>
 </html>
