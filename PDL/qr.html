@@ -14,76 +14,59 @@
   <h1>Generador de QR para Asistencias</h1>
   <canvas id="qr-code"></canvas>
   <script>
-    const firebaseDatabase = firebase.database();
-
-    // Simulación de fecha y hora (para pruebas)
-    const simulatedDate = new Date('2024-12-04T11:20:00'); // Cambiar según pruebas
-    const currentDay = simulatedDate.toLocaleString('es-MX', { weekday: 'long' }).toLowerCase();
-    const currentTime = simulatedDate.toTimeString().substring(0, 5).replace(':', '');
+    // Simulación simple (día y hora)
+    const simulatedDay = "lunes"; // Cambia según el día que quieras probar (sin acentos)
+    const simulatedTime = "0700"; // Cambia según la hora que quieras probar
 
     // Configuración de horarios
-    const horarioInicio = 700; // 07:00
-    const horarioFin = 1500;  // 15:00
-    const moduloDuracion = 44; // Duración de cada módulo en minutos
-    const recesoInicio = 1000; // 10:00
-    const recesoFin = 1029;    // 10:30
-    const diasHabiles = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const recesoInicio = "1000"; // 10:00
+    const recesoFin = "1030";    // 10:30
+    const diasHabiles = ["lunes", "martes", "miercoles", "jueves", "viernes"];
 
-    // Función para validar el día y horario
-    function validarHorario() {
-      // Verificar si es día hábil
-      if (!diasHabiles.includes(currentDay)) {
-        console.error('No hay clases los fines de semana.');
+    console.log("Simulación: Día =", simulatedDay, "Hora =", simulatedTime);
+
+    // Validar si el día y la hora son válidos
+    function validarHorario(dia, hora) {
+      if (!diasHabiles.includes(dia)) {
+        console.error("Día no hábil. No hay clases.");
         return false;
       }
 
-      // Verificar si es horario válido
-      if (currentTime >= recesoInicio && currentTime < recesoFin) {
-        console.error('Es hora de receso, no hay clases.');
+      if (hora >= recesoInicio && hora < recesoFin) {
+        console.error("Es hora de receso, no se registran clases.");
         return false;
       }
 
-      if (currentTime < horarioInicio || currentTime >= horarioFin) {
-        console.error('Fuera del horario escolar.');
-        return false;
-      }
-
+      console.log("Día y hora válidos:", dia, hora);
       return true;
     }
 
-    // Calcular la hora del módulo
-    const calcularModulo = (hora) => {
-      const inicioMinutos = Math.floor(hora / 100) * 60 + (hora % 100);
-      const diferencia = Math.floor((simulatedDate.getHours() * 60 + simulatedDate.getMinutes() - inicioMinutos) / moduloDuracion);
-      return inicioMinutos + diferencia * moduloDuracion;
-    };
-
-    if (validarHorario()) {
-      const horaModulo = calcularModulo(horarioInicio);
-      const horaClave = String(horaModulo).padStart(4, '0');
-
-      // Identificar la materia actual del maestro
+    if (validarHorario(simulatedDay, simulatedTime)) {
       firebase.auth().onAuthStateChanged(async (user) => {
         if (user) {
           const userId = user.uid;
+          console.log("Usuario autenticado:", userId);
+
           const userRef = firebaseDatabase.ref(`users/${userId}`);
-          const snapshot = await userRef.once('value');
+          const snapshot = await userRef.once("value");
           const userData = snapshot.val();
 
-          if (!userData || !userData.horario || !userData.horario[currentDay] || !userData.horario[currentDay][horaClave]) {
-            console.error('No se encontró la materia en el horario del maestro.');
+          if (!userData || !userData.horario || !userData.horario[simulatedDay] || !userData.horario[simulatedDay][simulatedTime]) {
+            console.error("No se encontró la materia en el horario del maestro.");
             return;
           }
 
-          const materia = userData.horario[currentDay][horaClave];
+          const materia = userData.horario[simulatedDay][simulatedTime];
+          console.log("Materia encontrada:", materia);
+
           if (!materia) {
-            console.error('No hay materia asignada en esta hora.');
+            console.error("No hay materia asignada en esta hora.");
             return;
           }
 
-          // Buscar el grupo y grado que corresponde a la materia
-          const classSchedulesRef = firebaseDatabase.ref('classSchedules');
-          const classSchedulesSnapshot = await classSchedulesRef.once('value');
+          // Buscar el grupo y grado en la base de datos
+          const classSchedulesRef = firebaseDatabase.ref("classSchedules");
+          const classSchedulesSnapshot = await classSchedulesRef.once("value");
           const classSchedules = classSchedulesSnapshot.val();
 
           let grado = null;
@@ -92,8 +75,8 @@
           outerLoop:
           for (const nivel in classSchedules) {
             for (const grupoKey in classSchedules[nivel]) {
-              const diaHorario = classSchedules[nivel][grupoKey][currentDay];
-              if (diaHorario && diaHorario[horaClave] === materia) {
+              const diaHorario = classSchedules[nivel][grupoKey][simulatedDay];
+              if (diaHorario && diaHorario[simulatedTime] === materia) {
                 grado = nivel;
                 grupo = grupoKey;
                 break outerLoop;
@@ -102,29 +85,31 @@
           }
 
           if (!grado || !grupo) {
-            console.error('No se encontró un grado y grupo que coincida con la materia.');
+            console.error("No se encontró un grado y grupo que coincida con la materia.");
             return;
           }
+
+          console.log("Grado y Grupo encontrados:", grado, grupo);
 
           // Generar el contenido del QR
           const qrData = {
             materia,
-            dia: currentDay,
-            hora: horaClave,
+            dia: simulatedDay,
+            hora: simulatedTime,
             grado,
             grupo,
           };
 
-          // Generar código QR
+          // Generar el código QR
           const qrCode = new QRious({
-            element: document.getElementById('qr-code'),
+            element: document.getElementById("qr-code"),
             size: 250,
             value: JSON.stringify(qrData),
           });
 
-          console.log('QR generado con éxito:', qrData);
+          console.log("QR generado con éxito:", qrData);
         } else {
-          console.error('Usuario no autenticado.');
+          console.error("Usuario no autenticado.");
         }
       });
     }
