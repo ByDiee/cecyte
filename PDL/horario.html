@@ -90,84 +90,194 @@
         </table>
     </main>
 
-    <script>
-        function loadSubjects() {
-            const subjectRef = firebase.database().ref('classSchedules');
-            subjectRef.once('value').then(snapshot => {
-                const subjects = snapshot.val();
-                const subjectBody = document.getElementById('subjectBody');
-                subjectBody.innerHTML = ''; // Limpiar tabla
+<script>
+    // Cargar materias desde Firebase con filtro en tiempo real
+    function loadSubjects(searchTerm = '') {
+        const subjectRef = firebase.database().ref('classSchedules');
+        subjectRef.once('value').then(snapshot => {
+            const subjects = snapshot.val();
+            const subjectBody = document.getElementById('subjectBody');
+            subjectBody.innerHTML = ''; // Limpiar la tabla antes de cargar nuevas materias
 
-                const loadedSubjects = {};
+            const loadedSubjects = {}; // Control para evitar duplicados
 
-                for (let semester in subjects) {
-                    for (let group in subjects[semester]) {
-                        for (let day in subjects[semester][group]) {
-                            for (let hour in subjects[semester][group][day]) {
-                                const subjectData = subjects[semester][group][day][hour];
-                                if (!subjectData || hour === "1000" || hour === "1029" || subjectData === "asistencias") continue;
+            // Iterar sobre todos los semestres, grupos, días y horas
+            for (let semester in subjects) {
+                for (let group in subjects[semester]) {
+                    for (let day in subjects[semester][group]) {
+                        for (let hour in subjects[semester][group][day]) {
+                            const subjectData = subjects[semester][group][day][hour];
 
-                                const subjectName = subjectData;
-                                const subjectKey = `${subjectName}-${semester}-${group}`;
-                                if (!loadedSubjects[subjectKey]) {
-                                    loadedSubjects[subjectKey] = true;
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>${subjectName}</td>
-                                        <td>${semester}</td>
-                                        <td>${group}</td>
-                                        <td>${day} ${hour}</td>
-                                    `;
-                                    row.addEventListener('click', () => {
-                                        assignAllHours(subjectName, semester, group);
-                                    });
-                                    subjectBody.appendChild(row);
+                            // Filtrar nodos "asistencias" y evitar materias vacías
+                            if (!subjectData || hour === "1000" || hour === "1029" || subjectData === "asistencias") continue;
+
+                            const subjectName = subjectData;
+
+                            // Crear un identificador único para la combinación de materia, semestre y grupo
+                            const subjectKey = `${subjectName}-${semester}-${group}`;
+
+                            // Si esta combinación ya se ha cargado, no la cargamos nuevamente
+                            if (!loadedSubjects[subjectKey]) {
+                                loadedSubjects[subjectKey] = true; // Marcamos esta combinación como cargada
+
+                                // Filtrar con el término de búsqueda
+                                if (!subjectName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                    !semester.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                    !group.toLowerCase().includes(searchTerm.toLowerCase())) {
+                                    continue; // Omitir si no coincide con la búsqueda
                                 }
+
+                                const row = document.createElement('tr');
+                                row.classList.add('subject-row');
+
+                                const subjectCell = document.createElement('td');
+                                const semesterCell = document.createElement('td');
+                                const groupCell = document.createElement('td');
+                                const hoursCell = document.createElement('td');
+
+                                subjectCell.textContent = subjectName;
+                                semesterCell.textContent = semester;
+                                groupCell.textContent = group;
+
+                                // Crear mini tabla
+                                const hoursTable = document.createElement('table');
+                                hoursTable.classList.add('hours-table');
+
+                                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                                const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+                                // Encabezados de la mini tabla
+                                const headerRow = document.createElement('tr');
+                                headerRow.appendChild(document.createElement('th')); // Celda vacía
+                                days.forEach(day => {
+                                    const th = document.createElement('th');
+                                    th.textContent = day;
+                                    headerRow.appendChild(th);
+                                });
+                                hoursTable.appendChild(headerRow);
+
+                                // Rellenar la mini tabla con los días y horas
+                                times.forEach(time => {
+                                    const tr = document.createElement('tr');
+                                    const timeCell = document.createElement('td');
+                                    timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                                    tr.appendChild(timeCell);
+
+                                    days.forEach(day => {
+                                        const td = document.createElement('td');
+                                        // Si existe la materia en ese día y hora, marcar como seleccionada
+                                        if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
+                                            td.classList.add('selected'); // Marcar en verde
+                                            td.dataset.day = day; // Almacenar el día
+                                            td.dataset.time = time; // Almacenar la hora
+                                        }
+                                        tr.appendChild(td);
+                                    });
+
+                                    hoursTable.appendChild(tr);
+                                });
+
+                                hoursCell.appendChild(hoursTable);
+
+                                row.appendChild(subjectCell);
+                                row.appendChild(semesterCell);
+                                row.appendChild(groupCell);
+                                row.appendChild(hoursCell);
+
+                                row.addEventListener('click', () => {
+                                    // Asignar todas las horas de la materia seleccionada
+                                    assignAllHours(subjectName, semester, group, subjects);
+                                });
+
+                                subjectBody.appendChild(row);
                             }
                         }
                     }
                 }
-            });
+            }
+        });
+    }
+
+    // Función para agregar "RECESO" a las 10:00 si no existe
+    function addRecessIfNotExists(existingSchedule) {
+        const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+        let added = false;
+
+        days.forEach(day => {
+            if (!existingSchedule[day]) {
+                existingSchedule[day] = {};
+            }
+
+            if (!existingSchedule[day]["1000"]) {
+                existingSchedule[day]["1000"] = "RECESO";
+                added = true;
+            }
+        });
+
+        return added;
+    }
+
+    // Asignar todas las horas de la materia seleccionada
+    function assignAllHours(subjectName, semester, group, subjects) {
+        const currentUser = firebase.auth().currentUser;
+
+        if (!currentUser) {
+            alert('Por favor inicia sesión.');
+            return;
         }
 
-        function assignAllHours(subjectName, semester, group) {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser) {
-                alert('Por favor inicia sesión.');
+        const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
+
+        userScheduleRef.once('value').then(snapshot => {
+            const existingSchedule = snapshot.val() || {};
+
+            // Validar si hay conflicto de horarios
+            if (isScheduleConflict(subjectName, semester, group, subjects, existingSchedule)) {
+                alert('Conflicto de horario: ya existe una clase asignada en ese horario.');
                 return;
             }
-            const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
-            userScheduleRef.once('value').then(snapshot => {
-                const schedule = snapshot.val() || {};
-                const recesoAsignado = asignarReceso(schedule);
 
-                for (let day of ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]) {
-                    schedule[day] = schedule[day] || {};
-                    schedule[day]["0700"] = subjectName; // Ejemplo de asignación
-                }
+            // Agregar "RECESO" si no está en el horario
+            const recessAdded = addRecessIfNotExists(existingSchedule);
 
-                userScheduleRef.set(schedule).then(() => {
-                    alert('Horario actualizado con éxito.');
-                    if (recesoAsignado) alert('Receso asignado automáticamente a las 10:00.');
-                });
-            });
-        }
+            // Iterar sobre todos los días y horas para asignar la materia seleccionada
+            for (let day in subjects[semester][group]) {
+                for (let hour in subjects[semester][group][day]) {
+                    const subjectInSchedule = subjects[semester][group][day][hour];
 
-        function asignarReceso(schedule) {
-            let recesoAsignado = false;
-            for (let day of ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]) {
-                if (!schedule[day]?.["1000"]) {
-                    schedule[day] = schedule[day] || {};
-                    schedule[day]["1000"] = "Receso";
-                    recesoAsignado = true;
+                    // Si la materia coincide, la asignamos
+                    if (subjectInSchedule === subjectName) {
+                        if (!existingSchedule[day]) {
+                            existingSchedule[day] = {};
+                        }
+                        existingSchedule[day][hour] = subjectName;
+                    }
                 }
             }
-            return recesoAsignado;
-        }
 
-        window.onload = function() {
-            loadSubjects();
-        };
-    </script>
+            // Guardar el horario actualizado en Firebase
+            userScheduleRef.set(existingSchedule).then(() => {
+                const message = recessAdded
+                    ? 'Horario actualizado con éxito y se agregó "RECESO".'
+                    : 'Horario actualizado con éxito.';
+                alert(message);
+                loadSubjects(); // Recargar las materias después de la actualización
+            }).catch(error => {
+                alert('Error al guardar horario: ' + error.message);
+            });
+        });
+    }
+
+    // Buscar en tiempo real
+    document.getElementById('searchBar').addEventListener('input', function () {
+        const searchTerm = this.value;
+        loadSubjects(searchTerm);
+    });
+
+    // Iniciar la carga de materias al cargar la página
+    window.onload = function() {
+        loadSubjects();
+    };
+</script>
 </body>
 </html>
