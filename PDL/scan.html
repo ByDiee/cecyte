@@ -125,24 +125,32 @@
             }
         }
 
-        async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre) {
-            try {
-                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${dia}/${hora}/asistencias/${fecha}`);
-                const snapshot = await dbRef.child(studentId).get();
+async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre) {
+    try {
+        // Nodo global de asistencias para el día
+        const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${dia}/asistencias/${fecha}`);
+        const snapshot = await dbRef.child(studentId).get();
 
-                if (snapshot.exists()) {
-                    console.log("Asistencia ya registrada.");
-                    return;
-                }
-
-                await dbRef.child(studentId).set({ nombre, presente: true });
-                notification.style.display = "block";
-                setTimeout(() => notification.style.display = "none", 3000);
-            } catch (err) {
-                error.style.display = "block";
-                console.error("Error al registrar la asistencia:", err);
-            }
+        if (snapshot.exists()) {
+            console.log("Asistencia ya registrada.");
+            return;
         }
+
+        // Registrar la asistencia con nombre y hora de escaneo
+        const horaEscaneo = new Date().toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' });
+        await dbRef.child(studentId).set({
+            nombre: nombre || "Alumno desconocido",
+            presente: true,
+            horaEscaneo
+        });
+
+        notification.style.display = "block";
+        setTimeout(() => notification.style.display = "none", 3000);
+    } catch (error) {
+        error.style.display = "block";
+        console.error("Error al registrar la asistencia:", error);
+    }
+}
 
         function parseHoraSimulada(hora) {
             const [hh, mm] = hora.split(':').map(Number);
