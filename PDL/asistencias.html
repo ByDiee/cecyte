@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Asistencias</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Asistencias Registradas</h1>
+        <div id="loading" style="text-align: center;">Cargando...</div>
+        <table id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Grado</th>
+                    <th>Grupo</th>
+                    <th>Materia</th>
+                    <th>Nombre del Alumno</th>
+                    <th>Hora de Escaneo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Las filas de asistencia se agregarán aquí -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Iniciar Firebase (si no está ya configurado en auth.js)
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            databaseURL: "TU_DATABASE_URL",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // Función para recuperar asistencias
+        async function fetchAttendances() {
+            try {
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    alert("No estás autenticado. Por favor, inicia sesión.");
+                    window.location.href = "login.html"; // Redirigir si no está autenticado
+                    return;
+                }
+
+                const dbRef = firebase.database().ref('classSchedules');
+                const snapshot = await dbRef.once('value');
+                const data = snapshot.val();
+                const tableBody = document.getElementById('attendanceTable').getElementsByTagName('tbody')[0];
+
+                // Limpiar tabla antes de llenar
+                tableBody.innerHTML = '';
+
+                // Iterar por los datos de las asistencias
+                for (let grado in data) {
+                    for (let grupo in data[grado]) {
+                        for (let dia in data[grado][grupo]) {
+                            for (let hora in data[grado][grupo][dia]) {
+                                // Si hay asistencias
+                                if (data[grado][grupo][dia][hora].hasOwnProperty("asistencias")) {
+                                    const materia = data[grado][grupo][dia][hora];
+                                    const asistencias = data[grado][grupo][dia][hora]["asistencias"];
+
+                                    // Iterar por las asistencias
+                                    for (let fecha in asistencias) {
+                                        for (let studentId in asistencias[fecha]) {
+                                            const alumno = asistencias[fecha][studentId];
+                                            const fila = document.createElement('tr');
+
+                                            // Crear las celdas con los datos
+                                            fila.innerHTML = `
+                                                <td>${fecha}</td>
+                                                <td>${grado}</td>
+                                                <td>${grupo}</td>
+                                                <td>${materia}</td>
+                                                <td>${alumno.nombre}</td>
+                                                <td>${alumno.horaEscaneo}</td>
+                                            `;
+
+                                            // Agregar la fila a la tabla
+                                            tableBody.appendChild(fila);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Ocultar mensaje de carga
+                document.getElementById('loading').style.display = 'none';
+
+            } catch (error) {
+                console.error("Error al recuperar las asistencias:", error);
+                document.getElementById('loading').textContent = 'Hubo un error al cargar los datos.';
+            }
+        }
+
+        // Llamar a la función para recuperar las asistencias
+        fetchAttendances();
+    </script>
+</body>
+</html>
