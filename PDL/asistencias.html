@@ -29,10 +29,20 @@
             <input type="date" id="filterFecha">
             
             <label for="filterGrado" class="filter-label">Grado:</label>
-            <input type="text" id="filterGrado" placeholder="Ej. 1">
+            <select id="filterGrado">
+                <option value="">Todos</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
             
             <label for="filterGrupo" class="filter-label">Grupo:</label>
-            <input type="text" id="filterGrupo" placeholder="Ej. A">
+            <select id="filterGrupo">
+                <option value="">Todos</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="F">F</option>
+            </select>
             
             <label for="filterMateria" class="filter-label">Materia:</label>
             <input type="text" id="filterMateria" placeholder="Ej. Educación Física I">
@@ -75,6 +85,7 @@
                 tableBody.innerHTML = '';
 
                 // Iterar por los datos de las asistencias
+                let noResults = true; // Variable para verificar si se muestran resultados
                 for (let grado in data) {
                     if (filterGrado && filterGrado !== grado) continue; // Filtro por grado
                     
@@ -103,6 +114,7 @@
                                                 <td>${alumno.horaEscaneo}</td>
                                             `;
                                             tableBody.appendChild(fila);
+                                            noResults = false;
                                         }
                                     }
                                 }
@@ -112,7 +124,7 @@
                 }
 
                 // Si no se encuentran resultados, mostrar un mensaje
-                if (tableBody.rows.length === 0) {
+                if (noResults) {
                     const fila = document.createElement('tr');
                     fila.innerHTML = "<td colspan='2' style='text-align: center;'>No se encontraron asistencias con los filtros aplicados.</td>";
                     tableBody.appendChild(fila);
@@ -132,4 +144,3 @@
     </script>
 </body>
 </html>
-
