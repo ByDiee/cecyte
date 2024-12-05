@@ -13,10 +13,26 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         #notification { margin-top: 20px; color: green; display: none; }
         #error { margin-top: 20px; color: red; display: none; }
+        .simulation-container { margin: 20px 0; }
     </style>
 </head>
 <body>
     <h1>Escanear QR para Asistencia</h1>
+
+    <div class="simulation-container">
+        <label for="simulated-day">Día simulado:</label>
+        <select id="simulated-day">
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miercoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+        </select>
+
+        <label for="simulated-time">Hora simulada (HH:MM):</label>
+        <input id="simulated-time" type="time" value="07:56">
+    </div>
+
     <video id="video" width="100%" height="auto" style="max-width: 600px;"></video>
     <canvas id="qr-canvas" style="display:none;"></canvas>
     <div id="notification">¡Asistencia registrada correctamente!</div>
@@ -38,10 +54,8 @@
         const notification = document.getElementById('notification');
         const error = document.getElementById('error');
 
-        // Simulación de día y hora
-        const SIMULAR = true; // Cambia a false para usar la hora real
-        const DIA_SIMULADO = "Martes"; // Cambia según lo necesites
-        const HORA_SIMULADA = "0958"; // Hora simulada (HH:mm)
+        const simulatedDayElement = document.getElementById("simulated-day");
+        const simulatedTimeElement = document.getElementById("simulated-time");
 
         // Escaneo del QR
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
@@ -66,23 +80,20 @@
         async function processQRCodeData(data) {
             try {
                 const qrData = JSON.parse(data);
-                const { grado, grupo } = qrData;
+                const { grado, grupo, materia, dia, hora } = qrData;
 
-                if (!grado || !grupo) return;
-
-                const fechaActual = new Date();
-                const diaSemana = SIMULAR ? DIA_SIMULADO : fechaActual.toLocaleDateString("es-ES", { weekday: "long" }).toLowerCase();
-                const horaActual = SIMULAR
-                    ? parseHoraSimulada(HORA_SIMULADA)
-                    : fechaActual.getHours() * 60 + fechaActual.getMinutes();
-
-                if (horaActual >= 600 && horaActual <= 629) {
-                    console.log("Es hora de receso, no se permite registrar asistencia.");
+                if (!grado || !grupo || !materia || !dia || !hora) {
+                    console.error("Datos del QR incompletos.");
                     return;
                 }
 
+                const fechaActual = new Date();
+                const diaSemana = simulatedDayElement.value; // Día simulado
+                const horaActualMinutos = parseHoraSimulada(simulatedTimeElement.value); // Hora simulada
+
+                // Validar si está dentro de un módulo
                 const moduloActual = MODULOS.find(
-                    m => horaActual >= m.inicio && horaActual <= m.fin
+                    m => horaActualMinutos >= m.inicio && horaActualMinutos <= m.fin
                 );
 
                 if (!moduloActual) {
@@ -92,14 +103,18 @@
 
                 firebase.auth().onAuthStateChanged(async user => {
                     if (user) {
+                        const nombreAlumno = user.displayName || "Alumno desconocido";
+                        const studentId = user.uid;
+                        const fecha = fechaActual.toISOString().split('T')[0];
+
                         await registerAttendance(
                             grado,
                             grupo,
                             diaSemana,
-                            moduloActual.hora,
-                            fechaActual.toISOString().split('T')[0],
-                            user.uid,
-                            user.displayName
+                            hora,
+                            fecha,
+                            studentId,
+                            nombreAlumno
                         );
                     } else {
                         console.log("Usuario no autenticado.");
@@ -123,9 +138,9 @@
                 await dbRef.child(studentId).set({ nombre, presente: true });
                 notification.style.display = "block";
                 setTimeout(() => notification.style.display = "none", 3000);
-            } catch (error) {
+            } catch (err) {
                 error.style.display = "block";
-                console.error("Error al registrar la asistencia:", error);
+                console.error("Error al registrar la asistencia:", err);
             }
         }
 
