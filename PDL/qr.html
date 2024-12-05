@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generador de QR para Asistencias</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/umd/qrious.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -12,11 +11,12 @@
 </head>
 <body>
   <h1>Generador de QR para Asistencias</h1>
-  <canvas id="qr-code"></canvas>
+  <img id="qr-image" alt="QR Code" style="max-width: 300px;">
+
   <script>
     // Simulación simple (día y hora)
     const simulatedDay = "Martes"; // Cambia según el día que quieras probar (sin acentos)
-    const simulatedTime = "0759"; // Cambia según la hora que quieras probar
+    const simulatedTime = "0755"; // Cambia según la hora que quieras probar
 
     // Configuración de horarios
     const recesoInicio = "1000"; // 10:00
@@ -55,7 +55,7 @@
           const userId = user.uid;
           console.log("Usuario autenticado:", userId);
 
-          const userRef = firebase.database().ref(`users/${userId}`);
+          const userRef = database.ref(`users/${userId}`);
           const snapshot = await userRef.once("value");
           const userData = snapshot.val();
 
@@ -88,7 +88,7 @@
           console.log("Materia encontrada:", materiaEncontrada);
 
           // Buscar el grupo y grado en la base de datos
-          const classSchedulesRef = firebase.database().ref("classSchedules");
+          const classSchedulesRef = database.ref("classSchedules");
           const classSchedulesSnapshot = await classSchedulesRef.once("value");
           const classSchedules = classSchedulesSnapshot.val();
 
@@ -134,12 +134,11 @@
             grupo,
           };
 
-          // Generar el código QR
-          const qrCode = new QRious({
-            element: document.getElementById("qr-code"),
-            size: 250,
-            value: JSON.stringify(qrData),
-          });
+          // Generar el QR con logo usando la API de QR Monkey
+          const qrUrl = `https://api.qrmonkey.com//generate?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://cecytlax.edu.mx/wp-content/uploads/2023/10/cropped-LOGO-CECyTE-EMSaD-2022_Mesa-de-trabajo-1.png","size":300}`;
+
+          // Establecer la imagen del QR en el canvas
+          document.getElementById("qr-image").src = qrUrl;
 
           console.log("QR generado con éxito:", qrData);
         } else {
