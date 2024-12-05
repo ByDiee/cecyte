@@ -12,7 +12,7 @@
 <body>
   <h1>Generador de QR para Asistencias</h1>
   <img id="qr-image" alt="QR Code" style="max-width: 300px;">
-
+  
   <script>
     // Simulación simple (día y hora)
     const simulatedDay = "Martes"; // Cambia según el día que quieras probar (sin acentos)
@@ -136,8 +136,8 @@
             grupo,
           };
 
-          // Generar el QR con logo usando la API de QR Monkey
-          const qrUrl = `https://api.qrmonkey.com/qr/custom?data=${encodeURIComponent(JSON.stringify(qrData))}&config={"body":"square","eye":"frame0","eyeColor":"#000000","brColor":"#ffffff","bgColor":"#ffffff","logo":"https://cecytlax.edu.mx/wp-content/uploads/2023/10/cropped-LOGO-CECyTE-EMSaD-2022_Mesa-de-trabajo-1.png","size":300}`;
+          // Generar el QR usando The QR Code Generator API (sin necesidad de API Key)
+          const qrUrl = `https://api.qr-code-generator.com/v1/create?data=${encodeURIComponent(JSON.stringify(qrData))}&size=300x300`;
 
           // Establecer la imagen del QR en el canvas
           document.getElementById("qr-image").src = qrUrl;
