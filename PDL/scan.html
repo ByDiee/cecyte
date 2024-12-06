@@ -13,7 +13,6 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         #notification { margin-top: 20px; color: green; display: none; }
         #error { margin-top: 20px; color: red; display: none; }
-        #already-registered { margin-top: 20px; color: orange; display: none; }
         #expired { margin-top: 20px; color: red; display: none; }
         .simulation-container { margin: 20px 0; }
     </style>
@@ -39,8 +38,7 @@
     <canvas id="qr-canvas" style="display:none;"></canvas>
     <div id="notification">¡Asistencia registrada correctamente!</div>
     <div id="error">No se pudo registrar la asistencia.</div>
-    <div id="already-registered">Ya has registrado tu asistencia para esta clase.</div>
-    <div id="expired">El QR ha caducado.</div>
+    <div id="expired">¡El código QR ha caducado!</div>
 
     <script>
         const MODULOS = [
@@ -56,7 +54,6 @@
         const ctx = canvas.getContext('2d');
         const notification = document.getElementById('notification');
         const error = document.getElementById('error');
-        const alreadyRegistered = document.getElementById('already-registered');
         const expired = document.getElementById('expired');
 
         const simulatedDayElement = document.getElementById("simulated-day");
@@ -104,10 +101,13 @@
                     return;
                 }
 
-                const caducidadFecha = new Date(caducidad);
-                if (fechaActual > caducidadFecha) {
-                    expired.style.display = "block";
-                    return;
+                // Verifica caducidad
+                if (caducidad) {
+                    const tiempoCaducidad = new Date(caducidad);
+                    if (fechaActual > tiempoCaducidad) {
+                        expired.style.display = "block";
+                        return;
+                    }
                 }
 
                 firebase.auth().onAuthStateChanged(async user => {
@@ -116,7 +116,7 @@
                         const studentId = user.uid;
                         const fecha = fechaActual.toISOString().split('T')[0];
 
-                        const asistenciaRegistrada = await registerAttendance(
+                        await registerAttendance(
                             grado,
                             grupo,
                             diaSemana,
@@ -126,32 +126,25 @@
                             nombreAlumno,
                             materia
                         );
-
-                        if (asistenciaRegistrada) {
-                            notification.style.display = "block";
-                            setTimeout(() => notification.style.display = "none", 3000);
-                        } else {
-                            alreadyRegistered.style.display = "block";
-                            setTimeout(() => alreadyRegistered.style.display = "none", 3000);
-                        }
                     } else {
                         console.log("Usuario no autenticado.");
                     }
                 });
             } catch (error) {
                 console.error("Error al procesar el QR:", error);
-                error.style.display = "block";
-                setTimeout(() => error.style.display = "none", 3000);
             }
         }
 
         async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre, materia) {
             try {
                 const dbRef = firebase.database().ref(`asistencias/${fecha}/${dia}/${hora}/${materia}`);
+
                 const snapshot = await dbRef.child(studentId).get();
 
                 if (snapshot.exists()) {
-                    return false; // Ya registrado
+                    console.log("Ya estás registrado.");
+                    error.style.display = "block";
+                    return;
                 }
 
                 const horaEscaneo = new Date().toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' });
@@ -160,10 +153,11 @@
                     horaEscaneo
                 });
 
-                return true; // Asistencia registrada correctamente
+                notification.style.display = "block";
+                setTimeout(() => notification.style.display = "none", 3000);
             } catch (error) {
+                error.style.display = "block";
                 console.error("Error al registrar la asistencia:", error);
-                return false; // Error en el registro
             }
         }
 
