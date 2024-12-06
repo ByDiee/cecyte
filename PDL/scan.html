@@ -63,7 +63,7 @@
             .then(stream => {
                 video.srcObject = stream;
                 video.play();
-                requestAnimationFrame(scanQRCode);
+                requestAnimationFrame(scanQRCode); // Inicia el escaneo cuando el video está listo
             }).catch(err => console.error('Error al acceder a la cámara:', err));
 
         function scanQRCode() {
@@ -71,38 +71,61 @@
                 canvas.height = video.videoHeight;
                 canvas.width = video.videoWidth;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, canvas.width, canvas.height, {
+                    inversionAttempts: "dontInvert",
+                });
 
                 if (code) {
-                    // Obtener los datos del código QR
-                    const qrData = JSON.parse(code.data); // Aquí se asume que el QR contiene un JSON
+                    const qrData = code.data; // Aquí tienes los datos del QR escaneado
+                    console.log("QR escaneado:", qrData);
+                    // Aquí puedes procesar los datos del QR como desees, por ejemplo, hacer la validación y registrar la asistencia
+                    registerAttendance(qrData);
+                } else {
+                    requestAnimationFrame(scanQRCode); // Continúa escaneando
+                }
+            } else {
+                requestAnimationFrame(scanQRCode); // Continúa escaneando
+            }
+        }
 
-                    const { userId, materia, grupo, grado, hora } = qrData;
+        function registerAttendance(qrData) {
+            // Aquí deberías validar el QR, y registrar la asistencia en Firebase
+            const qrParts = qrData.split(","); // Asumiendo que los datos están separados por coma
+            const materia = qrParts[0];
+            const grado = qrParts[1];
+            const grupo = qrParts[2];
+            const hora = qrParts[3];
 
-                    // Buscar el usuario en Firebase para recuperar su nombre completo
-                    const dbRef = firebase.database().ref('users/' + userId);
-                    dbRef.once('value').then(snapshot => {
-                        const userData = snapshot.val();
-                        if (userData) {
-                            const fullName = `${userData.firstName} ${userData.lastNameP} ${userData.lastNameM}`;
-                            // Mostrar el nombre del alumno
-                            console.log("Nombre del alumno:", fullName);
+            console.log("Materia:", materia);
+            console.log("Grado:", grado);
+            console.log("Grupo:", grupo);
+            console.log("Hora:", hora);
 
-                            // Aquí deberías realizar la acción de registrar la asistencia
-                            // Mostrar un mensaje o hacer algo con los datos
-                            notification.style.display = "block";
-                            error.style.display = "none";
-                            expired.style.display = "none";
-                        } else {
-                            // Si no se encuentra el usuario, mostrar un error
-                            notification.style.display = "none";
+            // Aquí recuperamos el usuario logueado para obtener su nombre completo
+            const userId = firebase.auth().currentUser.uid;
+            firebase.database().ref("users/" + userId).once("value", snapshot => {
+                const userData = snapshot.val();
+                const fullName = userData.firstName + " " + userData.lastNameP + " " + userData.lastNameM;
+                console.log("Nombre del alumno:", fullName);
+
+                // Luego de obtener el nombre completo, registrar la asistencia
+                const attendanceData = {
+                    nombre: fullName,
+                    presente: true,
+                    horaEscaneo: new Date().toLocaleTimeString(),
+                };
+
+                firebase.database().ref("classSchedules/1/A/Lunes/" + hora + "/asistencias/" + new Date().toLocaleDateString())
+                    .child(userId).set(attendanceData, (error) => {
+                        if (error) {
                             error.style.display = "block";
+                        } else {
+                            notification.style.display = "block";
                         }
                     });
-                }
-                requestAnimationFrame(scanQRCode);
-            }
+            });
         }
     </script>
 </body>
