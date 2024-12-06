@@ -124,7 +124,7 @@
                             const subjectName = subjectData;
 
                             // Crear un identificador único para la combinación de materia, semestre y grupo
-                            const subjectKey = `${subjectName}-${semester}-${group}`;
+                            const subjectKey = ${subjectName}-${semester}-${group};
 
                             // Si esta combinación ya se ha cargado, no la cargamos nuevamente
                             if (!loadedSubjects[subjectKey]) {
@@ -163,7 +163,7 @@
                                 times.forEach(time => {
                                     const tr = document.createElement('tr');
                                     const timeCell = document.createElement('td');
-                                    timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                                    timeCell.textContent = ${time.substring(0, 2)}:${time.substring(2)};
                                     tr.appendChild(timeCell);
 
                                     days.forEach(day => {
@@ -206,12 +206,13 @@
         for (let day in subjects[semester][group]) {
             for (let hour in subjects[semester][group][day]) {
                 const currentSubject = subjects[semester][group][day][hour];
+                // Si ya existe una materia diferente a la actual, hay conflicto
                 if (existingSchedule[day]?.[hour] && existingSchedule[day][hour] !== subjectName) {
-                    return true; // Conflicto encontrado
+                    return true;
                 }
             }
         }
-        return false; // No hay conflicto
+        return false;
     }
 
     // Asignar todas las horas de la materia seleccionada
@@ -223,18 +224,18 @@
             return;
         }
 
-        const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
+        const userScheduleRef = firebase.database().ref(users/${currentUser.uid}/horario);
 
         userScheduleRef.once('value').then(snapshot => {
             const existingSchedule = snapshot.val() || {};
 
-            // Verificar conflicto de horarios antes de asignar
+            // Validar si hay conflicto de horarios
             if (isScheduleConflict(subjectName, semester, group, subjects, existingSchedule)) {
                 alert('Conflicto de horario: ya existe una clase asignada en ese horario.');
-                return; // Si hay conflicto, no asignar la materia
+                return;
             }
 
-            // Iterar sobre los días y horas para asignar la materia seleccionada
+            // Iterar sobre todos los días y horas para asignar la materia seleccionada
             for (let day in subjects[semester][group]) {
                 for (let hour in subjects[semester][group][day]) {
                     const subjectInSchedule = subjects[semester][group][day][hour];
