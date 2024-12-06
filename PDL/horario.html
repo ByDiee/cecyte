@@ -78,7 +78,7 @@
 </head>
 <body>
     <header>
-        <h1>Filtrar Materias</h1>
+        <h1>Buscar Materias</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
@@ -253,14 +253,14 @@
             // Guardar el horario actualizado en Firebase
             userScheduleRef.set(existingSchedule).then(() => {
                 alert('Horario actualizado con éxito.');
-                loadSubjects(); // Recargar las materias después de la actualización
+                loadSubjects(); // Volver a cargar las materias
             }).catch(error => {
-                alert('Error al guardar horario: ' + error.message);
+                alert('Error al guardar el horario: ' + error.message);
             });
         });
     }
 
-    // Iniciar la carga de materias al cargar la página
+    // Cargar las materias al cargar la página
     window.onload = function() {
         loadSubjects();
     };
