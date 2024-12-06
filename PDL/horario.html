@@ -124,7 +124,7 @@
                             const subjectName = subjectData;
 
                             // Crear un identificador único para la combinación de materia, semestre y grupo
-                            const subjectKey = ${subjectName}-${semester}-${group};
+                            const subjectKey = `${subjectName}-${semester}-${group}`;
 
                             // Si esta combinación ya se ha cargado, no la cargamos nuevamente
                             if (!loadedSubjects[subjectKey]) {
@@ -163,7 +163,7 @@
                                 times.forEach(time => {
                                     const tr = document.createElement('tr');
                                     const timeCell = document.createElement('td');
-                                    timeCell.textContent = ${time.substring(0, 2)}:${time.substring(2)};
+                                    timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
                                     tr.appendChild(timeCell);
 
                                     days.forEach(day => {
@@ -224,7 +224,7 @@
             return;
         }
 
-        const userScheduleRef = firebase.database().ref(users/${currentUser.uid}/horario);
+        const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
 
         userScheduleRef.once('value').then(snapshot => {
             const existingSchedule = snapshot.val() || {};
@@ -253,14 +253,14 @@
             // Guardar el horario actualizado en Firebase
             userScheduleRef.set(existingSchedule).then(() => {
                 alert('Horario actualizado con éxito.');
-                loadSubjects(); // Volver a cargar las materias
+                loadSubjects(); // Recargar las materias después de la actualización
             }).catch(error => {
-                alert('Error al guardar el horario: ' + error.message);
+                alert('Error al guardar horario: ' + error.message);
             });
         });
     }
 
-    // Cargar las materias al cargar la página
+    // Iniciar la carga de materias al cargar la página
     window.onload = function() {
         loadSubjects();
     };
