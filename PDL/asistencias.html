@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Asistencias</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="auth.js"></script> <!-- Tu configuración de Firebase -->
   <style>
@@ -39,27 +38,26 @@
     tr:nth-child(even) {
       background-color: #f2f2f2;
     }
-    .date-picker {
+    .filters {
       margin: 10px 0;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
     }
-    .date-picker input {
+    .filters input,
+    .filters select,
+    .filters button {
       padding: 5px;
       font-size: 16px;
     }
-    .date-picker button {
-      margin-left: 10px;
-      padding: 5px 10px;
-      font-size: 16px;
+    .filters button {
       background-color: #ff7f00;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    .date-picker button:hover {
+    .filters button:hover {
       background-color: #ff5700;
     }
   </style>
@@ -67,11 +65,23 @@
 <body>
   <h1>Registros de Asistencias</h1>
   <div class="container">
-    <div class="date-picker">
-      <label for="fecha">Seleccionar Fecha: </label>
-      <input type="date" id="fecha" />
-      <button id="fetchRecords">Consultar</button>
+    <!-- Filtros de fecha y materia -->
+    <div class="filters">
+      <div>
+        <label for="fecha">Seleccionar Fecha: </label>
+        <input type="date" id="fecha" />
+      </div>
+      <div>
+        <label for="materia">Filtrar por Materia: </label>
+        <select id="materia">
+          <option value="all">Todas las Materias</option>
+        </select>
+      </div>
+      <div>
+        <button id="fetchRecords">Consultar</button>
+      </div>
     </div>
+    <!-- Contenedor para las asistencias -->
     <div id="asistenciasContainer">
       <!-- Aquí se mostrarán las asistencias -->
     </div>
@@ -90,10 +100,12 @@
       return `${año}-${mes}-${dia}`;
     }
 
-    // Cargar asistencias por fecha
+    // Función para cargar asistencias
     async function cargarAsistencias(fecha) {
       const asistenciasContainer = document.getElementById("asistenciasContainer");
+      const materiaSelect = document.getElementById("materia");
       asistenciasContainer.innerHTML = "<p>Cargando...</p>";
+      materiaSelect.innerHTML = `<option value="all">Todas las Materias</option>`; // Reinicia las opciones
 
       try {
         const ref = db.ref(`asistencias/${fecha}`);
@@ -105,45 +117,74 @@
           return;
         }
 
-        // Construir la tabla
         let html = "";
-        for (const hora in data) {
-          html += `<h3>Hora: ${hora}</h3>`;
-          for (const materia in data[hora]) {
-            html += `<h4>Materia: ${materia}</h4>`;
-            html += `
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Hora de Escaneo</th>
-                  </tr>
-                </thead>
-                <tbody>
-            `;
+        const materias = new Set(); // Usamos un Set para guardar las materias disponibles
 
-            for (const alumnoId in data[hora][materia]) {
-              const alumno = data[hora][materia][alumnoId];
+        for (const dia in data) {
+          html += `<h3>Día: ${dia}</h3>`;
+          for (const hora in data[dia]) {
+            html += `<h4>Hora: ${hora}</h4>`;
+            for (const materia in data[dia][hora]) {
+              materias.add(materia); // Agregar materia al Set
+
+              html += `<h5>Materia: ${materia}</h5>`;
               html += `
-                <tr>
-                  <td>${alumno.nombre}</td>
-                  <td>${alumno.horaEscaneo}</td>
-                </tr>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Hora de Escaneo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+              `;
+
+              for (const alumnoId in data[dia][hora][materia]) {
+                const alumno = data[dia][hora][materia][alumnoId];
+                html += `
+                  <tr class="asistencia-row" data-materia="${materia}">
+                    <td>${alumno.nombre || "Sin Nombre"}</td>
+                    <td>${alumno.horaEscaneo || "Sin Hora"}</td>
+                  </tr>
+                `;
+              }
+
+              html += `
+                  </tbody>
+                </table>
               `;
             }
-
-            html += `
-                </tbody>
-              </table>
-            `;
           }
         }
 
         asistenciasContainer.innerHTML = html;
+
+        // Actualizar el select con las materias del día
+        materias.forEach((materia) => {
+          const option = document.createElement("option");
+          option.value = materia;
+          option.textContent = materia;
+          materiaSelect.appendChild(option);
+        });
       } catch (error) {
         console.error("Error cargando asistencias:", error);
         asistenciasContainer.innerHTML = "<p>Ocurrió un error al cargar los registros.</p>";
       }
+    }
+
+    // Función para filtrar por materia
+    function filtrarPorMateria() {
+      const materiaSeleccionada = document.getElementById("materia").value;
+      const filas = document.querySelectorAll(".asistencia-row");
+
+      filas.forEach((fila) => {
+        const materia = fila.getAttribute("data-materia");
+        if (materiaSeleccionada === "all" || materia === materiaSeleccionada) {
+          fila.style.display = "";
+        } else {
+          fila.style.display = "none";
+        }
+      });
     }
 
     // Mostrar registros del día actual al cargar la página
@@ -162,6 +203,9 @@
         alert("Por favor, selecciona una fecha válida.");
       }
     });
+
+    // Filtrar registros al seleccionar una materia
+    document.getElementById("materia").addEventListener("change", filtrarPorMateria);
   </script>
 </body>
 </html>
