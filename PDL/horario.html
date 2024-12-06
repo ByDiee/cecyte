@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtrar Materias</title>
+    <title>Seleccionar Materias</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -203,7 +203,7 @@
             });
         }
 
-        // Verificar si hay conflicto de horarios
+        // Verificar si hay conflicto de horarios con el horario del profesor
         function checkScheduleConflict(subjectName, semester, group, subjects) {
             const userScheduleRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}/horario`);
             let hasConflict = false;
@@ -211,15 +211,20 @@
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
 
-                // Iterar sobre todos los días y horas del horario del usuario
-                for (let day in existingSchedule) {
-                    for (let hour in existingSchedule[day]) {
-                        const subjectInSchedule = existingSchedule[day][hour];
-                        // Si hay una materia en la misma hora, marcar como conflicto
-                        if (subjectInSchedule === subjectName) {
+                // Iterar sobre todos los días y horas del horario del profesor
+                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+                days.forEach(day => {
+                    times.forEach(time => {
+                        if (existingSchedule[day] && existingSchedule[day][time] === subjectName) {
                             hasConflict = true;
                         }
-                    }
+                    });
+                });
+
+                if (hasConflict) {
+                    alert('El horario de la materia seleccionada ya está ocupado en el horario del profesor.');
                 }
             });
 
@@ -228,30 +233,23 @@
 
         // Asignar todas las horas de la materia seleccionada
         function assignAllHours(subjectName, semester, group, subjects) {
-            const currentUser = firebase.auth().currentUser;
+            const userScheduleRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}/horario`);
 
-            if (!currentUser) {
-                alert('Por favor inicie sesión.');
-                return;
-            }
-
-            const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
-                // Asignar las horas de la materia seleccionada en todos los días y horas disponibles
-                for (let semesterKey in subjects) {
-                    for (let groupKey in subjects[semesterKey]) {
-                        for (let day in subjects[semesterKey][groupKey]) {
-                            const hours = Object.keys(subjects[semesterKey][groupKey][day]);
-                            hours.forEach(hour => {
-                                if (subjects[semesterKey][groupKey][day][hour] === subjectName) {
-                                    existingSchedule[day] = existingSchedule[day] || {};
-                                    existingSchedule[day][hour] = subjectName;
-                                }
-                            });
+
+                // Asignar la materia a todas las horas correspondientes
+                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+
+                days.forEach(day => {
+                    times.forEach(time => {
+                        if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
+                            existingSchedule[day] = existingSchedule[day] || {};
+                            existingSchedule[day][time] = subjectName;
                         }
-                    }
-                }
+                    });
+                });
 
                 userScheduleRef.set(existingSchedule);
                 alert('Horario asignado exitosamente.');
