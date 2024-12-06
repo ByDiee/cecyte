@@ -15,25 +15,10 @@
         #error { margin-top: 20px; color: red; display: none; }
         #expired { margin-top: 20px; color: red; display: none; }
         #already-registered { margin-top: 20px; color: orange; display: none; }
-        .simulation-container { margin: 20px 0; }
     </style>
 </head>
 <body>
     <h1>Escanear QR para Asistencia</h1>
-
-    <div class="simulation-container">
-        <label for="simulated-day">Día simulado:</label>
-        <select id="simulated-day">
-            <option value="Lunes">Lunes</option>
-            <option value="Martes">Martes</option>
-            <option value="Miércoles">Miércoles</option>
-            <option value="Jueves">Jueves</option>
-            <option value="Viernes">Viernes</option>
-        </select>
-
-        <label for="simulated-time">Hora simulada (HH:MM):</label>
-        <input id="simulated-time" type="time" value="07:56">
-    </div>
 
     <video id="video" width="100%" height="auto" style="max-width: 600px;"></video>
     <canvas id="qr-canvas" style="display:none;"></canvas>
@@ -43,13 +28,6 @@
     <div id="already-registered">¡Ya has registrado tu asistencia!</div>
 
     <script>
-        const MODULOS = [
-            { inicio: 420, fin: 464, hora: "0745" }, // 07:45 - 08:29
-            { inicio: 465, fin: 509, hora: "0830" }, // 08:30 - 09:14
-            { inicio: 510, fin: 554, hora: "0915" }, // 09:15 - 09:59
-            { inicio: 555, fin: 599, hora: "1030" }, // 10:30 - 11:14
-        ];
-
         const video = document.getElementById('video');
         const canvas = document.getElementById('qr-canvas');
         const ctx = canvas.getContext('2d');
@@ -57,9 +35,6 @@
         const error = document.getElementById('error');
         const expired = document.getElementById('expired');
         const alreadyRegistered = document.getElementById('already-registered');
-
-        const simulatedDayElement = document.getElementById("simulated-day");
-        const simulatedTimeElement = document.getElementById("simulated-time");
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
             .then(stream => {
@@ -124,7 +99,7 @@
                 }
 
                 // Verificar si la asistencia ya ha sido registrada
-                const date = new Date().toLocaleDateString(); // Fecha actual
+                const date = new Date().toLocaleDateString("es-ES").split('/').reverse().join('-'); // Fecha en formato AAAA-MM-DD
                 firebase.database().ref("asistencias/" + date + "/" + dia + "/" + hora + "/" + materia + "/" + userId)
                     .once("value", snapshot => {
                         if (snapshot.exists()) {
@@ -133,22 +108,24 @@
                         } else {
                             // Crear el objeto de datos para la asistencia
                             const attendanceData = {
-                                horaEscaneo: new Date().toLocaleTimeString(), // Formato de hora
+                                horaEscaneo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Formato de hora "HH:mm"
                                 nombre: fullName,
                             };
 
                             // Subir los datos a Firebase según la nueva estructura
                             const currentDate = new Date().toLocaleDateString("es-ES").split('/').reverse().join('-'); // Fecha en formato AAAA-MM-DD
-                            firebase.database().ref("asistencias/" + currentDate + "/" + dia + "/" + hora + "/" + materia + "/" + userId)
-                                .set(attendanceData, (error) => {
-                                    if (error) {
-                                        console.error("Error al registrar asistencia:", error);
-                                        error.style.display = "block";
-                                    } else {
-                                        console.log("Asistencia registrada correctamente");
-                                        notification.style.display = "block";
-                                    }
-                                });
+                            const ref = firebase.database().ref("asistencias/" + currentDate + "/" + dia + "/" + hora);
+                            const materiaRef = ref.child(materia).child(userId);
+
+                            materiaRef.set(attendanceData, (error) => {
+                                if (error) {
+                                    console.error("Error al registrar asistencia:", error);
+                                    error.style.display = "block";
+                                } else {
+                                    console.log("Asistencia registrada correctamente");
+                                    notification.style.display = "block";
+                                }
+                            });
                         }
                     });
             });
