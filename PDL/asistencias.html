@@ -5,106 +5,165 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Asistencias</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="auth.js"></script> <!-- Aquí ya se maneja la autenticación -->
+  <script src="auth.js"></script> <!-- Tu configuración de Firebase -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      color: #333;
+    }
+    h1 {
+      color: #006400; /* Verde */
+      text-align: center;
+    }
+    .container {
+      margin: 20px auto;
+      max-width: 800px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #006400;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .date-picker {
+      margin: 10px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .date-picker input {
+      padding: 5px;
+      font-size: 16px;
+    }
+    .date-picker button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      font-size: 16px;
+      background-color: #ff7f00;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .date-picker button:hover {
+      background-color: #ff5700;
+    }
+  </style>
 </head>
 <body>
-  <h1>Registro de Asistencias</h1>
-
-  <!-- Filtros -->
-  <div>
-    <label for="fecha">Fecha:</label>
-    <input type="date" id="fecha" value="2024-12-05">
-    <button id="filterBtn">Filtrar</button>
+  <h1>Registros de Asistencias</h1>
+  <div class="container">
+    <div class="date-picker">
+      <label for="fecha">Seleccionar Fecha: </label>
+      <input type="date" id="fecha" />
+      <button id="fetchRecords">Consultar</button>
+    </div>
+    <div id="asistenciasContainer">
+      <!-- Aquí se mostrarán las asistencias -->
+    </div>
   </div>
 
-  <!-- Tabla de asistencia -->
-  <table border="1" id="asistenciaTable">
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Hora Escaneo</th>
-        <th>Materia</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Aquí se llenarán las filas -->
-    </tbody>
-  </table>
-
   <script>
-    // Referencia a la base de datos Firebase
-    const dbRef = firebase.database().ref('classSchedules');
-    const asistenciaTable = document.getElementById("asistenciaTable").getElementsByTagName('tbody')[0];
-    const filterBtn = document.getElementById("filterBtn");
+    // Inicializar Firebase
+    const db = firebase.database();
 
-    // Función para obtener y mostrar los registros de asistencia
-    const obtenerAsistencias = (fecha) => {
-      console.log("Cargando datos de asistencia...");
+    // Obtener fecha actual en formato YYYY-MM-DD
+    function obtenerFechaActual() {
+      const hoy = new Date();
+      const año = hoy.getFullYear();
+      const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+      const dia = String(hoy.getDate()).padStart(2, "0");
+      return `${año}-${mes}-${dia}`;
+    }
 
-      dbRef.once("value", (snapshot) => {
-        // Limpiar la tabla antes de cargar nuevos datos
-        asistenciaTable.innerHTML = '';
+    // Cargar asistencias por fecha
+    async function cargarAsistencias(fecha) {
+      const asistenciasContainer = document.getElementById("asistenciasContainer");
+      asistenciasContainer.innerHTML = "<p>Cargando...</p>";
 
+      try {
+        const ref = db.ref(`asistencias/${fecha}`);
+        const snapshot = await ref.once("value");
         const data = snapshot.val();
-        if (data) {
-          // Recorrer los grados, grupos y días
-          for (const grado in data) {
-            for (const grupo in data[grado]) {
-              for (const dia in data[grado][grupo]) {
-                const materias = data[grado][grupo][dia];
-                if (materias.asistencias && materias.asistencias[fecha]) {
-                  const registros = materias.asistencias[fecha];
-                  // Recorrer los registros de asistencia
-                  for (const alumnoId in registros) {
-                    const registro = registros[alumnoId];
-                    const nombre = registro.nombre;
-                    const horaEscaneo = registro.horaEscaneo;
 
-                    // Identificar la materia correspondiente
-                    let materia = "";
-                    for (const hora in materias) {
-                      if (hora !== "asistencias" && isHoraInRange(hora, horaEscaneo)) {
-                        materia = materias[hora];
-                        break;
-                      }
-                    }
+        if (!data) {
+          asistenciasContainer.innerHTML = `<p>No se encontraron registros para la fecha ${fecha}.</p>`;
+          return;
+        }
 
-                    // Insertar los datos en la tabla
-                    const row = asistenciaTable.insertRow();
-                    row.innerHTML = `
-                      <td>${nombre}</td>
-                      <td>${horaEscaneo}</td>
-                      <td>${materia}</td>
-                    `;
-                  }
-                }
+        // Construir la tabla
+        let html = "";
+        for (const dia in data) {
+          html += `<h2>${dia}</h2>`;
+          for (const hora in data[dia]) {
+            html += `<h3>Hora: ${hora}</h3>`;
+            for (const materia in data[dia][hora]) {
+              html += `<h4>Materia: ${materia}</h4>`;
+              html += `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Hora de Escaneo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+              `;
+
+              for (const alumnoId in data[dia][hora][materia]) {
+                const alumno = data[dia][hora][materia][alumnoId];
+                html += `
+                  <tr>
+                    <td>${alumno.nombre}</td>
+                    <td>${alumno.horaEscaneo}</td>
+                  </tr>
+                `;
               }
+
+              html += `
+                  </tbody>
+                </table>
+              `;
             }
           }
-        } else {
-          console.log("No se encontraron datos.");
         }
-      });
-    };
 
-    // Función para verificar si una hora está dentro de un rango de 44 minutos
-    const isHoraInRange = (horaMateria, horaEscaneo) => {
-      const horaInicio = parseInt(horaMateria.substring(0, 2)) * 60 + parseInt(horaMateria.substring(2, 4));
-      const horaEscaneoMinutos = parseInt(horaEscaneo.substring(0, 2)) * 60 + parseInt(horaEscaneo.substring(2, 4));
-      return horaEscaneoMinutos >= horaInicio && horaEscaneoMinutos < horaInicio + 44;
-    };
+        asistenciasContainer.innerHTML = html;
+      } catch (error) {
+        console.error("Error cargando asistencias:", error);
+        asistenciasContainer.innerHTML = "<p>Ocurrió un error al cargar los registros.</p>";
+      }
+    }
 
-    // Filtrar por fecha
-    filterBtn.addEventListener("click", () => {
-      const fecha = document.getElementById("fecha").value;
-      console.log("Filtrando por fecha:", fecha);
-      obtenerAsistencias(fecha);
+    // Mostrar registros del día actual al cargar la página
+    document.addEventListener("DOMContentLoaded", () => {
+      const fechaActual = obtenerFechaActual();
+      document.getElementById("fecha").value = fechaActual;
+      cargarAsistencias(fechaActual);
     });
 
-    // Cargar las asistencias por defecto al iniciar
-    obtenerAsistencias("2024-12-05");
+    // Consultar registros al seleccionar una fecha
+    document.getElementById("fetchRecords").addEventListener("click", () => {
+      const fechaSeleccionada = document.getElementById("fecha").value;
+      if (fechaSeleccionada) {
+        cargarAsistencias(fechaSeleccionada);
+      } else {
+        alert("Por favor, selecciona una fecha válida.");
+      }
+    });
   </script>
 </body>
 </html>
