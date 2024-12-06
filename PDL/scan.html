@@ -39,7 +39,7 @@
             .then(stream => {
                 video.srcObject = stream;
                 video.play();
-                requestAnimationFrame(scanQRCode); // Inicia el escaneo
+                requestAnimationFrame(scanQRCode);
             }).catch(err => console.error('Error al acceder a la cámara:', err));
 
         function scanQRCode() {
@@ -54,20 +54,25 @@
                 });
 
                 if (code) {
-                    const qrData = code.data; // Datos del QR escaneado
+                    const qrData = code.data;
                     console.log("QR escaneado:", qrData);
-                    processQRData(qrData); // Procesa los datos del QR
+                    processQRData(qrData);
                 } else {
-                    requestAnimationFrame(scanQRCode); // Continúa escaneando
+                    requestAnimationFrame(scanQRCode);
                 }
             } else {
-                requestAnimationFrame(scanQRCode); // Continúa escaneando
+                requestAnimationFrame(scanQRCode);
             }
         }
 
         function processQRData(qrData) {
-            const qrParts = JSON.parse(qrData); // Se espera que el QR sea un JSON con los datos
-            const { fecha, dia, hora, materia } = qrParts;
+            const qrParts = JSON.parse(qrData); // Se espera un JSON en el QR
+            const { fecha, hora, materia } = qrParts;
+
+            // Calcular el día de la semana según la fecha actual
+            const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const fechaActual = new Date();
+            const dia = diasSemana[fechaActual.getDay()]; // Día actual (automático)
 
             // Obtener datos del usuario autenticado
             const userId = firebase.auth().currentUser.uid;
