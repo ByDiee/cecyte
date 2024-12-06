@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Asistencias</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="auth.js"></script> <!-- Tu configuración de Firebase -->
   <style>
@@ -106,38 +107,35 @@
 
         // Construir la tabla
         let html = "";
-        for (const dia in data) {
-          html += `<h2>${dia}</h2>`;
-          for (const hora in data[dia]) {
-            html += `<h3>Hora: ${hora}</h3>`;
-            for (const materia in data[dia][hora]) {
-              html += `<h4>Materia: ${materia}</h4>`;
-              html += `
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Hora de Escaneo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-              `;
-
-              for (const alumnoId in data[dia][hora][materia]) {
-                const alumno = data[dia][hora][materia][alumnoId];
-                html += `
+        for (const hora in data) {
+          html += `<h3>Hora: ${hora}</h3>`;
+          for (const materia in data[hora]) {
+            html += `<h4>Materia: ${materia}</h4>`;
+            html += `
+              <table>
+                <thead>
                   <tr>
-                    <td>${alumno.nombre}</td>
-                    <td>${alumno.horaEscaneo}</td>
+                    <th>Nombre</th>
+                    <th>Hora de Escaneo</th>
                   </tr>
-                `;
-              }
+                </thead>
+                <tbody>
+            `;
 
+            for (const alumnoId in data[hora][materia]) {
+              const alumno = data[hora][materia][alumnoId];
               html += `
-                  </tbody>
-                </table>
+                <tr>
+                  <td>${alumno.nombre}</td>
+                  <td>${alumno.horaEscaneo}</td>
+                </tr>
               `;
             }
+
+            html += `
+                </tbody>
+              </table>
+            `;
           }
         }
 
