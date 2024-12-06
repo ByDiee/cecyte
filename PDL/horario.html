@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtrar Materias</title>
+    <title>Asignar Materias</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -78,7 +78,7 @@
 </head>
 <body>
     <header>
-        <h1>Materias Disponibles</h1>
+        <h1>Buscar Materias</h1>
     </header>
     <nav>
         <a href="perfilmaestro.html">Editar Perfil</a>
@@ -117,13 +117,12 @@
                         for (let day in subjects[semester][group]) {
                             for (let hour in subjects[semester][group][day]) {
                                 const subjectName = subjects[semester][group][day][hour];
-                                
+
                                 if (!subjectName || hour === "1000") continue; // Ignorar materias vacías y la hora de receso
 
                                 // Crear un identificador único para la combinación de materia, semestre y grupo
                                 const subjectKey = `${subjectName}-${semester}-${group}`;
-                                
-                                // Si esta combinación ya se ha cargado, no la cargamos nuevamente
+
                                 if (!loadedSubjects[subjectKey]) {
                                     loadedSubjects[subjectKey] = true; // Marcamos esta combinación como cargada
 
@@ -185,16 +184,8 @@
                                     row.appendChild(hoursCell);
 
                                     row.addEventListener('click', () => {
-                                        // Primero verificar si las horas de la materia seleccionada se superponen con otro horario
-                                        checkScheduleConflict(subjectName, semester, group, subjects).then(hasConflict => {
-                                            if (hasConflict) {
-                                                alert('El horario de la materia seleccionada ya está ocupado.');
-                                                return; // No seguir con la asignación si hay conflicto
-                                            }
-
-                                            // Si no hay conflicto, entonces asignamos las horas de la materia
-                                            assignAllHours(subjectName, semester, group, subjects);
-                                        });
+                                        // Asignar todas las horas de la materia seleccionada
+                                        checkAndAssignHours(subjectName, semester, group, subjects);
                                     });
 
                                     subjectBody.appendChild(row);
@@ -206,58 +197,74 @@
             });
         }
 
-        // Verificar si hay conflicto de horarios con el horario del profesor
-        function checkScheduleConflict(subjectName, semester, group, subjects) {
-            return new Promise(resolve => {
-                const userScheduleRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}/horario`);
-                let hasConflict = false;
+        // Verificar si hay conflicto de horarios antes de asignar la materia
+        function checkAndAssignHours(subjectName, semester, group, subjects) {
+            const currentUser = firebase.auth().currentUser;
 
-                userScheduleRef.once('value').then(snapshot => {
-                    const existingSchedule = snapshot.val() || {};
+            if (!currentUser) {
+                alert('Por favor inicia sesión.');
+                return;
+            }
 
-                    // Iterar sobre todos los días y horas del horario del profesor
-                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-                    const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-
-                    days.forEach(day => {
-                        times.forEach(time => {
-                            if (existingSchedule[day] && existingSchedule[day][time] === subjectName) {
-                                hasConflict = true;
-                            }
-                        });
-                    });
-
-                    resolve(hasConflict); // Devolver el resultado de la verificación
-                });
-            });
-        }
-
-        // Asignar todas las horas de la materia seleccionada
-        function assignAllHours(subjectName, semester, group, subjects) {
-            const userScheduleRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}/horario`);
+            const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
 
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
 
-                // Asignar la materia a todas las horas correspondientes
+                // Verificar conflicto de horarios
                 const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
                 const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+                let conflictFound = false;
 
                 days.forEach(day => {
                     times.forEach(time => {
                         if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
-                            existingSchedule[day] = existingSchedule[day] || {};
-                            existingSchedule[day][time] = subjectName;
+                            // Si esa hora ya está ocupada en el horario del profesor, marcar como conflicto
+                            if (existingSchedule[day] && existingSchedule[day][time]) {
+                                conflictFound = true;
+                                alert(`Conflicto de horario: Ya tienes una clase en ${day} a las ${time}`);
+                            }
                         }
                     });
                 });
 
-                userScheduleRef.set(existingSchedule);
-                alert('Horario asignado exitosamente.');
+                if (!conflictFound) {
+                    // Asignar la materia si no hay conflictos
+                    assignSubjectToSchedule(subjectName, semester, group, subjects, existingSchedule);
+                }
             });
         }
 
-        // Cargar materias al iniciar la página
+        // Asignar la materia a todas las horas correspondientes si no hay conflicto
+        function assignSubjectToSchedule(subjectName, semester, group, subjects, existingSchedule) {
+            const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const currentUser = firebase.auth().currentUser;
+
+            const newSchedule = { ...existingSchedule };
+
+            days.forEach(day => {
+                times.forEach(time => {
+                    if (subjects[semester][group][day] && subjects[semester][group][day][time] === subjectName) {
+                        if (!newSchedule[day]) {
+                            newSchedule[day] = {};
+                        }
+                        newSchedule[day][time] = subjectName;
+                    }
+                });
+            });
+
+            // Guardar el horario actualizado en Firebase
+            firebase.database().ref(`users/${currentUser.uid}/horario`).set(newSchedule)
+                .then(() => {
+                    alert('Materia asignada correctamente.');
+                })
+                .catch(error => {
+                    alert('Error al asignar materia: ' + error.message);
+                });
+        }
+
+        // Cargar las materias al cargar la página
         loadSubjects();
     </script>
 </body>
