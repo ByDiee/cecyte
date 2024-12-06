@@ -231,22 +231,20 @@
             const currentUser = firebase.auth().currentUser;
 
             if (!currentUser) {
-                alert('Por favor inicia sesión.');
+                alert('Por favor inicie sesión.');
                 return;
             }
 
             const userScheduleRef = firebase.database().ref(`users/${currentUser.uid}/horario`);
-
             userScheduleRef.once('value').then(snapshot => {
                 const existingSchedule = snapshot.val() || {};
-
-                // Iterar sobre todos los días y horas para asignar la materia seleccionada
-                for (let semester in subjects) {
-                    for (let group in subjects[semester]) {
-                        for (let day in subjects[semester][group]) {
-                            const hours = Object.keys(subjects[semester][group][day]);
+                // Asignar las horas de la materia seleccionada en todos los días y horas disponibles
+                for (let semesterKey in subjects) {
+                    for (let groupKey in subjects[semesterKey]) {
+                        for (let day in subjects[semesterKey][groupKey]) {
+                            const hours = Object.keys(subjects[semesterKey][groupKey][day]);
                             hours.forEach(hour => {
-                                if (subjects[semester][group][day][hour] === subjectName) {
+                                if (subjects[semesterKey][groupKey][day][hour] === subjectName) {
                                     existingSchedule[day] = existingSchedule[day] || {};
                                     existingSchedule[day][hour] = subjectName;
                                 }
