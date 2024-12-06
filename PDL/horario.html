@@ -202,17 +202,16 @@
     }
 
     // Validar si hay conflicto de horarios antes de asignar
-    function isScheduleConflict(subjectName, semester, group, existingSchedule) {
-        for (let day in existingSchedule) {
-            for (let hour in existingSchedule[day]) {
-                const currentSubject = existingSchedule[day][hour];
-                // Si ya existe una materia diferente a la actual, hay conflicto
-                if (currentSubject && currentSubject !== subjectName) {
-                    return true;
+    function isScheduleConflict(subjectName, semester, group, subjects, existingSchedule) {
+        for (let day in subjects[semester][group]) {
+            for (let hour in subjects[semester][group][day]) {
+                const currentSubject = subjects[semester][group][day][hour];
+                if (existingSchedule[day]?.[hour] && existingSchedule[day][hour] !== subjectName) {
+                    return true; // Conflicto encontrado
                 }
             }
         }
-        return false;
+        return false; // No hay conflicto
     }
 
     // Asignar todas las horas de la materia seleccionada
@@ -229,51 +228,41 @@
         userScheduleRef.once('value').then(snapshot => {
             const existingSchedule = snapshot.val() || {};
 
-            // Si es la primera vez que se registra una materia, asignamos "RECESO" a las 10:00
-            if (Object.keys(existingSchedule).length === 0) {
-                if (!existingSchedule["Lunes"]) existingSchedule["Lunes"] = {};
-                if (!existingSchedule["Martes"]) existingSchedule["Martes"] = {};
-                if (!existingSchedule["Miercoles"]) existingSchedule["Miercoles"] = {};
-                if (!existingSchedule["Jueves"]) existingSchedule["Jueves"] = {};
-                if (!existingSchedule["Viernes"]) existingSchedule["Viernes"] = {};
-
-                // Asignar RECESO a las 10:00
-                ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"].forEach(day => {
-                    existingSchedule[day]["1000"] = "RECESO";
-                });
+            // Verificar conflicto de horarios antes de asignar
+            if (isScheduleConflict(subjectName, semester, group, subjects, existingSchedule)) {
+                alert('Conflicto de horario: ya existe una clase asignada en ese horario.');
+                return; // Si hay conflicto, no asignar la materia
             }
 
-            // Validamos si hay conflicto de horarios con la materia
-            if (isScheduleConflict(subjectName, semester, group, existingSchedule)) {
-                alert("¡Conflicto de horarios! No se puede asignar esta materia.");
-                return;
-            }
+            // Iterar sobre los días y horas para asignar la materia seleccionada
+            for (let day in subjects[semester][group]) {
+                for (let hour in subjects[semester][group][day]) {
+                    const subjectInSchedule = subjects[semester][group][day][hour];
 
-            // Asignar todas las horas
-            Object.keys(existingSchedule).forEach(day => {
-                if (!existingSchedule[day]) {
-                    existingSchedule[day] = {};
-                }
-                const days = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-                days.forEach(time => {
-                    if (!existingSchedule[day][time]) {
-                        existingSchedule[day][time] = subjectName;
+                    // Si la materia coincide, la asignamos
+                    if (subjectInSchedule === subjectName) {
+                        if (!existingSchedule[day]) {
+                            existingSchedule[day] = {};
+                        }
+                        existingSchedule[day][hour] = subjectName;
                     }
-                });
-            });
+                }
+            }
 
-            // Guardar el nuevo horario
+            // Guardar el horario actualizado en Firebase
             userScheduleRef.set(existingSchedule).then(() => {
-                alert('Horario actualizado correctamente');
-                loadSubjects();
+                alert('Horario actualizado con éxito.');
+                loadSubjects(); // Recargar las materias después de la actualización
             }).catch(error => {
-                alert('Error al guardar el horario: ' + error.message);
+                alert('Error al guardar horario: ' + error.message);
             });
         });
     }
 
-    // Cargar materias al iniciar la página
-    window.onload = loadSubjects;
+    // Iniciar la carga de materias al cargar la página
+    window.onload = function() {
+        loadSubjects();
+    };
 </script>
 </body>
 </html>
