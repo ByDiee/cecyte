@@ -73,97 +73,36 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
-                if (code) processQRCodeData(code.data);
+
+                if (code) {
+                    // Obtener los datos del código QR
+                    const qrData = JSON.parse(code.data); // Aquí se asume que el QR contiene un JSON
+
+                    const { userId, materia, grupo, grado, hora } = qrData;
+
+                    // Buscar el usuario en Firebase para recuperar su nombre completo
+                    const dbRef = firebase.database().ref('users/' + userId);
+                    dbRef.once('value').then(snapshot => {
+                        const userData = snapshot.val();
+                        if (userData) {
+                            const fullName = `${userData.firstName} ${userData.lastNameP} ${userData.lastNameM}`;
+                            // Mostrar el nombre del alumno
+                            console.log("Nombre del alumno:", fullName);
+
+                            // Aquí deberías realizar la acción de registrar la asistencia
+                            // Mostrar un mensaje o hacer algo con los datos
+                            notification.style.display = "block";
+                            error.style.display = "none";
+                            expired.style.display = "none";
+                        } else {
+                            // Si no se encuentra el usuario, mostrar un error
+                            notification.style.display = "none";
+                            error.style.display = "block";
+                        }
+                    });
+                }
+                requestAnimationFrame(scanQRCode);
             }
-            requestAnimationFrame(scanQRCode);
-        }
-
-        async function processQRCodeData(data) {
-            try {
-                const qrData = JSON.parse(data);
-                const { grado, grupo, materia, dia, hora, caducidad } = qrData;
-
-                if (!grado || !grupo || !materia || !dia || !hora) {
-                    console.error("Datos del QR incompletos.");
-                    return;
-                }
-
-                const fechaActual = new Date();
-                const diaSemana = simulatedDayElement.value; // Día simulado
-                const horaActualMinutos = parseHoraSimulada(simulatedTimeElement.value); // Hora simulada
-
-                const moduloActual = MODULOS.find(
-                    m => horaActualMinutos >= m.inicio && horaActualMinutos <= m.fin
-                );
-
-                if (!moduloActual) {
-                    console.log("No estás dentro de un módulo válido.");
-                    return;
-                }
-
-                // Verifica caducidad
-                if (caducidad) {
-                    const tiempoCaducidad = new Date(caducidad);
-                    if (fechaActual > tiempoCaducidad) {
-                        expired.style.display = "block";
-                        return;
-                    }
-                }
-
-                firebase.auth().onAuthStateChanged(async user => {
-                    if (user) {
-                        const nombreAlumno = user.displayName || "Alumno desconocido";
-                        const studentId = user.uid;
-                        const fecha = fechaActual.toISOString().split('T')[0];
-
-                        await registerAttendance(
-                            grado,
-                            grupo,
-                            diaSemana,
-                            hora,
-                            fecha,
-                            studentId,
-                            nombreAlumno,
-                            materia
-                        );
-                    } else {
-                        console.log("Usuario no autenticado.");
-                    }
-                });
-            } catch (error) {
-                console.error("Error al procesar el QR:", error);
-            }
-        }
-
-        async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre, materia) {
-            try {
-                const dbRef = firebase.database().ref(`asistencias/${fecha}/${dia}/${hora}/${materia}`);
-
-                const snapshot = await dbRef.child(studentId).get();
-
-                if (snapshot.exists()) {
-                    console.log("Ya estás registrado.");
-                    error.style.display = "block";
-                    return;
-                }
-
-                const horaEscaneo = new Date().toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' });
-                await dbRef.child(studentId).set({
-                    nombre: nombre,
-                    horaEscaneo
-                });
-
-                notification.style.display = "block";
-                setTimeout(() => notification.style.display = "none", 3000);
-            } catch (error) {
-                error.style.display = "block";
-                console.error("Error al registrar la asistencia:", error);
-            }
-        }
-
-        function parseHoraSimulada(hora) {
-            const [hh, mm] = hora.split(':').map(Number);
-            return hh * 60 + mm;
         }
     </script>
 </body>
