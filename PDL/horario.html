@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seleccionar Materias</title>
+    <title>Filtrar Materias</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -185,13 +185,16 @@
                                     row.appendChild(hoursCell);
 
                                     row.addEventListener('click', () => {
-                                        // Verificar si las horas de la materia seleccionada se superponen con otro horario
-                                        if (checkScheduleConflict(subjectName, semester, group, subjects)) {
-                                            alert('El horario de la materia seleccionada ya está ocupado.');
-                                            return;
-                                        }
-                                        // Asignar todas las horas de la materia seleccionada
-                                        assignAllHours(subjectName, semester, group, subjects);
+                                        // Primero verificar si las horas de la materia seleccionada se superponen con otro horario
+                                        checkScheduleConflict(subjectName, semester, group, subjects).then(hasConflict => {
+                                            if (hasConflict) {
+                                                alert('El horario de la materia seleccionada ya está ocupado.');
+                                                return; // No seguir con la asignación si hay conflicto
+                                            }
+
+                                            // Si no hay conflicto, entonces asignamos las horas de la materia
+                                            assignAllHours(subjectName, semester, group, subjects);
+                                        });
                                     });
 
                                     subjectBody.appendChild(row);
@@ -205,30 +208,28 @@
 
         // Verificar si hay conflicto de horarios con el horario del profesor
         function checkScheduleConflict(subjectName, semester, group, subjects) {
-            const userScheduleRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}/horario`);
-            let hasConflict = false;
+            return new Promise(resolve => {
+                const userScheduleRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}/horario`);
+                let hasConflict = false;
 
-            userScheduleRef.once('value').then(snapshot => {
-                const existingSchedule = snapshot.val() || {};
+                userScheduleRef.once('value').then(snapshot => {
+                    const existingSchedule = snapshot.val() || {};
 
-                // Iterar sobre todos los días y horas del horario del profesor
-                const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-                const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+                    // Iterar sobre todos los días y horas del horario del profesor
+                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                    const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
 
-                days.forEach(day => {
-                    times.forEach(time => {
-                        if (existingSchedule[day] && existingSchedule[day][time] === subjectName) {
-                            hasConflict = true;
-                        }
+                    days.forEach(day => {
+                        times.forEach(time => {
+                            if (existingSchedule[day] && existingSchedule[day][time] === subjectName) {
+                                hasConflict = true;
+                            }
+                        });
                     });
+
+                    resolve(hasConflict); // Devolver el resultado de la verificación
                 });
-
-                if (hasConflict) {
-                    alert('El horario de la materia seleccionada ya está ocupado en el horario del profesor.');
-                }
             });
-
-            return hasConflict;
         }
 
         // Asignar todas las horas de la materia seleccionada
