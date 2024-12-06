@@ -24,7 +24,7 @@
         <select id="simulated-day">
             <option value="Lunes">Lunes</option>
             <option value="Martes">Martes</option>
-            <option value="Miércoles">Miércoles</option>
+            <option value="Miercoles">Miércoles</option>
             <option value="Jueves">Jueves</option>
             <option value="Viernes">Viernes</option>
         </select>
@@ -39,7 +39,6 @@
     <div id="error">No se pudo registrar la asistencia.</div>
 
     <script>
-        // Configuración de módulos
         const MODULOS = [
             { inicio: 420, fin: 464, hora: "0700" }, // 07:00 - 07:44
             { inicio: 465, fin: 509, hora: "0745" }, // 07:45 - 08:29
@@ -57,7 +56,6 @@
         const simulatedDayElement = document.getElementById("simulated-day");
         const simulatedTimeElement = document.getElementById("simulated-time");
 
-        // Escaneo del QR
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
             .then(stream => {
                 video.srcObject = stream;
@@ -91,7 +89,6 @@
                 const diaSemana = simulatedDayElement.value; // Día simulado
                 const horaActualMinutos = parseHoraSimulada(simulatedTimeElement.value); // Hora simulada
 
-                // Validar si está dentro de un módulo
                 const moduloActual = MODULOS.find(
                     m => horaActualMinutos >= m.inicio && horaActualMinutos <= m.fin
                 );
@@ -114,7 +111,8 @@
                             hora,
                             fecha,
                             studentId,
-                            nombreAlumno
+                            nombreAlumno,
+                            materia
                         );
                     } else {
                         console.log("Usuario no autenticado.");
@@ -125,10 +123,10 @@
             }
         }
 
-        async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre) {
+        async function registerAttendance(grado, grupo, dia, hora, fecha, studentId, nombre, materia) {
             try {
-                // Nodo global de asistencias para el día
-                const dbRef = firebase.database().ref(`classSchedules/${grado}/${grupo}/${dia}/asistencias/${fecha}`);
+                const dbRef = firebase.database().ref(`asistencias/${fecha}/${dia}/${hora}/${materia}`);
+
                 const snapshot = await dbRef.child(studentId).get();
 
                 if (snapshot.exists()) {
@@ -136,7 +134,6 @@
                     return;
                 }
 
-                // Registrar la asistencia con nombre y hora de escaneo
                 const horaEscaneo = new Date().toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' });
                 await dbRef.child(studentId).set({
                     nombre: nombre || "Alumno desconocido",
