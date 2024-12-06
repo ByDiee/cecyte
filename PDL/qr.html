@@ -10,15 +10,64 @@
   <script src="auth.js"></script> <!-- Tu configuración de Firebase -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script> <!-- Librería nativa para generar QR -->
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      color: #333;
+      text-align: center;
+    }
+    h1 {
+      color: #006400; /* Verde */
+    }
+    .container {
+      margin-top: 30px;
+    }
+    .btn {
+      background-color: #ff7f00; /* Naranja */
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+    .btn:hover {
+      background-color: #ff5700;
+    }
     #qr-container {
       margin-top: 20px;
       text-align: center;
+    }
+    .info {
+      background-color: #e4f7d1; /* Verde claro */
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .time-left {
+      font-weight: bold;
+      color: red;
     }
   </style>
 </head>
 <body>
   <h1>Generador de QR para Asistencias</h1>
+
+  <div class="container">
+    <label for="caducidad">Tiempo de caducidad en minutos (opcional): </label>
+    <input type="number" id="caducidad" placeholder="Ingrese minutos" min="1" />
+    <button class="btn" id="generateQRBtn">Generar QR</button>
+  </div>
+
   <div id="qr-container"></div> <!-- Aquí se generará el QR -->
+
+  <div class="info">
+    <p id="horaActual"></p>
+    <p id="materiaInfo"></p>
+    <p id="gradoInfo"></p>
+    <p id="grupoInfo"></p>
+    <p id="caducidadInfo"></p>
+  </div>
 
   <script>
     // Simulación simple (día y hora)
@@ -56,119 +105,141 @@
       return true;
     }
 
-    if (validarHorario(simulatedDay, simulatedTime)) {
-      firebase.auth().onAuthStateChanged(async (user) => {
-        if (user) {
-          const userId = user.uid;
-          console.log("Usuario autenticado:", userId);
+    // Mostrar la hora actual
+    function mostrarHoraActual() {
+      const now = new Date();
+      const formattedTime = now.toLocaleTimeString();
+      document.getElementById("horaActual").innerText = `Hora Actual: ${formattedTime}`;
+    }
 
-          const userRef = firebase.database().ref(`users/${userId}`);
-          const snapshot = await userRef.once("value");
-          const userData = snapshot.val();
+    // Calcular el tiempo restante hasta la caducidad del QR
+    function calcularTiempoCaducidad(minutos) {
+      const currentTime = new Date().getTime();
+      const expirationTime = currentTime + (minutos * 60000);
+      return expirationTime;
+    }
 
-          if (!userData || !userData.horario || !userData.horario[simulatedDay]) {
-            console.error("No se encontró horario para este día.");
-            return;
-          }
+    // Generar el QR
+    document.getElementById("generateQRBtn").addEventListener("click", async function () {
+      const caducidadMinutos = document.getElementById("caducidad").value;
+      const caducidadTime = caducidadMinutos ? calcularTiempoCaducidad(caducidadMinutos) : null;
 
-          const horarioDia = userData.horario[simulatedDay];
-          const simulatedTimeMin = horaATotalMinutos(simulatedTime);
+      if (validarHorario(simulatedDay, simulatedTime)) {
+        firebase.auth().onAuthStateChanged(async (user) => {
+          if (user) {
+            const userId = user.uid;
+            console.log("Usuario autenticado:", userId);
 
-          // Buscar la materia según la hora simulada
-          let materiaEncontrada = null;
-          let horaExacta = null;
-          for (const horaInicio in horarioDia) {
-            const materia = horarioDia[horaInicio];
-            const horaInicioMin = horaATotalMinutos(horaInicio);
-            const horaFinMin = horaInicioMin + moduloDuracion;
+            const userRef = firebase.database().ref(`users/${userId}`);
+            const snapshot = await userRef.once("value");
+            const userData = snapshot.val();
 
-            if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
-              materiaEncontrada = materia;
-              horaExacta = horaInicio; // Obtener la hora exacta de la base de datos
-              break;
+            if (!userData || !userData.horario || !userData.horario[simulatedDay]) {
+              console.error("No se encontró horario para este día.");
+              return;
             }
-          }
 
-          if (!materiaEncontrada) {
-            console.error("No se encontró la materia en el horario del maestro.");
-            return;
-          }
+            const horarioDia = userData.horario[simulatedDay];
+            const simulatedTimeMin = horaATotalMinutos(simulatedTime);
 
-          console.log("Materia encontrada:", materiaEncontrada, "Hora exacta:", horaExacta);
+            // Buscar la materia según la hora simulada
+            let materiaEncontrada = null;
+            let horaExacta = null;
+            for (const horaInicio in horarioDia) {
+              const materia = horarioDia[horaInicio];
+              const horaInicioMin = horaATotalMinutos(horaInicio);
+              const horaFinMin = horaInicioMin + moduloDuracion;
 
-          // Buscar el grupo y grado en la base de datos
-          const classSchedulesRef = firebase.database().ref("classSchedules");
-          const classSchedulesSnapshot = await classSchedulesRef.once("value");
-          const classSchedules = classSchedulesSnapshot.val();
+              if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
+                materiaEncontrada = materia;
+                horaExacta = horaInicio; // Obtener la hora exacta de la base de datos
+                break;
+              }
+            }
 
-          let grado = null;
-          let grupo = null;
+            if (!materiaEncontrada) {
+              console.error("No se encontró la materia en el horario del maestro.");
+              return;
+            }
 
-          outerLoop:
-          for (const nivel in classSchedules) {
-            for (const grupoKey in classSchedules[nivel]) {
-              const diaHorario = classSchedules[nivel][grupoKey][simulatedDay];
-              if (diaHorario) {
-                for (const horaInicio in diaHorario) {
-                  const horaInicioMin = horaATotalMinutos(horaInicio);
-                  const horaFinMin = horaInicioMin + moduloDuracion;
+            console.log("Materia encontrada:", materiaEncontrada, "Hora exacta:", horaExacta);
 
-                  if (
-                    diaHorario[horaInicio] === materiaEncontrada &&
-                    simulatedTimeMin >= horaInicioMin &&
-                    simulatedTimeMin < horaFinMin
-                  ) {
-                    grado = nivel;
-                    grupo = grupoKey;
-                    break outerLoop;
+            // Buscar el grupo y grado
+            const classSchedulesRef = firebase.database().ref("classSchedules");
+            const classSchedulesSnapshot = await classSchedulesRef.once("value");
+            const classSchedules = classSchedulesSnapshot.val();
+
+            let grado = null;
+            let grupo = null;
+
+            outerLoop:
+            for (const nivel in classSchedules) {
+              for (const grupoKey in classSchedules[nivel]) {
+                const diaHorario = classSchedules[nivel][grupoKey][simulatedDay];
+                if (diaHorario) {
+                  for (const horaInicio in diaHorario) {
+                    const horaInicioMin = horaATotalMinutos(horaInicio);
+                    const horaFinMin = horaInicioMin + moduloDuracion;
+
+                    if (
+                      diaHorario[horaInicio] === materiaEncontrada &&
+                      simulatedTimeMin >= horaInicioMin &&
+                      simulatedTimeMin < horaFinMin
+                    ) {
+                      grado = nivel;
+                      grupo = grupoKey;
+                      break outerLoop;
+                    }
                   }
                 }
               }
             }
+
+            if (!grado || !grupo) {
+              console.error("No se encontró un grado y grupo que coincida con la materia.");
+              return;
+            }
+
+            console.log("Grado y Grupo encontrados:", grado, grupo);
+
+            // Mostrar la información
+            document.getElementById("materiaInfo").innerText = `Materia: ${materiaEncontrada}`;
+            document.getElementById("gradoInfo").innerText = `Grado: ${grado}`;
+            document.getElementById("grupoInfo").innerText = `Grupo: ${grupo}`;
+            if (caducidadTime) {
+              document.getElementById("caducidadInfo").innerText = `Caducidad: ${caducidadMinutos} minutos.`;
+            } else {
+              document.getElementById("caducidadInfo").innerText = "Sin caducidad.";
+            }
+
+            // Generar el QR de forma nativa usando QRCode.js
+            const qrData = {
+              materia: materiaEncontrada,
+              dia: simulatedDay,
+              hora: horaExacta, // Usar la hora exacta de la base de datos
+              grado,
+              grupo,
+              caducidad: caducidadTime,
+            };
+
+            // Generar el QR en el canvas
+            const qrContainer = document.getElementById("qr-container");
+            qrContainer.innerHTML = ""; // Limpiar contenido anterior
+            const canvas = document.createElement("canvas");
+            qrContainer.appendChild(canvas);
+            QRCode.toCanvas(canvas, JSON.stringify(qrData), function (error) {
+              if (error) {
+                console.error("Error generando el QR:", error);
+              } else {
+                console.log("QR generado correctamente");
+              }
+            });
           }
+        });
+      }
+    });
 
-          if (!grado || !grupo) {
-            console.error("No se encontró un grado y grupo que coincida con la materia.");
-            return;
-          }
-
-          console.log("Grado y Grupo encontrados:", grado, grupo);
-
-          // Generar el contenido del QR
-          const qrData = {
-            materia: materiaEncontrada,
-            dia: simulatedDay,
-            hora: horaExacta, // Usar la hora exacta de la base de datos
-            grado,
-            grupo,
-          };
-
-          console.log("Datos del QR:", qrData);
-
-  // Generar el QR de forma nativa usando QRCode.js
-  const qrContainer = document.getElementById("qr-container");
-  qrContainer.innerHTML = ""; // Limpiar contenido anterior
-
-  // Crear un canvas dinámicamente
-  const canvas = document.createElement("canvas");
-  qrContainer.appendChild(canvas); // Agregarlo al contenedor
-
-  // Generar el QR en el canvas
-  QRCode.toCanvas(canvas, JSON.stringify(qrData), {
-    width: 300,
-    margin: 2,
-  }, function (error) {
-    if (error) {
-      console.error("Error generando el QR:", error);
-    } else {
-      console.log("QR generado con éxito.");
-    }
-  });
-        } else {
-          console.error("Usuario no autenticado.");
-        }
-      });
-    }
+    mostrarHoraActual(); // Llamar para mostrar la hora al cargar la página
   </script>
 </body>
 </html>
