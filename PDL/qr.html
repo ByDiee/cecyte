@@ -7,8 +7,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="auth.js"></script> <!-- Tu configuración de Firebase -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script> <!-- Librería nativa para generar QR -->
+  <script src="auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -70,18 +70,33 @@
   </div>
 
   <script>
-    // Simulación simple (día y hora)
-    const simulatedDay = "Martes"; // Cambia según el día que quieras probar
-    const simulatedTime = "0756"; // Cambia según la hora que quieras probar
-    const simulatedDate = "2024-12-03";
+    const USE_SIMULATED_TIME = true; // HORA SIMULADA TRUE / FALSE HORA REAL
+    const simulatedDay = "Miércoles";  // Día simulado
+    const simulatedTime = "0756";   // Hora simulada (formato HHMM)
+    const simulatedDate = "2024-12-04"; // Fecha simulada (YYYY-MM-DD)
+
+    function getCurrentTime() {
+      if (USE_SIMULATED_TIME) {
+        return {
+          day: simulatedDay,
+          time: simulatedTime,
+          date: simulatedDate
+        };
+      } else {
+        const now = new Date();
+        const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const day = dayNames[now.getDay()];
+        const time = now.toTimeString().slice(0, 5).replace(":", ""); // HHMM
+        const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+        return { day, time, date };
+      }
+    }
 
     // Configuración de horarios
     const recesoInicio = "1000"; // 10:00
     const recesoFin = "1030";    // 10:30
     const diasHabiles = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
     const moduloDuracion = 44;   // Duración del módulo en minutos
-
-    console.log("Simulación: Día =", simulatedDay, "Hora =", simulatedTime);
 
     // Convertir horas a minutos
     function horaATotalMinutos(hora) {
@@ -108,9 +123,9 @@
 
     // Mostrar la hora actual
     function mostrarHoraActual() {
-      const now = new Date();
-      const formattedTime = now.toLocaleTimeString();
-      document.getElementById("horaActual").innerText = `Hora Actual: ${formattedTime}`;
+      const { day, time, date } = getCurrentTime();
+      const formattedTime = `${time.substring(0, 2)}:${time.substring(2, 4)}`;
+      document.getElementById("horaActual").innerText = `Hora Actual: ${day}, ${formattedTime} (${date})`;
     }
 
     // Calcular el tiempo restante hasta la caducidad del QR
@@ -122,10 +137,11 @@
 
     // Generar el QR
     document.getElementById("generateQRBtn").addEventListener("click", async function () {
+      const { day, time, date } = getCurrentTime();
       const caducidadMinutos = document.getElementById("caducidad").value;
       const caducidadTime = caducidadMinutos ? calcularTiempoCaducidad(caducidadMinutos) : null;
 
-      if (validarHorario(simulatedDay, simulatedTime)) {
+      if (validarHorario(day, time)) {
         firebase.auth().onAuthStateChanged(async (user) => {
           if (user) {
             const userId = user.uid;
@@ -135,13 +151,13 @@
             const snapshot = await userRef.once("value");
             const userData = snapshot.val();
 
-            if (!userData || !userData.horario || !userData.horario[simulatedDay]) {
+            if (!userData || !userData.horario || !userData.horario[day]) {
               console.error("No se encontró horario para este día.");
               return;
             }
 
-            const horarioDia = userData.horario[simulatedDay];
-            const simulatedTimeMin = horaATotalMinutos(simulatedTime);
+            const horarioDia = userData.horario[day];
+            const simulatedTimeMin = horaATotalMinutos(time);
 
             // Buscar la materia según la hora simulada
             let materiaEncontrada = null;
@@ -176,7 +192,7 @@
             outerLoop:
             for (const nivel in classSchedules) {
               for (const grupoKey in classSchedules[nivel]) {
-                const diaHorario = classSchedules[nivel][grupoKey][simulatedDay];
+                const diaHorario = classSchedules[nivel][grupoKey][day];
                 if (diaHorario) {
                   for (const horaInicio in diaHorario) {
                     const horaInicioMin = horaATotalMinutos(horaInicio);
@@ -207,41 +223,38 @@
             document.getElementById("materiaInfo").innerText = `Materia: ${materiaEncontrada}`;
             document.getElementById("gradoInfo").innerText = `Grado: ${grado}`;
             document.getElementById("grupoInfo").innerText = `Grupo: ${grupo}`;
-            if (caducidadTime) {
-              document.getElementById("caducidadInfo").innerText = `Caducidad: ${caducidadMinutos} minutos.`;
-            } else {
-              document.getElementById("caducidadInfo").innerText = "Sin caducidad.";
-            }
+            document.getElementById("caducidadInfo").innerText = caducidadTime
+              ? `Tiempo de caducidad: ${caducidadMinutos} minutos`
+              : "Sin caducidad";
 
-            // Generar el QR de forma nativa usando QRCode.js
-            const qrData = {
+            // Generar contenido para el QR
+            const qrContent = JSON.stringify({
               materia: materiaEncontrada,
-              dia: simulatedDay,
-              fecha: simulatedDate, // Añadida la fecha
-              hora: horaExacta, // Usar la hora exacta de la base de datos
               grado,
               grupo,
-              caducidad: caducidadTime,
-            };
+              hora: horaExacta,
+              fecha: date,
+              caducidad: caducidadTime || null,
+            });
 
-            // Generar el QR en el canvas
+            // Generar el QR
             const qrContainer = document.getElementById("qr-container");
-            qrContainer.innerHTML = ""; // Limpiar contenido anterior
-            const canvas = document.createElement("canvas");
-            qrContainer.appendChild(canvas);
-            QRCode.toCanvas(canvas, JSON.stringify(qrData), function (error) {
+            qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
+            QRCode.toCanvas(qrContainer, qrContent, { width: 256 }, (error) => {
               if (error) {
-                console.error("Error generando el QR:", error);
+                console.error("Error al generar el QR:", error);
               } else {
-                console.log("QR generado correctamente");
+                console.log("QR generado exitosamente:", qrContent);
               }
             });
+          } else {
+            console.error("El usuario no está autenticado.");
           }
         });
       }
     });
 
-    mostrarHoraActual(); // Llamar para mostrar la hora al cargar la página
+    mostrarHoraActual(); // Mostrar la hora actual al cargar la página
   </script>
 </body>
 </html>
