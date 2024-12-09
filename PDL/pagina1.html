@@ -26,11 +26,13 @@
             padding: 10px;
             display: flex;
             justify-content: space-around;
+            flex-wrap: wrap;
         }
         nav a {
             color: white;
             text-decoration: none;
             font-weight: bold;
+            margin: 5px 0;
         }
         main {
             padding: 20px;
@@ -42,6 +44,7 @@
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 20px;
         }
         .schedule-table th, .schedule-table td {
             border: 1px solid #cccccc;
@@ -71,6 +74,19 @@
         .schedule-table td:hover .delete-btn {
             display: block;
         }
+
+        /* Estilos responsivos */
+        @media (max-width: 768px) {
+            .schedule-table {
+                font-size: 14px;
+            }
+            nav {
+                flex-direction: column;
+            }
+            nav a {
+                margin: 5px 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -81,7 +97,7 @@
         <a href="qr.html">Generar QR</a>
         <a href="perfilmaestro.html">Editar Perfil</a>
         <a href="asistencias.html">Ver Asistencias</a>
-        <a href="horario.html">Editar Horario</a> <!-- Botón movido aquí -->
+        <a href="horario.html">Editar Horario</a>
     </nav>
     <main>
         <div class="welcome">
@@ -114,7 +130,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const database = firebase.database();
 
-            // Verifica autenticación
             firebase.auth().onAuthStateChanged((user) => {
                 if (!user) {
                     window.location.href = 'login.html';
@@ -125,7 +140,6 @@
                 }
             });
 
-            // Función para obtener el horario del profesor y poblar la tabla
             function fetchSchedule(userId) {
                 const scheduleRef = database.ref(`users/${userId}/horario`);
                 scheduleRef.once('value').then(snapshot => {
@@ -136,30 +150,33 @@
                     const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
                     const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
-                    // Crear las filas para cada hora
                     for (const time of times) {
                         const row = document.createElement('tr');
                         const timeCell = document.createElement('th');
                         timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
                         row.appendChild(timeCell);
 
-                        // Crear las celdas para cada día
                         for (const day of days) {
                             const cell = document.createElement('td');
-                            const subject = schedule && schedule[day] && schedule[day][time];
-                            if (subject) {
-                                cell.textContent = subject;
 
-                                // Botón de eliminar
-                                const deleteBtn = document.createElement('button');
-                                deleteBtn.textContent = 'X';
-                                deleteBtn.classList.add('delete-btn');
-                                deleteBtn.addEventListener('click', () => {
-                                    if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
-                                        deleteAllInstancesOfSubject(userId, subject);
-                                    }
-                                });
-                                cell.appendChild(deleteBtn);
+                            if (time === "1000") {
+                                cell.textContent = "RECESO";
+                                cell.style.backgroundColor = "#f2f2f2";
+                            } else {
+                                const subject = schedule && schedule[day] && schedule[day][time];
+                                if (subject) {
+                                    cell.textContent = subject;
+
+                                    const deleteBtn = document.createElement('button');
+                                    deleteBtn.textContent = 'X';
+                                    deleteBtn.classList.add('delete-btn');
+                                    deleteBtn.addEventListener('click', () => {
+                                        if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
+                                            deleteAllInstancesOfSubject(userId, subject);
+                                        }
+                                    });
+                                    cell.appendChild(deleteBtn);
+                                }
                             }
                             row.appendChild(cell);
                         }
@@ -170,7 +187,6 @@
                 });
             }
 
-            // Eliminar todas las instancias de la materia seleccionada del horario
             function deleteAllInstancesOfSubject(userId, subjectToDelete) {
                 const scheduleRef = database.ref(`users/${userId}/horario`);
                 scheduleRef.once('value').then(snapshot => {
