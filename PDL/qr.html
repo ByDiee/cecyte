@@ -237,22 +237,22 @@
               caducidad: caducidadTime || null,
             });
 
-            // Generar el QR
-            const qrContainer = document.getElementById("qr-container");
-            qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
-            QRCode.toCanvas(qrContainer, qrContent, { width: 256 }, (error) => {
-              if (error) {
-                console.error("Error al generar el QR:", error);
-              } else {
-                console.log("QR generado exitosamente:", qrContent);
-              }
-            });
-          } else {
-            console.error("El usuario no está autenticado.");
-          }
-        });
-      }
-    });
+// Generar el QR
+const qrContainer = document.getElementById("qr-container");
+qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
+
+// Crear un elemento canvas dentro del contenedor
+const canvas = document.createElement("canvas");
+qrContainer.appendChild(canvas);
+
+// Generar el QR en el canvas
+QRCode.toCanvas(canvas, qrContent, { width: 256 }, (error) => {
+  if (error) {
+    console.error("Error al generar el QR:", error);
+  } else {
+    console.log("QR generado exitosamente:", qrContent);
+  }
+});
 
     mostrarHoraActual(); // Mostrar la hora actual al cargar la página
   </script>
