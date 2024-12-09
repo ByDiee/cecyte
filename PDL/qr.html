@@ -71,7 +71,7 @@
 
   <script>
     const USE_SIMULATED_TIME = true; // HORA SIMULADA TRUE / FALSE HORA REAL
-    const simulatedDay = "Miércoles";  // Día simulado
+    const simulatedDay = "Miercoles";  // Día simulado
     const simulatedTime = "0756";   // Hora simulada (formato HHMM)
     const simulatedDate = "2024-12-04"; // Fecha simulada (YYYY-MM-DD)
 
@@ -84,7 +84,7 @@
         };
       } else {
         const now = new Date();
-        const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const dayNames = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
         const day = dayNames[now.getDay()];
         const time = now.toTimeString().slice(0, 5).replace(":", ""); // HHMM
         const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
