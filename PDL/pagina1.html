@@ -16,45 +16,30 @@
         padding: 0;
     }
 
-    /* Contenedor principal para ajustar el ancho */
-    .container {
-        width: 100%;
-        max-width: 100%; /* Asegura que no haya desplazamiento horizontal */
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden; /* Eliminar desplazamiento horizontal */
-    }
-
     header {
         background-color: #28a745;
         color: white;
-        padding: 0;
-        margin: 0;
-        height: 70px; /* Ajusta el tamaño del encabezado */
-        width: 100%;
-        box-sizing: border-box; /* Incluye el padding en el ancho total */
+        padding: 15px;
+        text-align: center;
     }
 
-    /* Barra de navegación */
     nav {
         background-color: #ff851b;
         padding: 10px;
         display: flex;
         justify-content: space-around;
-        width: 100%;
-        box-sizing: border-box; /* Incluye el padding en el ancho total */
+        flex-wrap: wrap;
     }
 
     nav a {
         color: white;
         text-decoration: none;
         font-weight: bold;
+        margin: 5px 0;
     }
 
     main {
         padding: 20px;
-        width: 100%;
-        box-sizing: border-box;
     }
 
     .welcome {
@@ -62,11 +47,10 @@
         margin-bottom: 20px;
     }
 
-    /* Ajustes para la tabla */
     .schedule-table {
         width: 100%;
         border-collapse: collapse;
-        box-sizing: border-box; /* Asegura que la tabla ocupe todo el ancho */
+        margin-bottom: 20px;
     }
 
     .schedule-table th, .schedule-table td {
@@ -78,66 +62,55 @@
 
     .schedule-table th {
         background-color: #f2f2f2;
+        font-size: 16px; /* Tamaño de fuente por defecto */
     }
 
-    /* Botón eliminar */
-    .delete-btn {
-        display: none;
-        position: absolute;
-        right: 5px;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: #ff4d4d;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        text-align: center;
-        line-height: 20px;
-        cursor: pointer;
+    /* Ajustes específicos para la responsividad de los encabezados */
+    .schedule-table th {
+        white-space: nowrap;
+        word-wrap: break-word;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    .schedule-table td:hover .delete-btn {
-        display: block;
-    }
-
-    /* Responsividad */
+    /* Estilos de la tabla y su contenido en dispositivos móviles */
     @media (max-width: 768px) {
-        header {
-            font-size: 16px;
-            padding: 10px;
-            height: auto; /* Asegura que el encabezado no tenga un tamaño fijo */
+        .schedule-table {
+            font-size: 12px; /* Reducir el tamaño de fuente en dispositivos móviles */
+        }
+
+        .schedule-table th {
+            font-size: 14px; /* Ajustar tamaño de fuente en encabezados */
+            padding: 10px 5px;
+            text-align: center;
         }
 
         nav {
-            flex-direction: column; /* Apilar enlaces verticalmente */
-            text-align: center;
+            flex-direction: column;
         }
 
         nav a {
             margin: 5px 0;
         }
 
-        main {
-            padding: 10px;
-        }
-
-        .schedule-table th, .schedule-table td {
-            padding: 5px;
-            font-size: 12px; /* Reducir tamaño de fuente */
+        .schedule-table td {
+            padding: 5px; /* Reducir el padding de las celdas */
         }
     }
 
-    /* Establecer un ajuste para que la tabla se vea bien en pantallas pequeñas */
     @media (max-width: 480px) {
-        header {
-            height: auto; /* Ajusta la altura del encabezado en móviles */
-            padding: 10px;
+        /* Para dispositivos muy pequeños */
+        .schedule-table {
+            font-size: 10px; /* Reducir aún más el tamaño de fuente */
         }
 
-        .schedule-table th, .schedule-table td {
-            font-size: 10px; /* Reducir aún más el tamaño de la fuente en pantallas pequeñas */
+        .schedule-table th {
+            font-size: 12px; /* Ajustar aún más el tamaño de los encabezados */
+            padding: 8px 4px;
+        }
+
+        .schedule-table td {
+            padding: 4px; /* Reducir el padding aún más */
         }
     }
 </style>
