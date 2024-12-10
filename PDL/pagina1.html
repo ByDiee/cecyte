@@ -9,16 +9,19 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box; /* Asegurar que los bordes y padding no afecten el tamaño */
-    }
-
     body {
         font-family: Arial, sans-serif;
         background-color: #ffffff;
-        overflow-x: hidden; /* Eliminar desplazamiento horizontal */
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Contenedor principal para ajustar el ancho */
+    .container {
+        width: 100%;
+        max-width: 100%; /* Asegura que no haya desplazamiento horizontal */
+        margin: 0;
+        padding: 0;
     }
 
     header {
@@ -27,7 +30,7 @@
         padding: 15px;
         text-align: center;
         width: 100%;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Agregar un sombreado sutil */
+        box-sizing: border-box; /* Incluye el padding en el ancho total */
     }
 
     nav {
@@ -35,24 +38,20 @@
         padding: 10px;
         display: flex;
         justify-content: space-around;
-        flex-wrap: wrap; /* Permite que los elementos se ajusten si es necesario */
         width: 100%;
-        box-sizing: border-box; /* Asegurar que no haya desplazamientos */
+        box-sizing: border-box; /* Incluye el padding en el ancho total */
     }
 
     nav a {
         color: white;
         text-decoration: none;
         font-weight: bold;
-        margin: 5px 10px;
-        text-align: center;
     }
 
     main {
         padding: 20px;
-        margin: 0 auto;
         width: 100%;
-        max-width: 100%; /* El contenedor ocupará todo el ancho disponible */
+        box-sizing: border-box;
     }
 
     .welcome {
@@ -63,9 +62,8 @@
     /* Ajustes para la tabla */
     .schedule-table {
         width: 100%;
-        table-layout: fixed; /* Fija el tamaño de las celdas para evitar que se expandan */
         border-collapse: collapse;
-        margin-top: 20px;
+        box-sizing: border-box; /* Asegura que la tabla ocupe todo el ancho */
     }
 
     .schedule-table th, .schedule-table td {
@@ -124,14 +122,6 @@
         .schedule-table th, .schedule-table td {
             padding: 5px;
             font-size: 12px; /* Reducir tamaño de fuente */
-        }
-    }
-
-    /* Asegurar que la tabla no cause desplazamiento horizontal */
-    @media (max-width: 600px) {
-        .schedule-table {
-            width: 100%;
-            overflow-x: auto; /* Permite el desplazamiento horizontal en pantallas muy pequeñas */
         }
     }
 </style>
