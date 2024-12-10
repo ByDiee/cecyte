@@ -9,13 +9,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
 <style>
-    /* Ajustar márgenes y evitar scroll lateral */
     body {
         font-family: Arial, sans-serif;
         background-color: #ffffff;
         margin: 0;
         padding: 0;
-        overflow-x: hidden; /* Prevenir scroll horizontal */
+        box-sizing: border-box; /* Asegurar que el padding no altere el tamaño de los elementos */
     }
 
     /* Encabezado */
@@ -24,6 +23,8 @@
         color: white;
         padding: 15px;
         text-align: center;
+        width: 100%; /* Asegurar que ocupe todo el ancho */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Agregar un ligero sombreado */
     }
 
     /* Navegación */
@@ -32,42 +33,41 @@
         padding: 10px;
         display: flex;
         justify-content: space-around;
-        flex-wrap: wrap;
+        flex-wrap: wrap; /* Adaptar a múltiples líneas si es necesario */
+        width: 100%; /* Ocupa todo el ancho */
     }
 
     nav a {
         color: white;
         text-decoration: none;
         font-weight: bold;
-        margin: 5px 0;
+        margin: 5px 10px;
+        text-align: center;
     }
 
     /* Contenido principal */
     main {
         padding: 20px;
-        max-width: 100%; /* Limitar ancho al viewport */
-        overflow-x: hidden;
+        margin: 0 auto;
+        max-width: 1200px; /* Limitar el ancho máximo en pantallas grandes */
     }
 
     /* Tabla */
     .schedule-table {
-        width: 100%; /* Asegurar ancho completo */
+        width: 100%;
         border-collapse: collapse;
-        margin-bottom: 20px;
+        margin-top: 20px;
     }
 
-    .schedule-table th,
-    .schedule-table td {
+    .schedule-table th, .schedule-table td {
         border: 1px solid #cccccc;
         padding: 8px;
         text-align: center;
+        position: relative;
     }
 
     .schedule-table th {
         background-color: #f2f2f2;
-        position: sticky;
-        top: 0;
-        z-index: 2;
     }
 
     /* Botón eliminar */
@@ -92,19 +92,29 @@
         display: block;
     }
 
-    /* Estilos responsivos */
+    /* Responsividad */
     @media (max-width: 768px) {
-        .schedule-table {
-            font-size: 12px;
-        }
-
-        .schedule-table th,
-        .schedule-table td {
-            padding: 5px;
+        header {
+            font-size: 16px;
+            padding: 10px;
         }
 
         nav {
-            flex-direction: column;
+            flex-direction: column; /* Apilar enlaces verticalmente */
+            text-align: center;
+        }
+
+        nav a {
+            margin: 5px 0;
+        }
+
+        main {
+            padding: 10px;
+        }
+
+        .schedule-table th, .schedule-table td {
+            padding: 5px;
+            font-size: 12px; /* Reducir tamaño de fuente */
         }
     }
 </style>
