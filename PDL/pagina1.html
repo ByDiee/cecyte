@@ -22,17 +22,20 @@
         max-width: 100%; /* Asegura que no haya desplazamiento horizontal */
         margin: 0;
         padding: 0;
+        overflow-x: hidden; /* Eliminar desplazamiento horizontal */
     }
 
     header {
         background-color: #28a745;
         color: white;
-        padding: 15px;
-        text-align: center;
+        padding: 0;
+        margin: 0;
+        height: 70px; /* Ajusta el tamaño del encabezado */
         width: 100%;
         box-sizing: border-box; /* Incluye el padding en el ancho total */
     }
 
+    /* Barra de navegación */
     nav {
         background-color: #ff851b;
         padding: 10px;
@@ -104,6 +107,7 @@
         header {
             font-size: 16px;
             padding: 10px;
+            height: auto; /* Asegura que el encabezado no tenga un tamaño fijo */
         }
 
         nav {
@@ -122,6 +126,18 @@
         .schedule-table th, .schedule-table td {
             padding: 5px;
             font-size: 12px; /* Reducir tamaño de fuente */
+        }
+    }
+
+    /* Establecer un ajuste para que la tabla se vea bien en pantallas pequeñas */
+    @media (max-width: 480px) {
+        header {
+            height: auto; /* Ajusta la altura del encabezado en móviles */
+            padding: 10px;
+        }
+
+        .schedule-table th, .schedule-table td {
+            font-size: 10px; /* Reducir aún más el tamaño de la fuente en pantallas pequeñas */
         }
     }
 </style>
