@@ -8,14 +8,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
 <style>
     body {
         font-family: Arial, sans-serif;
         background-color: #ffffff;
         margin: 0;
         padding: 0;
-        overflow-x: auto; /* Permite el scroll horizontal */
     }
 
     header {
@@ -23,8 +21,6 @@
         color: white;
         padding: 15px;
         text-align: center;
-        width: 100%;
-        box-sizing: border-box; /* Asegura que el padding no afecte el ancho */
     }
 
     nav {
@@ -32,22 +28,20 @@
         padding: 10px;
         display: flex;
         justify-content: space-around;
-        flex-wrap: wrap;
-        width: 100%;
-        box-sizing: border-box; /* Asegura que el padding no afecte el ancho */
+        flex-wrap: wrap; /* Permite que los elementos se ajusten en móviles */
     }
 
     nav a {
         color: white;
         text-decoration: none;
         font-weight: bold;
-        margin: 5px 0;
+        margin: 5px;
+        flex: 1 1 auto; /* Hace que los enlaces se adapten al espacio disponible */
+        text-align: center;
     }
 
     main {
         padding: 20px;
-        overflow-x: auto; /* Permite el scroll horizontal en el contenedor principal si es necesario */
-        width: 100%;
     }
 
     .welcome {
@@ -58,9 +52,6 @@
     .schedule-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 20px;
-        table-layout: fixed; /* Asegura que las celdas de la tabla no se expandan más allá del contenedor */
-        word-wrap: break-word; /* Permite el ajuste de texto largo */
     }
 
     .schedule-table th, .schedule-table td {
@@ -95,35 +86,63 @@
         display: block;
     }
 
-    /* Estilos responsivos para header y nav */
-    @media (max-width: 768px) {
+    /* Media Queries para ajustar el diseño en dispositivos móviles */
+    @media screen and (max-width: 768px) {
         header {
-            padding: 10px; /* Reduce el padding en móviles */
+            padding: 10px;
+        }
+
+        nav {
+            flex-direction: column; /* Los enlaces se apilan en columnas */
+            align-items: center; /* Centra los elementos */
+        }
+
+        nav a {
+            margin: 10px 0; /* Agrega margen entre los enlaces */
+            width: 100%; /* Los enlaces toman el 100% de la anchura disponible */
+            text-align: center; /* Asegura que el texto esté centrado */
+        }
+
+        main {
+            padding: 10px;
+        }
+
+        .schedule-table th, .schedule-table td {
+            font-size: 14px; /* Ajusta el tamaño de la fuente en pantallas más pequeñas */
+        }
+
+        .delete-btn {
+            width: 25px;
+            height: 25px;
+            font-size: 14px; /* Aumenta el tamaño del botón de eliminación para facilitar su uso en dispositivos móviles */
+        }
+    }
+
+    /* Media Queries para pantallas más pequeñas (móviles muy pequeños) */
+    @media screen and (max-width: 480px) {
+        header {
+            padding: 8px;
+            font-size: 14px; /* Reduce el tamaño de la fuente */
         }
 
         nav {
             flex-direction: column;
-            justify-content: flex-start;
-            width: 100%;
         }
 
         nav a {
-            margin: 10px 0; /* Más espacio entre los enlaces */
-            text-align: center;
+            font-size: 14px; /* Reduce el tamaño de los enlaces */
+        }
+
+        .schedule-table th, .schedule-table td {
+            font-size: 12px; /* Reduce el tamaño de la fuente en la tabla */
+        }
+
+        .delete-btn {
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
         }
     }
-
-    /* Responsividad para la tabla: cuando el ancho es pequeño */
-    @media (max-width: 768px) {
-        .schedule-table {
-            font-size: 14px;
-        }
-
-        body {
-            overflow-x: auto; /* Asegura que se pueda hacer scroll horizontal */
-        }
-    }
-
 </style>
 </head>
 <body>
