@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Asesorías</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="auth.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #ffffff;
+            background-color: #f9f9f9;
             margin: 0;
             padding: 0;
         }
@@ -20,37 +17,44 @@
             padding: 15px;
             text-align: center;
         }
-        main {
-            padding: 20px;
-        }
-        .schedule-table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 20px auto;
         }
-        .schedule-table th, .schedule-table td {
-            border: 1px solid #cccccc;
-            padding: 10px;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: center;
         }
-        .schedule-table th {
-            background-color: #f2f2f2;
+        th {
+            background-color: #f4f4f4;
+            color: #333;
         }
-        .occupied {
-            background-color: #ff4d4d; /* Espacios ocupados en rojo */
+        td.occupied {
+            background-color: #f44336; /* Rojo */
+            color: white;
             pointer-events: none;
         }
-        .selected {
-            background-color: #28a745; /* Selección en verde */
+        td.selected {
+            background-color: #4caf50; /* Verde */
             color: white;
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #ff851b;
+            background-color: #28a745;
             color: white;
             border: none;
+            padding: 10px 20px;
             cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -59,7 +63,7 @@
         <h1>Gestión de Asesorías</h1>
     </header>
     <main>
-        <table class="schedule-table" id="scheduleTable">
+        <table id="schedule-table">
             <thead>
                 <tr>
                     <th>Hora</th>
@@ -71,88 +75,109 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- Contenido generado dinámicamente -->
+                <!-- Filas y columnas generadas dinámicamente -->
             </tbody>
         </table>
-        <button id="confirmButton">Confirmar</button>
+        <button id="confirm-button" disabled>Confirmar Asesorías</button>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const database = firebase.database();
-            const userId = user.uid; // Cambiar dinámicamente según el usuario logueado
-            const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
-            const selectedCells = new Set(); // Para almacenar las celdas seleccionadas
+    <script type="module">
+        import { database, auth } from './auth.js';
+        import { ref, get, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+        const tableBody = document.querySelector('#schedule-table tbody');
+        const confirmButton = document.getElementById('confirm-button');
+        let selectedCells = [];
 
-            // Poblar la tabla
-            function fetchSchedule() {
-                const scheduleRef = database.ref(`users/${userId}/horario`);
-                scheduleRef.once('value').then(snapshot => {
-                    const schedule = snapshot.val();
-                    scheduleTableBody.innerHTML = '';
+        // Generar horarios dinámicamente (rangos de tiempo)
+        const hours = [
+            '07:00', '07:45', '08:30', '09:15', '10:30',
+            '11:15', '12:00', '12:45', '13:30', '14:15'
+        ];
+        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 
-                    times.forEach(time => {
-                        const row = document.createElement('tr');
-                        const timeCell = document.createElement('th');
-                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
-                        row.appendChild(timeCell);
+        function createTable() {
+            hours.forEach(hour => {
+                const row = document.createElement('tr');
+                const timeCell = document.createElement('td');
+                timeCell.textContent = hour;
+                row.appendChild(timeCell);
 
-                        days.forEach(day => {
-                            const cell = document.createElement('td');
-                            const isOccupied = schedule && schedule[day] && schedule[day][time];
+                days.forEach(day => {
+                    const cell = document.createElement('td');
+                    cell.dataset.day = day;
+                    cell.dataset.hour = hour;
 
-                            if (isOccupied) {
-                                cell.classList.add('occupied');
-                            } else {
-                                cell.addEventListener('click', () => toggleSelection(cell, day, time));
-                            }
+                    // Selección de celdas
+                    cell.addEventListener('click', () => {
+                        if (cell.classList.contains('selected')) {
+                            cell.classList.remove('selected');
+                            selectedCells = selectedCells.filter(
+                                selected => !(selected.day === day && selected.hour === hour)
+                            );
+                        } else {
+                            cell.classList.add('selected');
+                            selectedCells.push({ day, hour });
+                        }
 
-                            row.appendChild(cell);
-                        });
-
-                        scheduleTableBody.appendChild(row);
+                        confirmButton.disabled = selectedCells.length === 0;
                     });
-                });
-            }
 
-            // Alternar selección de celda
-            function toggleSelection(cell, day, time) {
-                const cellId = `${day}_${time}`;
-                if (selectedCells.has(cellId)) {
-                    selectedCells.delete(cellId);
-                    cell.classList.remove('selected');
-                } else {
-                    selectedCells.add(cellId);
-                    cell.classList.add('selected');
-                }
-            }
-
-            // Confirmar selección
-            document.getElementById('confirmButton').addEventListener('click', () => {
-                if (selectedCells.size === 0) {
-                    alert('Por favor selecciona al menos una celda.');
-                    return;
-                }
-
-                const updates = {};
-                selectedCells.forEach(cellId => {
-                    const [day, time] = cellId.split('_');
-                    updates[`${day}/${time}`] = "Asesorías";
+                    row.appendChild(cell);
                 });
 
-                database.ref(`users/${userId}/horario`).update(updates).then(() => {
-                    alert('Asesorías guardadas correctamente.');
-                    fetchSchedule(); // Actualizar tabla
-                }).catch(error => {
-                    console.error('Error al guardar asesorías:', error);
-                });
+                tableBody.appendChild(row);
             });
+        }
 
-            fetchSchedule();
+        // Cargar horarios ocupados desde Firebase
+        function loadOccupiedSchedule() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    const scheduleRef = ref(database, `users/${user.uid}/horario`);
+                    get(scheduleRef).then(snapshot => {
+                        if (snapshot.exists()) {
+                            const schedule = snapshot.val();
+
+                            for (const day in schedule) {
+                                for (const hour in schedule[day]) {
+                                    if (schedule[day][hour]) {
+                                        const cell = document.querySelector(
+                                            `td[data-day="${day}"][data-hour="${hour}"]`
+                                        );
+                                        if (cell) cell.classList.add('occupied');
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Guardar asesorías en Firebase
+        confirmButton.addEventListener('click', () => {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    const updates = {};
+                    selectedCells.forEach(({ day, hour }) => {
+                        updates[`${day}/${hour}`] = 'Asesorías';
+                    });
+
+                    const scheduleRef = ref(database, `users/${user.uid}/horario`);
+                    update(scheduleRef, updates)
+                        .then(() => {
+                            alert('Asesorías guardadas correctamente');
+                            location.reload();
+                        })
+                        .catch(error => console.error('Error al guardar asesorías:', error));
+                }
+            });
         });
+
+        // Inicializar tabla
+        createTable();
+        loadOccupiedSchedule();
     </script>
 </body>
 </html>
