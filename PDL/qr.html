@@ -1,264 +1,130 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generador de QR para Asistencias</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="auth.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f8ff;
-      color: #333;
-      text-align: center;
-    }
-    h1 {
-      color: #006400; /* Verde */
-    }
-    .container {
-      margin-top: 30px;
-    }
-    .btn {
-      background-color: #ff7f00; /* Naranja */
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 5px;
-    }
-    .btn:hover {
-      background-color: #ff5700;
-    }
-    #qr-container {
-      margin-top: 20px;
-      text-align: center;
-    }
-    .info {
-      background-color: #e4f7d1; /* Verde claro */
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 20px;
-    }
-    .time-left {
-      font-weight: bold;
-      color: red;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear QR para Asistencia</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #notification { margin-top: 20px; color: green; display: none; }
+        #error { margin-top: 20px; color: red; display: none; }
+        #expired { margin-top: 20px; color: red; display: none; }
+        #already-registered { margin-top: 20px; color: orange; display: none; }
+        #not-belong { margin-top: 20px; color: red; display: none; }
+    </style>
 </head>
 <body>
-  <h1>Generador de QR para Asistencias</h1>
+    <h1>Escanear QR para Asistencia</h1>
+    <video id="video" width="100%" height="auto" style="max-width: 600px;"></video>
+    <canvas id="qr-canvas" style="display:none;"></canvas>
+    <div id="notification">¡Asistencia registrada correctamente!</div>
+    <div id="error">No se pudo registrar la asistencia.</div>
+    <div id="expired">¡El código QR ha caducado!</div>
+    <div id="already-registered">¡Ya has registrado tu asistencia!</div>
+    <div id="not-belong">¡No perteneces a este grado y grupo!</div>
 
-  <div class="container">
-    <label for="caducidad">Tiempo de caducidad en minutos (opcional): </label>
-    <input type="number" id="caducidad" placeholder="Ingrese minutos" min="1" />
-    <button class="btn" id="generateQRBtn">Generar QR</button>
-  </div>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('qr-canvas');
+        const ctx = canvas.getContext('2d');
+        const notification = document.getElementById('notification');
+        const error = document.getElementById('error');
+        const expired = document.getElementById('expired');
+        const alreadyRegistered = document.getElementById('already-registered');
+        const notBelong = document.getElementById('not-belong');
 
-  <div id="qr-container"></div> <!-- Aquí se generará el QR -->
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+                requestAnimationFrame(scanQRCode); // Inicia el escaneo
+            }).catch(err => console.error('Error al acceder a la cámara:', err));
 
-  <div class="info">
-    <p id="horaActual"></p>
-    <p id="materiaInfo"></p>
-    <p id="gradoInfo"></p>
-    <p id="grupoInfo"></p>
-    <p id="caducidadInfo"></p>
-  </div>
+        function scanQRCode() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  <script>
-    const USE_SIMULATED_TIME = true; // HORA SIMULADA TRUE / FALSE HORA REAL
-    const simulatedDay = "Jueves";  // Día simulado
-    const simulatedTime = "1030";   // Hora simulada (formato HHMM)
-    const simulatedDate = "2024-12-05"; // Fecha simulada (YYYY-MM-DD)
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, canvas.width, canvas.height, {
+                    inversionAttempts: "dontInvert",
+                });
 
-    function getCurrentTime() {
-      if (USE_SIMULATED_TIME) {
-        return {
-          day: simulatedDay,
-          time: simulatedTime,
-          date: simulatedDate
-        };
-      } else {
-        const now = new Date();
-        const dayNames = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
-        const day = dayNames[now.getDay()];
-        const time = now.toTimeString().slice(0, 5).replace(":", ""); // HHMM
-        const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
-        return { day, time, date };
-      }
-    }
-
-    // Configuración de horarios
-    const recesoInicio = "1000"; // 10:00
-    const recesoFin = "1029";    // 10:30
-    const diasHabiles = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-    const moduloDuracion = 44;   // Duración del módulo en minutos
-
-    // Convertir horas a minutos
-    function horaATotalMinutos(hora) {
-      const horas = parseInt(hora.substring(0, 2));
-      const minutos = parseInt(hora.substring(2, 4));
-      return horas * 60 + minutos;
-    }
-
-    // Validar si el día y la hora son válidos
-    function validarHorario(dia, hora) {
-      if (!diasHabiles.includes(dia)) {
-        console.error("Día no hábil. No hay clases.");
-        return false;
-      }
-
-      if (hora >= recesoInicio && hora < recesoFin) {
-        console.error("Es hora de receso, no se registran clases.");
-        return false;
-      }
-
-      console.log("Día y hora válidos:", dia, hora);
-      return true;
-    }
-
-    // Mostrar la hora actual
-    function mostrarHoraActual() {
-      const { day, time, date } = getCurrentTime();
-      const formattedTime = `${time.substring(0, 2)}:${time.substring(2, 4)}`;
-      document.getElementById("horaActual").innerText = `Hora Actual: ${day}, ${formattedTime} (${date})`;
-    }
-
-    // Calcular el tiempo restante hasta la caducidad del QR
-    function calcularTiempoCaducidad(minutos) {
-      const currentTime = new Date().getTime();
-      const expirationTime = currentTime + (minutos * 60000);
-      return expirationTime;
-    }
-
-    // Generar el QR
-    document.getElementById("generateQRBtn").addEventListener("click", async function () {
-      const { day, time, date } = getCurrentTime();
-      const caducidadMinutos = document.getElementById("caducidad").value;
-      const caducidadTime = caducidadMinutos ? calcularTiempoCaducidad(caducidadMinutos) : null;
-
-      if (validarHorario(day, time)) {
-        firebase.auth().onAuthStateChanged(async (user) => {
-          if (user) {
-            const userId = user.uid;
-            console.log("Usuario autenticado:", userId);
-
-            const userRef = firebase.database().ref(`users/${userId}`);
-            const snapshot = await userRef.once("value");
-            const userData = snapshot.val();
-
-            if (!userData || !userData.horario || !userData.horario[day]) {
-              console.error("No se encontró horario para este día.");
-              return;
-            }
-
-            const horarioDia = userData.horario[day];
-            const simulatedTimeMin = horaATotalMinutos(time);
-
-            // Buscar la materia según la hora simulada
-            let materiaEncontrada = null;
-            let horaExacta = null;
-            for (const horaInicio in horarioDia) {
-              const materia = horarioDia[horaInicio];
-              const horaInicioMin = horaATotalMinutos(horaInicio);
-              const horaFinMin = horaInicioMin + moduloDuracion;
-
-              if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
-                materiaEncontrada = materia;
-                horaExacta = horaInicio; // Obtener la hora exacta de la base de datos
-                break;
-              }
-            }
-
-            if (!materiaEncontrada) {
-              console.error("No se encontró la materia en el horario del maestro.");
-              return;
-            }
-
-            console.log("Materia encontrada:", materiaEncontrada, "Hora exacta:", horaExacta);
-
-            // Buscar el grupo y grado
-            const classSchedulesRef = firebase.database().ref("classSchedules");
-            const classSchedulesSnapshot = await classSchedulesRef.once("value");
-            const classSchedules = classSchedulesSnapshot.val();
-
-            let grado = null;
-            let grupo = null;
-
-            outerLoop:
-            for (const nivel in classSchedules) {
-              for (const grupoKey in classSchedules[nivel]) {
-                const diaHorario = classSchedules[nivel][grupoKey][day];
-                if (diaHorario) {
-                  for (const horaInicio in diaHorario) {
-                    const horaInicioMin = horaATotalMinutos(horaInicio);
-                    const horaFinMin = horaInicioMin + moduloDuracion;
-
-                    if (
-                      diaHorario[horaInicio] === materiaEncontrada &&
-                      simulatedTimeMin >= horaInicioMin &&
-                      simulatedTimeMin < horaFinMin
-                    ) {
-                      grado = nivel;
-                      grupo = grupoKey;
-                      break outerLoop;
-                    }
-                  }
+                if (code) {
+                    const qrData = code.data; // Datos del QR escaneado
+                    console.log("QR escaneado:", qrData);
+                    processQRData(qrData); // Procesa los datos del QR
+                } else {
+                    requestAnimationFrame(scanQRCode); // Continúa escaneando
                 }
-              }
+            } else {
+                requestAnimationFrame(scanQRCode); // Continúa escaneando
             }
+        }
 
-            if (!grado || !grupo) {
-              console.error("No se encontró un grado y grupo que coincida con la materia.");
-              return;
-            }
+        function processQRData(qrData) {
+            const qrParts = JSON.parse(qrData); // Se espera que el QR sea un JSON con los datos
+            const { fecha, dia, hora, materia, grado, grupo } = qrParts;
 
-            console.log("Grado y Grupo encontrados:", grado, grupo);
+            // Obtener datos del usuario autenticado
+            const userId = firebase.auth().currentUser.uid;
+            firebase.database().ref("users/" + userId).once("value", snapshot => {
+                const userData = snapshot.val();
+                const userGrado = userData.grado; // Obtiene el grado del usuario
+                const userGrupo = userData.grupo; // Obtiene el grupo del usuario
+                const fullName = `${userData.firstName} ${userData.lastNameP} ${userData.lastNameM}`;
 
-            // Mostrar la información
-            document.getElementById("materiaInfo").innerText = `Materia: ${materiaEncontrada}`;
-            document.getElementById("gradoInfo").innerText = `Grado: ${grado}`;
-            document.getElementById("grupoInfo").innerText = `Grupo: ${grupo}`;
-            document.getElementById("caducidadInfo").innerText = caducidadTime
-              ? `Tiempo de caducidad: ${caducidadMinutos} minutos`
-              : "Sin caducidad";
+                // Log de los datos para depuración
+                console.log(`Grado del usuario: ${userGrado}, Grupo del usuario: ${userGrupo}`);
+                console.log(`Grado del QR: ${grado}, Grupo del QR: ${grupo}`);
 
-            // Generar contenido para el QR
-            const qrContent = JSON.stringify({
-              materia: materiaEncontrada,
-              grado,
-              grupo,
-              hora: horaExacta,
-              fecha: date,
-              caducidad: caducidadTime || null,
+                // Verificar si el usuario pertenece al mismo grado y grupo
+                if (userGrado !== grado || userGrupo !== grupo) {
+                    notBelong.style.display = "block"; // Muestra mensaje de error
+                    console.log("¡No perteneces a este grado y grupo!");
+                    return; // No continuar con el proceso si no coincide
+                }
+
+                // Verificar si el QR tiene fecha de caducidad
+                if (qrParts.caducidad) {
+                    const currentTimestamp = Date.now();
+                    if (currentTimestamp > qrParts.caducidad) {
+                        expired.style.display = "block";
+                        return; // No registrar asistencia si el QR ha caducado
+                    }
+                }
+
+                // Verificar si ya se registró la asistencia
+                const asistenciaRef = firebase.database().ref(`asistencias/${fecha}/${dia}/${hora}/${materia}/${userId}`);
+                asistenciaRef.once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        alreadyRegistered.style.display = "block";
+                    } else {
+                        // Registrar asistencia
+                        const attendanceData = {
+                            horaEscaneo: new Date().toLocaleTimeString("es-ES"),
+                            nombre: fullName,
+                        };
+
+                        asistenciaRef.set(attendanceData, (error) => {
+                            if (error) {
+                                console.error("Error al registrar asistencia:", error);
+                                error.style.display = "block";
+                            } else {
+                                console.log("Asistencia registrada correctamente");
+                                notification.style.display = "block";
+                            }
+                        });
+                    }
+                });
             });
-
-// Generar el QR
-const qrContainer = document.getElementById("qr-container");
-qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
-
-// Crear un elemento canvas dentro del contenedor
-const canvas = document.createElement("canvas");
-qrContainer.appendChild(canvas);
-
-// Generar el QR en el canvas
-QRCode.toCanvas(canvas, qrContent, { width: 256 }, (error) => {
-  if (error) {
-    console.error("Error al generar el QR:", error);
-  } else {
-    console.log("QR generado exitosamente:", qrContent);
-  }
-});
-}
-});
-}
-});
-
-    mostrarHoraActual(); // Mostrar la hora actual al cargar la página
-  </script>
+        }
+    </script>
 </body>
 </html>
