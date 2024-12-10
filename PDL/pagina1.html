@@ -22,12 +22,6 @@
         padding: 15px;
         text-align: center;
         width: 100%; /* Asegura que el encabezado ocupe todo el ancho */
-        box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
-        position: fixed; /* Fija el encabezado para que esté siempre visible al hacer scroll */
-        top: 0;
-        left: 0;
-        z-index: 1000; /* Asegura que el encabezado esté por encima del contenido */
-        width: 100%; /* Asegura que el encabezado siempre ocupe todo el ancho disponible */
     }
 
     nav {
@@ -36,9 +30,7 @@
         display: flex;
         justify-content: space-around;
         flex-wrap: wrap;
-        width: 100%;
-        box-sizing: border-box; /* Asegura que el ancho no se vea afectado por el padding */
-        margin-top: 60px; /* Da espacio al encabezado fijo */
+        width: 100%; /* Asegura que el nav ocupe todo el ancho */
     }
 
     nav a {
@@ -50,7 +42,6 @@
 
     main {
         padding: 20px;
-        margin-top: 80px; /* Da espacio para el header fijo y la barra de navegación */
     }
 
     .welcome {
@@ -96,50 +87,21 @@
         display: block;
     }
 
-    /* Estilos responsivos */
+    /* Estilos responsivos para header y nav */
     @media (max-width: 768px) {
-        /* Ajustes para pantallas pequeñas */
-        body {
-            margin-top: 0; /* Remover margen superior */
-        }
-        
         header {
-            padding: 10px; /* Reducir padding en móviles */
-            font-size: 14px; /* Ajustar tamaño del texto del encabezado */
+            padding: 10px; /* Reducir el padding en móviles */
         }
 
         nav {
-            padding: 15px;
-            flex-direction: column;
-        }
-
-        .schedule-table {
-            font-size: 14px;
-        }
-
-        .schedule-table th, .schedule-table td {
-            padding: 6px;
-        }
-    }
-
-    /* Estilos para pantallas muy pequeñas */
-    @media (max-width: 480px) {
-        /* Ajustes para pantallas muy pequeñas */
-        header {
-            font-size: 12px; /* Ajustar tamaño de fuente aún más pequeño */
-            padding: 8px; /* Reducir padding */
+            flex-direction: column; /* Colocar los enlaces de navegación verticalmente */
+            justify-content: flex-start; /* Asegura que se alineen al principio */
+            width: 100%;
         }
 
         nav a {
-            font-size: 12px; /* Reducir el tamaño de la fuente de los enlaces */
-        }
-
-        .schedule-table {
-            font-size: 12px;
-        }
-
-        .schedule-table th, .schedule-table td {
-            padding: 5px;
+            margin: 10px 0; /* Separar los enlaces más en móviles */
+            text-align: center;
         }
     }
 </style>
