@@ -14,7 +14,6 @@
         background-color: #ffffff;
         margin: 0;
         padding: 0;
-        height: 100%; /* Asegura que el cuerpo ocupe toda la altura */
     }
 
     header {
@@ -43,9 +42,6 @@
 
     main {
         padding: 20px;
-        height: calc(100vh - 100px); /* Asegura que el contenido principal ocupe el resto de la pantalla */
-        overflow: hidden; /* Evita que el contenido se desborde */
-        box-sizing: border-box; /* Asegura que el padding no afecte el tamaño total */
     }
 
     .welcome {
@@ -56,9 +52,6 @@
     .schedule-table {
         width: 100%;
         border-collapse: collapse;
-        table-layout: fixed; /* Hace que las celdas no se expandan más allá del 100% del ancho */
-        max-width: 100%;
-        overflow-x: auto; /* Permite el scroll horizontal en pantallas pequeñas */
     }
 
     .schedule-table th, .schedule-table td {
@@ -66,8 +59,6 @@
         padding: 8px;
         text-align: center;
         position: relative;
-        word-wrap: break-word; /* Previene que el texto se desborde */
-        overflow: hidden; /* Evita que el texto se salga de la celda */
     }
 
     .schedule-table th {
@@ -109,7 +100,7 @@
         nav a {
             margin: 10px 0; /* Agrega margen entre los enlaces */
             width: 100%; /* Los enlaces toman el 100% de la anchura disponible */
-            text-align: center;
+            text-align: center; /* Asegura que el texto esté centrado */
         }
 
         main {
@@ -151,12 +142,6 @@
             height: 30px;
             font-size: 16px;
         }
-    }
-
-    /* Previene el espacio en blanco al hacer zoom out */
-    html, body {
-        height: 100%;
-        overflow-x: hidden;
     }
 </style>
 </head>
