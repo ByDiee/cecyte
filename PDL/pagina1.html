@@ -50,10 +50,15 @@
             border: 1px solid #cccccc;
             padding: 8px;
             text-align: center;
-            position: relative;
         }
         .schedule-table th {
             background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .schedule-table td {
+            position: relative;
         }
         .delete-btn {
             display: none;
@@ -78,13 +83,13 @@
         /* Estilos responsivos */
         @media (max-width: 768px) {
             .schedule-table {
-                font-size: 14px;
+                font-size: 12px;
+            }
+            .schedule-table th, .schedule-table td {
+                padding: 5px;
             }
             nav {
                 flex-direction: column;
-            }
-            nav a {
-                margin: 5px 0;
             }
         }
     </style>
