@@ -21,8 +21,13 @@
         color: white;
         padding: 15px;
         text-align: center;
-        width: 100%;
+        width: 100%; /* Asegura que el encabezado ocupe todo el ancho */
         box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+        position: fixed; /* Fija el encabezado para que esté siempre visible al hacer scroll */
+        top: 0;
+        left: 0;
+        z-index: 1000; /* Asegura que el encabezado esté por encima del contenido */
+        width: 100%; /* Asegura que el encabezado siempre ocupe todo el ancho disponible */
     }
 
     nav {
@@ -31,6 +36,9 @@
         display: flex;
         justify-content: space-around;
         flex-wrap: wrap;
+        width: 100%;
+        box-sizing: border-box; /* Asegura que el ancho no se vea afectado por el padding */
+        margin-top: 60px; /* Da espacio al encabezado fijo */
     }
 
     nav a {
@@ -42,6 +50,7 @@
 
     main {
         padding: 20px;
+        margin-top: 80px; /* Da espacio para el header fijo y la barra de navegación */
     }
 
     .welcome {
@@ -89,48 +98,49 @@
 
     /* Estilos responsivos */
     @media (max-width: 768px) {
-        /* Ajustamos el padding del header para que ocupe toda la parte superior */
+        /* Ajustes para pantallas pequeñas */
+        body {
+            margin-top: 0; /* Remover margen superior */
+        }
+        
         header {
-            padding: 10px; /* Reducir el padding en pantallas pequeñas */
+            padding: 10px; /* Reducir padding en móviles */
+            font-size: 14px; /* Ajustar tamaño del texto del encabezado */
         }
 
         nav {
+            padding: 15px;
             flex-direction: column;
         }
 
-        nav a {
-            margin: 5px 0;
-        }
-
-        /* Responsividad de la tabla */
         .schedule-table {
             font-size: 14px;
         }
+
+        .schedule-table th, .schedule-table td {
+            padding: 6px;
+        }
     }
 
-    /* Media query adicional para pantallas más pequeñas */
+    /* Estilos para pantallas muy pequeñas */
     @media (max-width: 480px) {
-        /* Hacer que la tabla sea más pequeña en dispositivos más pequeños */
+        /* Ajustes para pantallas muy pequeñas */
+        header {
+            font-size: 12px; /* Ajustar tamaño de fuente aún más pequeño */
+            padding: 8px; /* Reducir padding */
+        }
+
+        nav a {
+            font-size: 12px; /* Reducir el tamaño de la fuente de los enlaces */
+        }
+
         .schedule-table {
             font-size: 12px;
         }
 
-        header {
-            padding: 8px; /* Reducir padding del encabezado en dispositivos muy pequeños */
+        .schedule-table th, .schedule-table td {
+            padding: 5px;
         }
-    }
-
-    /* Asegurar que el encabezado siempre esté fijo en la parte superior */
-    header, nav {
-        position: fixed;
-        width: 100%;
-        top: 0;
-        left: 0;
-        z-index: 1000;
-    }
-
-    main {
-        padding-top: 70px; /* Añadir un espacio para que el contenido no quede tapado por el header */
     }
 </style>
 </head>
