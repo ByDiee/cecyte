@@ -141,7 +141,7 @@
             });
 
             function fetchSchedule(userId) {
-                const scheduleRef = database.ref(users/${userId}/horario);
+                const scheduleRef = database.ref(`users/${userId}/horario`);
                 scheduleRef.once('value').then(snapshot => {
                     const schedule = snapshot.val();
                     const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
@@ -153,7 +153,7 @@
                     for (const time of times) {
                         const row = document.createElement('tr');
                         const timeCell = document.createElement('th');
-                        timeCell.textContent = ${time.substring(0, 2)}:${time.substring(2)};
+                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
                         row.appendChild(timeCell);
 
                         for (const day of days) {
@@ -171,7 +171,7 @@
                                     deleteBtn.textContent = 'X';
                                     deleteBtn.classList.add('delete-btn');
                                     deleteBtn.addEventListener('click', () => {
-                                        if (confirm(¿Estás seguro de eliminar "${subject}" del horario?)) {
+                                        if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
                                             deleteAllInstancesOfSubject(userId, subject);
                                         }
                                     });
@@ -188,7 +188,7 @@
             }
 
             function deleteAllInstancesOfSubject(userId, subjectToDelete) {
-                const scheduleRef = database.ref(users/${userId}/horario);
+                const scheduleRef = database.ref(`users/${userId}/horario`);
                 scheduleRef.once('value').then(snapshot => {
                     const schedule = snapshot.val();
                     const updates = {};
