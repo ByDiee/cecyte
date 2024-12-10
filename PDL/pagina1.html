@@ -41,23 +41,16 @@
             text-align: center;
             margin-bottom: 20px;
         }
-
-        /* Contenedor para tabla desplazable */
-        .table-wrapper {
-            overflow-x: auto; /* Habilita desplazamiento horizontal */
-        }
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
-            min-width: 600px; /* Ancho mínimo para evitar compresión excesiva */
         }
         .schedule-table th, .schedule-table td {
             border: 1px solid #cccccc;
             padding: 8px;
             text-align: center;
             position: relative;
-            word-wrap: break-word; /* Ajusta contenido largo */
         }
         .schedule-table th {
             background-color: #f2f2f2;
@@ -84,28 +77,14 @@
 
         /* Estilos responsivos */
         @media (max-width: 768px) {
-            .schedule-table, thead, tbody, th, td, tr {
-                display: block; /* Convierte la tabla en lista */
+            .schedule-table {
+                font-size: 14px;
             }
-            thead tr {
-                position: absolute;
-                top: -9999px;
-                left: -9999px; /* Oculta encabezados */
+            nav {
+                flex-direction: column;
             }
-            tr {
-                margin-bottom: 15px;
-            }
-            td {
-                text-align: right;
-                padding-left: 50%;
-                position: relative;
-            }
-            td::before {
-                content: attr(data-label); /* Etiquetas dinámicas */
-                position: absolute;
-                left: 10px;
-                font-weight: bold;
-                text-align: left;
+            nav a {
+                margin: 5px 0;
             }
         }
     </style>
@@ -162,7 +141,7 @@
             });
 
             function fetchSchedule(userId) {
-                const scheduleRef = database.ref(`users/${userId}/horario`);
+                const scheduleRef = database.ref(users/${userId}/horario);
                 scheduleRef.once('value').then(snapshot => {
                     const schedule = snapshot.val();
                     const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
@@ -174,7 +153,7 @@
                     for (const time of times) {
                         const row = document.createElement('tr');
                         const timeCell = document.createElement('th');
-                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                        timeCell.textContent = ${time.substring(0, 2)}:${time.substring(2)};
                         row.appendChild(timeCell);
 
                         for (const day of days) {
@@ -192,7 +171,7 @@
                                     deleteBtn.textContent = 'X';
                                     deleteBtn.classList.add('delete-btn');
                                     deleteBtn.addEventListener('click', () => {
-                                        if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
+                                        if (confirm(¿Estás seguro de eliminar "${subject}" del horario?)) {
                                             deleteAllInstancesOfSubject(userId, subject);
                                         }
                                     });
@@ -209,7 +188,7 @@
             }
 
             function deleteAllInstancesOfSubject(userId, subjectToDelete) {
-                const scheduleRef = database.ref(`users/${userId}/horario`);
+                const scheduleRef = database.ref(users/${userId}/horario);
                 scheduleRef.once('value').then(snapshot => {
                     const schedule = snapshot.val();
                     const updates = {};
