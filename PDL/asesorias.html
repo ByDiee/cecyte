@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Asesorías</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .schedule-table th, .schedule-table td {
+            border: 1px solid #cccccc;
+            padding: 10px;
+            text-align: center;
+        }
+        .schedule-table th {
+            background-color: #f2f2f2;
+        }
+        .occupied {
+            background-color: #ff4d4d; /* Espacios ocupados en rojo */
+            pointer-events: none;
+        }
+        .selected {
+            background-color: #28a745; /* Selección en verde */
+            color: white;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff851b;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Gestión de Asesorías</h1>
+    </header>
+    <main>
+        <table class="schedule-table" id="scheduleTable">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Lunes</th>
+                    <th>Martes</th>
+                    <th>Miércoles</th>
+                    <th>Jueves</th>
+                    <th>Viernes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Contenido generado dinámicamente -->
+            </tbody>
+        </table>
+        <button id="confirmButton">Confirmar</button>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const database = firebase.database();
+            const userId = "profesor_id"; // Cambiar dinámicamente según el usuario logueado
+            const scheduleTableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+            const selectedCells = new Set(); // Para almacenar las celdas seleccionadas
+
+            const times = ["0700", "0745", "0830", "0915", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
+            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+
+            // Poblar la tabla
+            function fetchSchedule() {
+                const scheduleRef = database.ref(`users/${userId}/horario`);
+                scheduleRef.once('value').then(snapshot => {
+                    const schedule = snapshot.val();
+                    scheduleTableBody.innerHTML = '';
+
+                    times.forEach(time => {
+                        const row = document.createElement('tr');
+                        const timeCell = document.createElement('th');
+                        timeCell.textContent = `${time.substring(0, 2)}:${time.substring(2)}`;
+                        row.appendChild(timeCell);
+
+                        days.forEach(day => {
+                            const cell = document.createElement('td');
+                            const isOccupied = schedule && schedule[day] && schedule[day][time];
+
+                            if (isOccupied) {
+                                cell.classList.add('occupied');
+                            } else {
+                                cell.addEventListener('click', () => toggleSelection(cell, day, time));
+                            }
+
+                            row.appendChild(cell);
+                        });
+
+                        scheduleTableBody.appendChild(row);
+                    });
+                });
+            }
+
+            // Alternar selección de celda
+            function toggleSelection(cell, day, time) {
+                const cellId = `${day}_${time}`;
+                if (selectedCells.has(cellId)) {
+                    selectedCells.delete(cellId);
+                    cell.classList.remove('selected');
+                } else {
+                    selectedCells.add(cellId);
+                    cell.classList.add('selected');
+                }
+            }
+
+            // Confirmar selección
+            document.getElementById('confirmButton').addEventListener('click', () => {
+                if (selectedCells.size === 0) {
+                    alert('Por favor selecciona al menos una celda.');
+                    return;
+                }
+
+                const updates = {};
+                selectedCells.forEach(cellId => {
+                    const [day, time] = cellId.split('_');
+                    updates[`${day}/${time}`] = "Asesorías";
+                });
+
+                database.ref(`users/${userId}/horario`).update(updates).then(() => {
+                    alert('Asesorías guardadas correctamente.');
+                    fetchSchedule(); // Actualizar tabla
+                }).catch(error => {
+                    console.error('Error al guardar asesorías:', error);
+                });
+            });
+
+            fetchSchedule();
+        });
+    </script>
+</body>
+</html>
