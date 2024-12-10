@@ -8,12 +8,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
 <style>
     body {
         font-family: Arial, sans-serif;
         background-color: #ffffff;
         margin: 0;
         padding: 0;
+        overflow-x: auto; /* Permite el scroll horizontal */
     }
 
     header {
@@ -21,8 +23,8 @@
         color: white;
         padding: 15px;
         text-align: center;
-        width: 100%; /* Asegura que el encabezado ocupe todo el ancho */
-        box-sizing: border-box;
+        width: 100%;
+        box-sizing: border-box; /* Asegura que el padding no afecte el ancho */
     }
 
     nav {
@@ -31,8 +33,8 @@
         display: flex;
         justify-content: space-around;
         flex-wrap: wrap;
-        width: 100%; /* Asegura que el nav ocupe todo el ancho */
-        box-sizing: border-box;
+        width: 100%;
+        box-sizing: border-box; /* Asegura que el padding no afecte el ancho */
     }
 
     nav a {
@@ -44,6 +46,8 @@
 
     main {
         padding: 20px;
+        overflow-x: auto; /* Permite el scroll horizontal en el contenedor principal si es necesario */
+        width: 100%;
     }
 
     .welcome {
@@ -55,6 +59,8 @@
         width: 100%;
         border-collapse: collapse;
         margin-bottom: 20px;
+        table-layout: fixed; /* Asegura que las celdas de la tabla no se expandan más allá del contenedor */
+        word-wrap: break-word; /* Permite el ajuste de texto largo */
     }
 
     .schedule-table th, .schedule-table td {
@@ -92,20 +98,32 @@
     /* Estilos responsivos para header y nav */
     @media (max-width: 768px) {
         header {
-            padding: 10px; /* Reducir el padding en móviles */
+            padding: 10px; /* Reduce el padding en móviles */
         }
 
         nav {
-            flex-direction: column; /* Colocar los enlaces de navegación verticalmente */
-            justify-content: flex-start; /* Asegura que se alineen al principio */
+            flex-direction: column;
+            justify-content: flex-start;
             width: 100%;
         }
 
         nav a {
-            margin: 10px 0; /* Separar los enlaces más en móviles */
+            margin: 10px 0; /* Más espacio entre los enlaces */
             text-align: center;
         }
     }
+
+    /* Responsividad para la tabla: cuando el ancho es pequeño */
+    @media (max-width: 768px) {
+        .schedule-table {
+            font-size: 14px;
+        }
+
+        body {
+            overflow-x: auto; /* Asegura que se pueda hacer scroll horizontal */
+        }
+    }
+
 </style>
 </head>
 <body>
