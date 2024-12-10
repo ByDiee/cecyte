@@ -68,63 +68,64 @@
             }
         }
 
-        function processQRData(qrData) {
-            const qrParts = JSON.parse(qrData); // Se espera que el QR sea un JSON con los datos
-            const { fecha, dia, hora, materia, grado, grupo } = qrParts;
+function processQRData(qrData) {
+    const qrParts = JSON.parse(qrData); // Se espera que el QR sea un JSON con los datos
+    const { fecha, dia, hora, materia, semestre, grupo } = qrParts;
 
-            // Obtener datos del usuario autenticado
-            const userId = firebase.auth().currentUser.uid;
-            firebase.database().ref("users/" + userId).once("value", snapshot => {
-                const userData = snapshot.val();
-                const userGrado = userData.grado; // Obtiene el grado del usuario
-                const userGrupo = userData.grupo; // Obtiene el grupo del usuario
-                const fullName = `${userData.firstName} ${userData.lastNameP} ${userData.lastNameM}`;
+    // Obtener datos del usuario autenticado
+    const userId = firebase.auth().currentUser.uid;
+    firebase.database().ref("users/" + userId).once("value", snapshot => {
+        const userData = snapshot.val();
+        const userSemestre = userData.Semestre; // Obtiene el semestre del usuario
+        const userGrupo = userData.Grupo; // Obtiene el grupo del usuario
+        const fullName = `${userData.firstName} ${userData.lastNameP} ${userData.lastNameM}`;
 
-                // Log de los datos para depuración
-                console.log(`Grado del usuario: ${userGrado}, Grupo del usuario: ${userGrupo}`);
-                console.log(`Grado del QR: ${grado}, Grupo del QR: ${grupo}`);
+        // Log de depuración para ver qué semestre y grupo está detectando el usuario
+        console.log("Semestre del usuario:", userSemestre);
+        console.log("Grupo del usuario:", userGrupo);
+        console.log("Datos del QR: Semestre -", semestre, "Grupo -", grupo);
 
-                // Verificar si el usuario pertenece al mismo grado y grupo
-                if (userGrado !== grado || userGrupo !== grupo) {
-                    notBelong.style.display = "block"; // Muestra mensaje de error
-                    console.log("¡No perteneces a este grado y grupo!");
-                    return; // No continuar con el proceso si no coincide
-                }
+        // Verificar si el usuario pertenece al mismo semestre y grupo
+        if (userSemestre !== semestre || userGrupo !== grupo) {
+            notBelong.style.display = "block"; // Muestra mensaje de error
+            console.log("¡El usuario no pertenece al grupo o semestre indicado en el QR!");
+            return; // No continuar con el proceso si no coincide
+        }
 
-                // Verificar si el QR tiene fecha de caducidad
-                if (qrParts.caducidad) {
-                    const currentTimestamp = Date.now();
-                    if (currentTimestamp > qrParts.caducidad) {
-                        expired.style.display = "block";
-                        return; // No registrar asistencia si el QR ha caducado
-                    }
-                }
+        // Verificar si el QR tiene fecha de caducidad
+        if (qrParts.caducidad) {
+            const currentTimestamp = Date.now();
+            if (currentTimestamp > qrParts.caducidad) {
+                expired.style.display = "block";
+                return; // No registrar asistencia si el QR ha caducado
+            }
+        }
 
-                // Verificar si ya se registró la asistencia
-                const asistenciaRef = firebase.database().ref(`asistencias/${fecha}/${dia}/${hora}/${materia}/${userId}`);
-                asistenciaRef.once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        alreadyRegistered.style.display = "block";
+        // Verificar si ya se registró la asistencia
+        const asistenciaRef = firebase.database().ref(`asistencias/${fecha}/${dia}/${hora}/${materia}/${userId}`);
+        asistenciaRef.once("value", snapshot => {
+            if (snapshot.exists()) {
+                alreadyRegistered.style.display = "block";
+            } else {
+                // Registrar asistencia
+                const attendanceData = {
+                    horaEscaneo: new Date().toLocaleTimeString("es-ES"),
+                    nombre: fullName,
+                };
+
+                asistenciaRef.set(attendanceData, (error) => {
+                    if (error) {
+                        console.error("Error al registrar asistencia:", error);
+                        error.style.display = "block";
                     } else {
-                        // Registrar asistencia
-                        const attendanceData = {
-                            horaEscaneo: new Date().toLocaleTimeString("es-ES"),
-                            nombre: fullName,
-                        };
-
-                        asistenciaRef.set(attendanceData, (error) => {
-                            if (error) {
-                                console.error("Error al registrar asistencia:", error);
-                                error.style.display = "block";
-                            } else {
-                                console.log("Asistencia registrada correctamente");
-                                notification.style.display = "block";
-                            }
-                        });
+                        console.log("Asistencia registrada correctamente");
+                        notification.style.display = "block";
                     }
                 });
-            });
-        }
+            }
+        });
+    });
+}
     </script>
 </body>
 </html>
