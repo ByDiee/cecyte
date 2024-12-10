@@ -9,32 +9,35 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
 <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box; /* Asegurar que los bordes y padding no afecten el tamaño */
+    }
+
     body {
         font-family: Arial, sans-serif;
         background-color: #ffffff;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box; /* Asegurar que el padding no altere el tamaño de los elementos */
+        overflow-x: hidden; /* Eliminar desplazamiento horizontal */
     }
 
-    /* Encabezado */
     header {
         background-color: #28a745;
         color: white;
         padding: 15px;
         text-align: center;
-        width: 100%; /* Asegurar que ocupe todo el ancho */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Agregar un ligero sombreado */
+        width: 100%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Agregar un sombreado sutil */
     }
 
-    /* Navegación */
     nav {
         background-color: #ff851b;
         padding: 10px;
         display: flex;
         justify-content: space-around;
-        flex-wrap: wrap; /* Adaptar a múltiples líneas si es necesario */
-        width: 100%; /* Ocupa todo el ancho */
+        flex-wrap: wrap; /* Permite que los elementos se ajusten si es necesario */
+        width: 100%;
+        box-sizing: border-box; /* Asegurar que no haya desplazamientos */
     }
 
     nav a {
@@ -45,16 +48,22 @@
         text-align: center;
     }
 
-    /* Contenido principal */
     main {
         padding: 20px;
         margin: 0 auto;
-        max-width: 1200px; /* Limitar el ancho máximo en pantallas grandes */
+        width: 100%;
+        max-width: 100%; /* El contenedor ocupará todo el ancho disponible */
     }
 
-    /* Tabla */
+    .welcome {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Ajustes para la tabla */
     .schedule-table {
         width: 100%;
+        table-layout: fixed; /* Fija el tamaño de las celdas para evitar que se expandan */
         border-collapse: collapse;
         margin-top: 20px;
     }
@@ -115,6 +124,14 @@
         .schedule-table th, .schedule-table td {
             padding: 5px;
             font-size: 12px; /* Reducir tamaño de fuente */
+        }
+    }
+
+    /* Asegurar que la tabla no cause desplazamiento horizontal */
+    @media (max-width: 600px) {
+        .schedule-table {
+            width: 100%;
+            overflow-x: auto; /* Permite el desplazamiento horizontal en pantallas muy pequeñas */
         }
     }
 </style>
