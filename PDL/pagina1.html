@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
-<style>
+    <style>
     body {
         font-family: Arial, sans-serif;
         background-color: #ffffff;
@@ -28,7 +28,7 @@
         padding: 10px;
         display: flex;
         justify-content: space-around;
-        flex-wrap: wrap; /* Permite que los elementos se ajusten en móviles */
+        flex-wrap: wrap;
     }
 
     nav a {
@@ -36,7 +36,7 @@
         text-decoration: none;
         font-weight: bold;
         margin: 5px;
-        flex: 1 1 auto; /* Hace que los enlaces se adapten al espacio disponible */
+        flex: 1 1 auto;
         text-align: center;
     }
 
@@ -86,21 +86,19 @@
         display: block;
     }
 
-    /* Media Queries para ajustar el diseño en dispositivos móviles */
     @media screen and (max-width: 768px) {
         header {
             padding: 10px;
         }
 
         nav {
-            flex-direction: column; /* Los enlaces se apilan en columnas */
-            align-items: center; /* Centra los elementos */
+            flex-direction: column;
+            align-items: center;
         }
 
         nav a {
-            margin: 10px 0; /* Agrega margen entre los enlaces */
-            width: 100%; /* Los enlaces toman el 100% de la anchura disponible */
-            text-align: center; /* Asegura que el texto esté centrado */
+            margin: 10px 0;
+            width: 100%;
         }
 
         main {
@@ -108,21 +106,20 @@
         }
 
         .schedule-table th, .schedule-table td {
-            font-size: 14px; /* Ajusta el tamaño de la fuente en pantallas más pequeñas */
+            font-size: 14px;
         }
 
         .delete-btn {
             width: 25px;
             height: 25px;
-            font-size: 14px; /* Aumenta el tamaño del botón de eliminación para facilitar su uso en dispositivos móviles */
+            font-size: 14px;
         }
     }
 
-    /* Media Queries para pantallas más pequeñas (móviles muy pequeños) */
     @media screen and (max-width: 480px) {
         header {
             padding: 8px;
-            font-size: 14px; /* Reduce el tamaño de la fuente */
+            font-size: 14px;
         }
 
         nav {
@@ -130,11 +127,11 @@
         }
 
         nav a {
-            font-size: 14px; /* Reduce el tamaño de los enlaces */
+            font-size: 14px;
         }
 
         .schedule-table th, .schedule-table td {
-            font-size: 12px; /* Reduce el tamaño de la fuente en la tabla */
+            font-size: 12px;
         }
 
         .delete-btn {
@@ -143,7 +140,7 @@
             font-size: 16px;
         }
     }
-</style>
+    </style>
 </head>
 <body>
     <header>
@@ -161,7 +158,7 @@
             <h2>Bienvenido a tu Dashboard</h2>
             <p>Gestiona tus clases y asistencias de manera eficiente.</p>
         </div>
-        
+
         <!-- Tabla de Horario -->
         <div class="schedule">
             <h3>Tu Horario</h3>
@@ -205,7 +202,7 @@
                     scheduleTableBody.innerHTML = '';
 
                     const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+                    const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
                     for (const time of times) {
                         const row = document.createElement('tr');
@@ -222,17 +219,22 @@
                             } else {
                                 const subject = schedule && schedule[day] && schedule[day][time];
                                 if (subject) {
-                                    cell.textContent = subject;
+                                    // Aquí obtenemos el grado y grupo basado en la materia
+                                    getSubjectDetails(userId, day, time, subject).then(({ grado, grupo }) => {
+                                        cell.innerHTML = `${subject} <br> Grado: ${grado} <br> Grupo: ${grupo}`;
 
-                                    const deleteBtn = document.createElement('button');
-                                    deleteBtn.textContent = 'X';
-                                    deleteBtn.classList.add('delete-btn');
-                                    deleteBtn.addEventListener('click', () => {
-                                        if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
-                                            deleteAllInstancesOfSubject(userId, subject);
-                                        }
+                                        const deleteBtn = document.createElement('button');
+                                        deleteBtn.textContent = 'X';
+                                        deleteBtn.classList.add('delete-btn');
+                                        deleteBtn.addEventListener('click', () => {
+                                            if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
+                                                deleteAllInstancesOfSubject(userId, subject);
+                                            }
+                                        });
+                                        cell.appendChild(deleteBtn);
+                                    }).catch(err => {
+                                        console.error('Error al obtener los detalles de la materia:', err);
                                     });
-                                    cell.appendChild(deleteBtn);
                                 }
                             }
                             row.appendChild(cell);
@@ -241,6 +243,30 @@
                     }
                 }).catch(error => {
                     console.error('Error al obtener el horario:', error);
+                });
+            }
+
+            function getSubjectDetails(userId, day, time, subject) {
+                return new Promise((resolve, reject) => {
+                    const subjectsRef = database.ref(`materias`);
+                    subjectsRef.orderByChild('materia').equalTo(subject).once('value').then(snapshot => {
+                        const subjects = snapshot.val();
+                        if (subjects) {
+                            for (const key in subjects) {
+                                const subjectData = subjects[key];
+                                if (subjectData.horarios && subjectData.horarios[day] && subjectData.horarios[day].includes(time)) {
+                                    resolve({
+                                        grado: subjectData.grado || "Desconocido",
+                                        grupo: subjectData.grupo || "Desconocido"
+                                    });
+                                    return;
+                                }
+                            }
+                        }
+                        reject('Materia no encontrada en el horario.');
+                    }).catch(error => {
+                        reject(error);
+                    });
                 });
             }
 
