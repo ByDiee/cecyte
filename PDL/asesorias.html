@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="auth.js"></script>
     <title>Gestión de Asesorías</title>
     <style>
         body {
@@ -81,10 +85,7 @@
         <button id="confirm-button" disabled>Confirmar Asesorías</button>
     </main>
 
-    <script type="module">
-        import { database, auth } from './auth.js';
-        import { ref, get, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-
+    <script>
         const tableBody = document.querySelector('#schedule-table tbody');
         const confirmButton = document.getElementById('confirm-button');
         let selectedCells = [];
@@ -134,8 +135,8 @@
         function loadOccupiedSchedule() {
             auth.onAuthStateChanged(user => {
                 if (user) {
-                    const scheduleRef = ref(database, `users/${user.uid}/horario`);
-                    get(scheduleRef).then(snapshot => {
+                    const scheduleRef = database.ref(`users/${user.uid}/horario`);
+                    scheduleRef.once('value').then(snapshot => {
                         if (snapshot.exists()) {
                             const schedule = snapshot.val();
 
@@ -164,8 +165,8 @@
                         updates[`${day}/${hour}`] = 'Asesorías';
                     });
 
-                    const scheduleRef = ref(database, `users/${user.uid}/horario`);
-                    update(scheduleRef, updates)
+                    const scheduleRef = database.ref(`users/${user.uid}/horario`);
+                    scheduleRef.update(updates)
                         .then(() => {
                             alert('Asesorías guardadas correctamente');
                             location.reload();
