@@ -90,13 +90,13 @@
         const confirmButton = document.getElementById('confirm-button');
         let selectedCells = [];
 
+        // Generar horarios dinámicamente (rangos de tiempo)
         const hours = [
             '07:00', '07:45', '08:30', '09:15', '10:30',
             '11:15', '12:00', '12:45', '13:30', '14:15'
         ];
         const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 
-        // Generar tabla
         function createTable() {
             hours.forEach(hour => {
                 const row = document.createElement('tr');
@@ -111,19 +111,17 @@
 
                     // Selección de celdas
                     cell.addEventListener('click', () => {
-                        if (!cell.classList.contains('occupied')) {
-                            if (cell.classList.contains('selected')) {
-                                cell.classList.remove('selected');
-                                selectedCells = selectedCells.filter(
-                                    selected => !(selected.day === day && selected.hour === hour)
-                                );
-                            } else {
-                                cell.classList.add('selected');
-                                selectedCells.push({ day, hour });
-                            }
-
-                            confirmButton.disabled = selectedCells.length === 0;
+                        if (cell.classList.contains('selected')) {
+                            cell.classList.remove('selected');
+                            selectedCells = selectedCells.filter(
+                                selected => !(selected.day === day && selected.hour === hour)
+                            );
+                        } else {
+                            cell.classList.add('selected');
+                            selectedCells.push({ day, hour });
                         }
+
+                        confirmButton.disabled = selectedCells.length === 0;
                     });
 
                     row.appendChild(cell);
@@ -133,7 +131,7 @@
             });
         }
 
-        // Cargar clases ocupadas desde Firebase
+        // Cargar horarios ocupados desde Firebase
         function loadOccupiedSchedule() {
             auth.onAuthStateChanged(user => {
                 if (user) {
@@ -142,14 +140,17 @@
                         if (snapshot.exists()) {
                             const schedule = snapshot.val();
 
-                            // Recorrer horarios ocupados y marcarlos
                             for (const day in schedule) {
                                 for (const hour in schedule[day]) {
-                                    if (schedule[day][hour]) {
+                                    const className = schedule[day][hour];
+                                    if (className) { // Si hay una materia registrada en este horario
                                         const cell = document.querySelector(
                                             `td[data-day="${day}"][data-hour="${hour}"]`
                                         );
-                                        if (cell) cell.classList.add('occupied');
+                                        if (cell) {
+                                            cell.classList.add('occupied');
+                                            cell.textContent = "Ocupado"; // Opcional, muestra "Ocupado" en la celda
+                                        }
                                     }
                                 }
                             }
@@ -159,7 +160,7 @@
             });
         }
 
-        // Guardar asesorías seleccionadas en Firebase
+        // Guardar asesorías en Firebase
         confirmButton.addEventListener('click', () => {
             auth.onAuthStateChanged(user => {
                 if (user) {
