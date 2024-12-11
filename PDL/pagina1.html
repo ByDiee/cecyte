@@ -9,140 +9,140 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="auth.js"></script>
     <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #ffffff;
-        margin: 0;
-        padding: 0;
-    }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
 
-    header {
-        background-color: #28a745;
-        color: white;
-        padding: 15px;
-        text-align: center;
-    }
-
-    nav {
-        background-color: #ff851b;
-        padding: 10px;
-        display: flex;
-        justify-content: space-around;
-        flex-wrap: wrap; /* Permite que los elementos se ajusten en móviles */
-    }
-
-    nav a {
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        margin: 5px;
-        flex: 1 1 auto; /* Hace que los enlaces se adapten al espacio disponible */
-        text-align: center;
-    }
-
-    main {
-        padding: 20px;
-    }
-
-    .welcome {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .schedule-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .schedule-table th, .schedule-table td {
-        border: 1px solid #cccccc;
-        padding: 8px;
-        text-align: center;
-        position: relative;
-    }
-
-    .schedule-table th {
-        background-color: #f2f2f2;
-    }
-
-    .delete-btn {
-        display: none;
-        position: absolute;
-        right: 5px;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: #ff4d4d;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        text-align: center;
-        line-height: 20px;
-        cursor: pointer;
-    }
-
-    .schedule-table td:hover .delete-btn {
-        display: block;
-    }
-
-    /* Media Queries para ajustar el diseño en dispositivos móviles */
-    @media screen and (max-width: 768px) {
         header {
-            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
         }
 
         nav {
-            flex-direction: column; /* Los enlaces se apilan en columnas */
-            align-items: center; /* Centra los elementos */
+            background-color: #ff851b;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap; /* Permite que los elementos se ajusten en móviles */
         }
 
         nav a {
-            margin: 10px 0; /* Agrega margen entre los enlaces */
-            width: 100%; /* Los enlaces toman el 100% de la anchura disponible */
-            text-align: center; /* Asegura que el texto esté centrado */
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 5px;
+            flex: 1 1 auto; /* Hace que los enlaces se adapten al espacio disponible */
+            text-align: center;
         }
 
         main {
-            padding: 10px;
+            padding: 20px;
+        }
+
+        .welcome {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
         .schedule-table th, .schedule-table td {
-            font-size: 14px; /* Ajusta el tamaño de la fuente en pantallas más pequeñas */
-        }
-
-        .delete-btn {
-            width: 25px;
-            height: 25px;
-            font-size: 14px; /* Aumenta el tamaño del botón de eliminación para facilitar su uso en dispositivos móviles */
-        }
-    }
-
-    /* Media Queries para pantallas más pequeñas (móviles muy pequeños) */
-    @media screen and (max-width: 480px) {
-        header {
+            border: 1px solid #cccccc;
             padding: 8px;
-            font-size: 14px; /* Reduce el tamaño de la fuente */
+            text-align: center;
+            position: relative;
         }
 
-        nav {
-            flex-direction: column;
-        }
-
-        nav a {
-            font-size: 14px; /* Reduce el tamaño de los enlaces */
-        }
-
-        .schedule-table th, .schedule-table td {
-            font-size: 12px; /* Reduce el tamaño de la fuente en la tabla */
+        .schedule-table th {
+            background-color: #f2f2f2;
         }
 
         .delete-btn {
-            width: 30px;
-            height: 30px;
-            font-size: 16px;
+            display: none;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
         }
-    }
+
+        .schedule-table td:hover .delete-btn {
+            display: block;
+        }
+
+        /* Media Queries para ajustar el diseño en dispositivos móviles */
+        @media screen and (max-width: 768px) {
+            header {
+                padding: 10px;
+            }
+
+            nav {
+                flex-direction: column; /* Los enlaces se apilan en columnas */
+                align-items: center; /* Centra los elementos */
+            }
+
+            nav a {
+                margin: 10px 0; /* Agrega margen entre los enlaces */
+                width: 100%; /* Los enlaces toman el 100% de la anchura disponible */
+                text-align: center; /* Asegura que el texto esté centrado */
+            }
+
+            main {
+                padding: 10px;
+            }
+
+            .schedule-table th, .schedule-table td {
+                font-size: 14px; /* Ajusta el tamaño de la fuente en pantallas más pequeñas */
+            }
+
+            .delete-btn {
+                width: 25px;
+                height: 25px;
+                font-size: 14px; /* Aumenta el tamaño del botón de eliminación para facilitar su uso en dispositivos móviles */
+            }
+        }
+
+        /* Media Queries para pantallas más pequeñas (móviles muy pequeños) */
+        @media screen and (max-width: 480px) {
+            header {
+                padding: 8px;
+                font-size: 14px; /* Reduce el tamaño de la fuente */
+            }
+
+            nav {
+                flex-direction: column;
+            }
+
+            nav a {
+                font-size: 14px; /* Reduce el tamaño de los enlaces */
+            }
+
+            .schedule-table th, .schedule-table td {
+                font-size: 12px; /* Reduce el tamaño de la fuente en la tabla */
+            }
+
+            .delete-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -154,7 +154,6 @@
         <a href="perfilmaestro.html">Editar Perfil</a>
         <a href="asistencias.html">Ver Asistencias</a>
         <a href="horario.html">Editar Horario</a>
-        <a href="asesorias.html">Agregar Asesorías</a>
     </nav>
     <main>
         <div class="welcome">
@@ -162,6 +161,7 @@
             <p>Gestiona tus clases y asistencias de manera eficiente.</p>
         </div>
         
+        <!-- Tabla de Horario -->
         <div class="schedule">
             <h3>Tu Horario</h3>
             <table class="schedule-table" id="scheduleTable">
@@ -204,7 +204,7 @@
                     scheduleTableBody.innerHTML = '';
 
                     const times = ["0700", "0745", "0830", "0915", "1000", "1030", "1115", "1200", "1245", "1330", "1415", "1500"];
-                    const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+                    const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
 
                     for (const time of times) {
                         const row = document.createElement('tr');
@@ -221,7 +221,6 @@
                             } else {
                                 const subject = schedule && schedule[day] && schedule[day][time];
                                 if (subject) {
-                                    const subjectWithGroup = subject;
                                     cell.textContent = subject;
 
                                     const deleteBtn = document.createElement('button');
@@ -229,7 +228,7 @@
                                     deleteBtn.classList.add('delete-btn');
                                     deleteBtn.addEventListener('click', () => {
                                         if (confirm(`¿Estás seguro de eliminar "${subject}" del horario?`)) {
-                                            deleteAllInstancesOfSubject(userId, subjectWithGroup);
+                                            deleteAllInstancesOfSubject(userId, subject);
                                         }
                                     });
                                     cell.appendChild(deleteBtn);
@@ -253,7 +252,7 @@
                     for (const day in schedule) {
                         updates[day] = {};
                         for (const time in schedule[day]) {
-                            if (schedule[day][time] === subjectToDelete && subjectToDelete !== 'Asesorías') {
+                            if (schedule[day][time] === subjectToDelete) {
                                 updates[day][time] = null;
                             } else {
                                 updates[day][time] = schedule[day][time];
