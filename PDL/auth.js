@@ -51,9 +51,11 @@ window.addEventListener("unload", () => {
 function getRequiredRole() {
     const currentPage = window.location.pathname;
     if (currentPage.includes("pagina1.html") || currentPage.includes("perfilmaestro.html") || 
-        currentPage.includes("qr.html") || currentPage.includes("horario.html")) {
+        currentPage.includes("qr.html") || currentPage.includes("horario.html") || currentPage.includes("asistencias.html")
+       || currentPage.includes("asesorias.html") || currentPage.includes("qr.html")) {
         return "admin";
-    } else if (currentPage.includes("pagina2.html") || currentPage.includes("perfilalu.html")) {
+    } else if (currentPage.includes("pagina2.html") || currentPage.includes("perfilalu.html")
+              || currentPage.includes("scan.html")) {
         return "student";
     } else {
         return null; // Páginas sin restricción de roles
