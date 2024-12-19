@@ -1,88 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            font-family: Arial, sans-serif;
-        }
-        .form-container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-            width: 300px;
-        }
-        .form-container h2 {
-            margin-bottom: 20px;
-            color: #fff;
-        }
-        .form-container input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: none;
-        }
-        .form-container button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: none;
-            background-color: #4caf50;
-            color: #fff;
-            cursor: pointer;
-        }
-        .form-container img {
-            width: 40px;
-            cursor: pointer;
-        }
-        .form-container p {
-            color: #fff;
-        }
-        .form-container .error-message {
-            color: #ff6b6b;
-            margin: 10px 0;
-            font-size: 14px;
-        }
-        .form-container .register-link {
-            margin-top: 15px;
-            color: #fff;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .form-container .register-link:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"></script>
 </head>
 <body>
-    <div class="form-container">
-        <h2>Login</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <p id="error-message" class="error-message"></p>
-        <button id="loginBtn">Login</button>
-        <p>O inicia sesión con:</p>
-        <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
-        <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
-    </div>
+    <h1>Iniciar Sesión</h1>
+    <form id="login-form">
+        <input type="email" id="email" placeholder="Correo electrónico" required>
+        <input type="password" id="password" placeholder="Contraseña" required>
+        <button type="submit">Iniciar Sesión</button>
+    </form>
+    <p>¿No tienes cuenta? <a href="registro.html">Regístrate aquí</a></p>
 
-        <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    
     <script>
-        // Firebase configuration
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
             authDomain: "pdlista-61c4d.firebaseapp.com",
@@ -94,122 +30,75 @@
             databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
         };
 
-        // Initialize Firebase
+        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // Clear all sessions and storage
-        auth.signOut().then(() => {
-            console.log('All Firebase sessions closed.');
-        }).catch((error) => {
-            console.error('Error signing out:', error);
+        // Verificar si el usuario está registrado al cargar la página
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                database.ref('users/' + userId).once('value').then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        // Si el usuario no existe, redirigir al registro
+                        window.location.href = 'registro.html';
+                    }
+                });
+            }
         });
 
-        localStorage.clear();
-        sessionStorage.clear();
-        console.log('Local storage and session storage cleared.');
-
-        // Login with Email and Password
-        document.getElementById('loginBtn').addEventListener('click', () => {
+        // Manejar el formulario de inicio de sesión
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('error-message');
-
-            errorMessage.textContent = ''; // Clear any previous error message
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
-                    const userId = user.uid;
+                    console.log('Inicio de sesión exitoso:', user);
 
-                    // Check if user exists in the database
+                    // Verificar el rol del usuario en la base de datos
+                    const userId = user.uid;
                     database.ref('users/' + userId).once('value').then((snapshot) => {
-                        if (!snapshot.exists()) {
-                            // Save basic user data if it doesn't exist
-                            database.ref('users/' + userId).set({
-                                email: user.email,
-                                role: 'student',
-                                firstName: '',
-                                lastNameP: '',
-                                lastNameM: '',
-                                Grupo: '',
-                                Semestre: '',
-                                enrollment: ''
-                            });
+                        if (snapshot.exists()) {
+                            const userData = snapshot.val();
+                            if (userData.rol === 'admin') {
+                                window.location.href = 'pagina1.html';
+                            } else {
+                                window.location.href = 'pagina2.html';
+                            }
+                        } else {
+                            // Si el usuario no tiene datos, redirigir al registro
+                            window.location.href = 'registro.html';
                         }
                     });
-
-                    // Redirect based on role
-                    database.ref('users/' + userId).once('value')
-                        .then((snapshot) => {
-                            const userData = snapshot.val();
-                            const role = userData.role;
-                            if (role === 'admin') {
-                                window.location.href = 'pagina1.html';
-                            } else if (role === 'student') {
-                                window.location.href = 'pagina2.html';
-                            } else {
-                                alert('Role not assigned yet');
-                            }
-                        });
                 })
                 .catch((error) => {
-                    // Show error messages
                     if (error.code === 'auth/wrong-password') {
-                        errorMessage.textContent = 'Contraseña incorrecta. Por favor, inténtalo de nuevo.';
+                        alert('Contraseña incorrecta. Por favor, inténtalo de nuevo.');
                     } else if (error.code === 'auth/user-not-found') {
-                        errorMessage.textContent = 'El usuario no existe. Regístrate primero.';
+                        alert('No existe una cuenta con este correo electrónico. Regístrate primero.');
                     } else if (error.code === 'auth/invalid-email') {
-                        errorMessage.textContent = 'Correo electrónico inválido.';
+                        alert('El formato del correo electrónico es inválido.');
                     } else {
-                        errorMessage.textContent = 'Error al iniciar sesión: ' + error.message;
+                        console.error('Error al iniciar sesión:', error.message);
+                        alert('Error al iniciar sesión: ' + error.message);
                     }
                 });
         });
 
-        // Login with Google
-        document.getElementById('googleSignInBtn').addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then((result) => {
-                    const user = result.user;
-
-                    // Check if user exists in the database
-                    database.ref('users/' + user.uid).once('value').then((snapshot) => {
-                        if (!snapshot.exists()) {
-                            // Save basic user data if it doesn't exist
-                            database.ref('users/' + user.uid).set({
-                                email: user.email,
-                                role: 'student',
-                                firstName: user.displayName ? user.displayName.split(' ')[0] : '',
-                                lastNameP: user.displayName ? user.displayName.split(' ')[1] : '',
-                                lastNameM: '',
-                                Grupo: '',
-                                Semestre: '',
-                                enrollment: ''
-                            });
-                        }
-                    });
-
-                    // Redirect based on role
-                    database.ref('users/' + user.uid).once('value')
-                        .then((snapshot) => {
-                            const userData = snapshot.val();
-                            const role = userData.role;
-                            if (role === 'admin') {
-                                window.location.href = 'pagina1.html';
-                            } else if (role === 'student') {
-                                window.location.href = 'pagina2.html';
-                            } else {
-                                alert('Role not assigned yet');
-                            }
-                        });
-                })
-                .catch((error) => {
-                    console.error('Google authentication error:', error.message);
-                });
+        // Cerrar sesiones previas y limpiar almacenamiento
+        auth.signOut().then(() => {
+            console.log('Sesión cerrada en Firebase.');
+        }).catch((error) => {
+            console.error('Error al cerrar sesión:', error);
         });
+
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('LocalStorage y SessionStorage limpios.');
     </script>
 </body>
 </html>
