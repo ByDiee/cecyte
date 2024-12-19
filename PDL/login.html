@@ -49,6 +49,11 @@
         .form-container p {
             color: #fff;
         }
+        .form-container .error-message {
+            color: #ff6b6b;
+            margin: 10px 0;
+            font-size: 14px;
+        }
         .form-container .register-link {
             margin-top: 15px;
             color: #fff;
@@ -65,16 +70,12 @@
         <h2>Login</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
+        <p id="error-message" class="error-message"></p>
         <button id="loginBtn">Login</button>
         <p>O inicia sesión con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
         <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
     </div>
-
-    <!-- Firebase scripts -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
         // Firebase configuration
@@ -109,6 +110,9 @@
         document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            errorMessage.textContent = ''; // Clear any previous error message
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
@@ -147,7 +151,16 @@
                         });
                 })
                 .catch((error) => {
-                    console.error('Login error:', error.message);
+                    // Show error messages
+                    if (error.code === 'auth/wrong-password') {
+                        errorMessage.textContent = 'Contraseña incorrecta. Por favor, inténtalo de nuevo.';
+                    } else if (error.code === 'auth/user-not-found') {
+                        errorMessage.textContent = 'El usuario no existe. Regístrate primero.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage.textContent = 'Correo electrónico inválido.';
+                    } else {
+                        errorMessage.textContent = 'Error al iniciar sesión: ' + error.message;
+                    }
                 });
         });
 
