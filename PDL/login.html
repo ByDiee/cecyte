@@ -8,6 +8,66 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"></script>
 </head>
+        <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            font-family: Arial, sans-serif;
+        }
+        .form-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+        .form-container h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+        }
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            background-color: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+        .form-container img {
+            width: 40px;
+            cursor: pointer;
+        }
+        .form-container p {
+            color: #fff;
+        }
+        .form-container .error-message {
+            color: #ff6b6b;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .form-container .register-link {
+            margin-top: 15px;
+            color: #fff;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .form-container .register-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 <body>
     <h1>Iniciar Sesión</h1>
     <form id="login-form">
