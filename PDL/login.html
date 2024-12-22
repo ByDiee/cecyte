@@ -58,10 +58,10 @@
         .form-container .register-link:hover {
             text-decoration: underline;
         }
-        .error-message {
+        .notification {
             color: red;
-            font-size: 14px;
             margin-top: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -74,7 +74,6 @@
         <p>O inicia sesión con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
         <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
-        <div id="errorMessage" class="error-message"></div>
     </div>
 
     <!-- Firebase scripts -->
@@ -115,9 +114,6 @@
         document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('errorMessage');
-
-            errorMessage.textContent = ''; // Clear previous error messages
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
@@ -156,16 +152,23 @@
                         });
                 })
                 .catch((error) => {
-                    if (error.code === 'auth/user-not-found') {
-                        errorMessage.textContent = 'Usuario no registrado. Redirigiendo a la página de registro...';
+                    const errorCode = error.code;
+                    const notification = document.createElement('div');
+                    notification.className = 'notification';
+
+                    if (errorCode === 'auth/wrong-password') {
+                        notification.textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
+                    } else if (errorCode === 'auth/user-not-found') {
+                        notification.textContent = 'Correo no registrado. Redirigiendo a la página de registro...';
                         setTimeout(() => {
                             window.location.href = 'registro.html';
-                        }, 3000);
-                    } else if (error.code === 'auth/wrong-password') {
-                        errorMessage.textContent = 'Contraseña incorrecta. Por favor, inténtalo de nuevo.';
+                        }, 3000); // Delay de 3 segundos para redirección
                     } else {
-                        errorMessage.textContent = 'Error al iniciar sesión: ' + error.message;
+                        notification.textContent = 'Error desconocido. Intenta de nuevo.';
                     }
+
+                    document.querySelector('.form-container').appendChild(notification);
+                    setTimeout(() => notification.remove(), 5000); // Elimina la notificación después de 5 segundos
                 });
         });
 
