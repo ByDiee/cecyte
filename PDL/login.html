@@ -58,10 +58,10 @@
         .form-container .register-link:hover {
             text-decoration: underline;
         }
-        .notification {
+        .error-message {
             color: red;
-            margin-top: 10px;
             font-size: 14px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -74,12 +74,12 @@
         <p>O inicia sesión con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
         <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
+        <div id="error-message" class="error-message"></div>
     </div>
 
     <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
         // Firebase configuration
@@ -97,7 +97,6 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const database = firebase.database();
 
         // Clear all sessions and storage
         auth.signOut().then(() => {
@@ -114,61 +113,27 @@
         document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorMessageElement = document.getElementById('error-message');
+            errorMessageElement.textContent = ''; // Clear any previous error message
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    const user = userCredential.user;
-                    const userId = user.uid;
-
-                    // Check if user exists in the database
-                    database.ref('users/' + userId).once('value').then((snapshot) => {
-                        if (!snapshot.exists()) {
-                            // Save basic user data if it doesn't exist
-                            database.ref('users/' + userId).set({
-                                email: user.email,
-                                role: 'student',
-                                firstName: '',
-                                lastNameP: '',
-                                lastNameM: '',
-                                Grupo: '',
-                                Semestre: '',
-                                enrollment: ''
-                            });
-                        }
-                    });
-
                     // Redirect based on role
-                    database.ref('users/' + userId).once('value')
-                        .then((snapshot) => {
-                            const userData = snapshot.val();
-                            const role = userData.role;
-                            if (role === 'admin') {
-                                window.location.href = 'pagina1.html';
-                            } else if (role === 'student') {
-                                window.location.href = 'pagina2.html';
-                            } else {
-                                alert('Role not assigned yet');
-                            }
-                        });
+                    const user = userCredential.user;
+                    window.location.href = 'pagina2.html'; // Assuming user has a 'student' role
                 })
                 .catch((error) => {
-                    const errorCode = error.code;
-                    const notification = document.createElement('div');
-                    notification.className = 'notification';
-
-                    if (errorCode === 'auth/wrong-password') {
-                        notification.textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
-                    } else if (errorCode === 'auth/user-not-found') {
-                        notification.textContent = 'Correo no registrado. Redirigiendo a la página de registro...';
-                        setTimeout(() => {
-                            window.location.href = 'registro.html';
-                        }, 3000); // Delay de 3 segundos para redirección
+                    if (error.code === 'auth/user-not-found') {
+                        // If no user found, redirect to the registration page
+                        window.location.href = 'registro.html';
+                    } else if (error.code === 'auth/wrong-password') {
+                        // Show an error message for incorrect password
+                        errorMessageElement.textContent = 'La contraseña es incorrecta.';
                     } else {
-                        notification.textContent = 'Error desconocido. Intenta de nuevo.';
+                        // For other errors, show a generic message
+                        errorMessageElement.textContent = 'Hubo un error al intentar iniciar sesión.';
                     }
-
-                    document.querySelector('.form-container').appendChild(notification);
-                    setTimeout(() => notification.remove(), 5000); // Elimina la notificación después de 5 segundos
+                    console.error('Login error:', error.message);
                 });
         });
 
@@ -178,37 +143,7 @@
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
-
-                    // Check if user exists in the database
-                    database.ref('users/' + user.uid).once('value').then((snapshot) => {
-                        if (!snapshot.exists()) {
-                            // Save basic user data if it doesn't exist
-                            database.ref('users/' + user.uid).set({
-                                email: user.email,
-                                role: 'student',
-                                firstName: user.displayName ? user.displayName.split(' ')[0] : '',
-                                lastNameP: user.displayName ? user.displayName.split(' ')[1] : '',
-                                lastNameM: '',
-                                Grupo: '',
-                                Semestre: '',
-                                enrollment: ''
-                            });
-                        }
-                    });
-
-                    // Redirect based on role
-                    database.ref('users/' + user.uid).once('value')
-                        .then((snapshot) => {
-                            const userData = snapshot.val();
-                            const role = userData.role;
-                            if (role === 'admin') {
-                                window.location.href = 'pagina1.html';
-                            } else if (role === 'student') {
-                                window.location.href = 'pagina2.html';
-                            } else {
-                                alert('Role not assigned yet');
-                            }
-                        });
+                    window.location.href = 'pagina2.html'; // Assuming user has a 'student' role
                 })
                 .catch((error) => {
                     console.error('Google authentication error:', error.message);
