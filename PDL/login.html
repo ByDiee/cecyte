@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,11 +59,6 @@
         .form-container .register-link:hover {
             text-decoration: underline;
         }
-        .error-message {
-            color: red;
-            font-size: 14px;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
@@ -74,12 +70,12 @@
         <p>O inicia sesión con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
         <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
-        <div id="error-message" class="error-message"></div>
     </div>
 
     <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
         // Firebase configuration
@@ -97,6 +93,7 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const database = firebase.database();
 
         // Clear all sessions and storage
         auth.signOut().then(() => {
@@ -113,26 +110,34 @@
         document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorMessageElement = document.getElementById('error-message');
-            errorMessageElement.textContent = ''; // Clear any previous error message
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Redirect based on role
                     const user = userCredential.user;
-                    window.location.href = 'pagina2.html'; // Assuming user has a 'student' role
+                    const userId = user.uid;
+
+                    // Check user role
+                    database.ref('users/' + userId).once('value')
+                        .then((snapshot) => {
+                            const userData = snapshot.val();
+                            if (userData) {
+                                const role = userData.role;
+                                if (role === 'admin') {
+                                    window.location.href = 'pagina1.html';
+                                } else if (role === 'student') {
+                                    window.location.href = 'pagina2.html';
+                                } else {
+                                    alert('Role not assigned yet');
+                                }
+                            } else {
+                                alert('User not found in database');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error retrieving user data:', error.message);
+                        });
                 })
                 .catch((error) => {
-                    if (error.code === 'auth/user-not-found') {
-                        // If no user found, redirect to the registration page
-                        window.location.href = 'registro.html';
-                    } else if (error.code === 'auth/wrong-password') {
-                        // Show an error message for incorrect password
-                        errorMessageElement.textContent = 'La contraseña es incorrecta.';
-                    } else {
-                        // For other errors, show a generic message
-                        errorMessageElement.textContent = 'Hubo un error al intentar iniciar sesión.';
-                    }
                     console.error('Login error:', error.message);
                 });
         });
@@ -143,7 +148,25 @@
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
-                    window.location.href = 'pagina2.html'; // Assuming user has a 'student' role
+                    database.ref('users/' + user.uid).once('value')
+                        .then((snapshot) => {
+                            const userData = snapshot.val();
+                            if (userData) {
+                                const role = userData.role;
+                                if (role === 'admin') {
+                                    window.location.href = 'pagina1.html';
+                                } else if (role === 'student') {
+                                    window.location.href = 'pagina2.html';
+                                } else {
+                                    alert('Role not assigned yet');
+                                }
+                            } else {
+                                alert('User not found in database');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error retrieving user data:', error.message);
+                        });
                 })
                 .catch((error) => {
                     console.error('Google authentication error:', error.message);
