@@ -124,8 +124,8 @@
     // Mostrar la hora actual
     function mostrarHoraActual() {
       const { day, time, date } = getCurrentTime();
-      const formattedTime = ${time.substring(0, 2)}:${time.substring(2, 4)};
-      document.getElementById("horaActual").innerText = Hora Actual: ${day}, ${formattedTime} (${date});
+      const formattedTime = `${time.substring(0, 2)}:${time.substring(2, 4)}`;
+      document.getElementById("horaActual").innerText = `Hora Actual: ${day}, ${formattedTime} (${date})`;
     }
 
     // Calcular el tiempo restante hasta la caducidad del QR
@@ -147,7 +147,7 @@
             const userId = user.uid;
             console.log("Usuario autenticado:", userId);
 
-            const userRef = firebase.database().ref(users/${userId});
+            const userRef = firebase.database().ref(`users/${userId}`);
             const snapshot = await userRef.once("value");
             const userData = snapshot.val();
 
@@ -220,11 +220,11 @@
             console.log("Grado y Grupo encontrados:", grado, grupo);
 
             // Mostrar la información
-            document.getElementById("materiaInfo").innerText = Materia: ${materiaEncontrada};
-            document.getElementById("gradoInfo").innerText = Grado: ${grado};
-            document.getElementById("grupoInfo").innerText = Grupo: ${grupo};
+            document.getElementById("materiaInfo").innerText = `Materia: ${materiaEncontrada}`;
+            document.getElementById("gradoInfo").innerText = `Grado: ${grado}`;
+            document.getElementById("grupoInfo").innerText = `Grupo: ${grupo}`;
             document.getElementById("caducidadInfo").innerText = caducidadTime
-              ? Tiempo de caducidad: ${caducidadMinutos} minutos
+              ? `Tiempo de caducidad: ${caducidadMinutos} minutos`
               : "Sin caducidad";
 
             // Generar contenido para el QR
