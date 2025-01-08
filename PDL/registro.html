@@ -1,44 +1,86 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Materias Disponibles</title>
+    <title>Registro</title>
     <style>
         body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
         }
-        header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        main {
+        .form-container {
+            background: rgba(255, 255, 255, 0.1);
             padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            width: 300px;
         }
-        .subject-list {
-            list-style-type: none;
-            padding: 0;
+        .form-container h2 {
+            margin-bottom: 20px;
+            color: #fff;
         }
-        .subject-list li {
-            padding: 8px;
-            border-bottom: 1px solid #cccccc;
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+        }
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            background-color: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+        .form-container img {
+            width: 40px;
+            cursor: pointer;
+        }
+        .form-container p {
+            color: #fff;
+        }
+        .password-requirements {
+            text-align: left;
+            color: #fff;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .password-requirements li {
+            margin-bottom: 5px;
+        }
+        .password-requirements .fulfilled {
+            color: #4caf50;
+        }
+        .password-requirements .unfulfilled {
+            color: #852019;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Materias Disponibles</h1>
-    </header>
-    <main>
-        <ul class="subject-list" id="subjectList">
-            <!-- Aquí se mostrarán las materias -->
+    <div class="form-container">
+        <h2>Registro</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password" oninput="validatePassword()">
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" oninput="validatePassword()">
+        <button id="registerBtn">Registro</button>
+        <p>O regístrate con:</p>
+        <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
+        <ul class="password-requirements">
+            <li id="length" class="unfulfilled">La contraseña debe contener al menos 8 caracteres</li>
+            <li id="number" class="unfulfilled">La contraseña debe contener al menos 1 número</li>
+            <li id="uppercase" class="unfulfilled">La contraseña debe contener al menos 1 letra mayúscula</li>
         </ul>
-    </main>
+    </div>
 
     <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -46,54 +88,115 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configuración Firebase
-            const firebaseConfig = {
-                apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
-                authDomain: "pdlista-61c4d.firebaseapp.com",
-                projectId: "pdlista-61c4d",
-                storageBucket: "pdlista-61c4d.appspot.com",
-                messagingSenderId: "449596760167",
-                appId: "1:449596760167:web:dd667445d003c22f47f4c2",
-                measurementId: "G-BDXFNR25C0",
-                databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
-            };
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAH6MvrHYih49lF9RY1mdi0L3JK9HFyIP0",
+            authDomain: "pdlista-61c4d.firebaseapp.com",
+            projectId: "pdlista-61c4d",
+            storageBucket: "pdlista-61c4d.appspot.com",
+            messagingSenderId: "449596760167",
+            appId: "1:449596760167:web:dd667445d003c22f47f4c2",
+            measurementId: "G-BDXFNR25C0",
+            databaseURL: "https://pdlista-61c4d-default-rtdb.firebaseio.com/"
+        };
 
-            // Inicializar Firebase
-            firebase.initializeApp(firebaseConfig);
-            const database = firebase.database();
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
 
-            const subjectList = document.getElementById('subjectList');
+        // Validate password strength
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            const length = document.getElementById('length');
+            const number = document.getElementById('number');
+            const uppercase = document.getElementById('uppercase');
 
-            // Función para cargar todas las materias
-            function loadAllSubjects() {
-                database.ref('classSchedules').once('value').then(snapshot => {
-                    const data = snapshot.val();
-
-                    if (data) {
-                        for (const semester in data) {
-                            for (const group in data[semester]) {
-                                for (const day in data[semester][group]) {
-                                    for (const time in data[semester][group][day]) {
-                                        const subject = data[semester][group][day][time];
-                                        const listItem = document.createElement('li');
-                                        listItem.textContent = `Semestre: ${semester}, Grupo: ${group}, Día: ${day}, Hora: ${time}, Materia: ${subject}`;
-                                        subjectList.appendChild(listItem);
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        subjectList.innerHTML = '<li>No hay materias disponibles</li>';
-                    }
-                }).catch(error => {
-                    console.error('Error al cargar materias:', error);
-                    subjectList.innerHTML = '<li>Error al cargar las materias</li>';
-                });
+            // Password length
+            if (password.length >= 8) {
+                length.classList.remove('unfulfilled');
+                length.classList.add('fulfilled');
+            } else {
+                length.classList.remove('fulfilled');
+                length.classList.add('unfulfilled');
             }
 
-            // Cargar todas las materias al cargar la página
-            loadAllSubjects();
+            // Contains at least one number
+            if (/\d/.test(password)) {
+                number.classList.remove('unfulfilled');
+                number.classList.add('fulfilled');
+            } else {
+                number.classList.remove('fulfilled');
+                number.classList.add('unfulfilled');
+            }
+
+            // Contains at least one uppercase letter
+            if (/[A-Z]/.test(password)) {
+                uppercase.classList.remove('unfulfilled');
+                uppercase.classList.add('fulfilled');
+            } else {
+                uppercase.classList.remove('fulfilled');
+                uppercase.classList.add('unfulfilled');
+            }
+        }
+
+        // Save user to database
+        function saveUserToDatabase(user) {
+            const userRef = database.ref('users/' + user.uid);
+            userRef.set({
+                email: user.email,
+                role: 'student',
+                createdAt: new Date().toISOString()
+            })
+            .then(() => {
+                console.log('Usuario guardado en la base de datos.');
+            })
+            .catch((error) => {
+                console.error('Error al guardar en la base de datos:', error.message);
+            });
+        }
+
+        // Register with email and password
+        document.getElementById('registerBtn').addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (document.querySelectorAll('.unfulfilled').length === 0) {
+                if (password === confirmPassword) {
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .then((userCredential) => {
+                            const user = userCredential.user;
+                            saveUserToDatabase(user);
+                            alert('Usuario registrado exitosamente.');
+                            window.location.href = 'login.html';
+                        })
+                        .catch((error) => {
+                            console.error('Error al registrar:', error.message);
+                            alert('Error al registrar: ' + error.message);
+                        });
+                } else {
+                    alert('Las contraseñas no coinciden.');
+                }
+            } else {
+                alert('Por favor, llena todos los campos correctamente.');
+            }
+        });
+
+        // Register or login with Google
+        document.getElementById('googleSignInBtn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    saveUserToDatabase(user);
+                    alert('Inicio de sesión con Google exitoso.');
+                    window.location.href = 'login.html';
+                })
+                .catch((error) => {
+                    console.error('Error en autenticación con Google:', error.message);
+                    alert('Error en autenticación con Google: ' + error.message);
+                });
         });
     </script>
 </body>
