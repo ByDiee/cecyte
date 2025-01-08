@@ -151,6 +151,8 @@
                         .then((userCredential) => {
                             const user = userCredential.user;
 
+                            saveUserToDatabase(user);
+
                             database.ref('users/' + user.uid).set({
                                 email: user.email,
                                 role: 'student'
