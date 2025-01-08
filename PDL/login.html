@@ -49,6 +49,15 @@
         .form-container p {
             color: #fff;
         }
+        .form-container .register-link {
+            margin-top: 15px;
+            color: #fff;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .form-container .register-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -57,8 +66,9 @@
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
         <button id="loginBtn">Login</button>
-        <p>Or sign in with:</p>
+        <p>O inicia sesión con:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
+        <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
     </div>
 
     <!-- Firebase scripts -->
@@ -84,6 +94,17 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
+        // Clear all sessions and storage
+        auth.signOut().then(() => {
+            console.log('All Firebase sessions closed.');
+        }).catch((error) => {
+            console.error('Error signing out:', error);
+        });
+
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('Local storage and session storage cleared.');
+
         // Login with Email and Password
         document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
@@ -92,26 +113,37 @@
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
-                    // Check user role
-                    database.ref('users/' + user.uid).once('value')
+                    const userId = user.uid;
+
+                    // Check if user exists in the database
+                    database.ref('users/' + userId).once('value').then((snapshot) => {
+                        if (!snapshot.exists()) {
+                            // Save basic user data if it doesn't exist
+                            database.ref('users/' + userId).set({
+                                email: user.email,
+                                role: 'student',
+                                firstName: '',
+                                lastNameP: '',
+                                lastNameM: '',
+                                Grupo: '',
+                                Semestre: '',
+                                enrollment: ''
+                            });
+                        }
+                    });
+
+                    // Redirect based on role
+                    database.ref('users/' + userId).once('value')
                         .then((snapshot) => {
                             const userData = snapshot.val();
-                            if (userData) {
-                                // Redirect based on role (set role in Firebase later)
-                                const role = userData.role; // Assume 'role' will be set later
-                                if (role === 'admin') {
-                                    window.location.href = 'pagina1.html';
-                                } else if (role === 'student') {
-                                    window.location.href = 'pagina2.html';
-                                } else {
-                                    alert('Role not assigned yet');
-                                }
+                            const role = userData.role;
+                            if (role === 'admin') {
+                                window.location.href = 'pagina1.html';
+                            } else if (role === 'student') {
+                                window.location.href = 'pagina2.html';
                             } else {
-                                alert('User not found in database');
+                                alert('Role not assigned yet');
                             }
-                        })
-                        .catch((error) => {
-                            console.error('Error retrieving user data:', error.message);
                         });
                 })
                 .catch((error) => {
@@ -125,26 +157,36 @@
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
-                    // Check user role
+
+                    // Check if user exists in the database
+                    database.ref('users/' + user.uid).once('value').then((snapshot) => {
+                        if (!snapshot.exists()) {
+                            // Save basic user data if it doesn't exist
+                            database.ref('users/' + user.uid).set({
+                                email: user.email,
+                                role: 'student',
+                                firstName: user.displayName ? user.displayName.split(' ')[0] : '',
+                                lastNameP: user.displayName ? user.displayName.split(' ')[1] : '',
+                                lastNameM: '',
+                                Grupo: '',
+                                Semestre: '',
+                                enrollment: ''
+                            });
+                        }
+                    });
+
+                    // Redirect based on role
                     database.ref('users/' + user.uid).once('value')
                         .then((snapshot) => {
                             const userData = snapshot.val();
-                            if (userData) {
-                                // Redirect based on role (set role in Firebase later)
-                                const role = userData.role; // Assume 'role' will be set later
-                                if (role === 'admin') {
-                                    window.location.href = 'pagina1.html';
-                                } else if (role === 'student') {
-                                    window.location.href = 'pagina2.html';
-                                } else {
-                                    alert('Role not assigned yet');
-                                }
+                            const role = userData.role;
+                            if (role === 'admin') {
+                                window.location.href = 'pagina1.html';
+                            } else if (role === 'student') {
+                                window.location.href = 'pagina2.html';
                             } else {
-                                alert('User not found in database');
+                                alert('Role not assigned yet');
                             }
-                        })
-                        .catch((error) => {
-                            console.error('Error retrieving user data:', error.message);
                         });
                 })
                 .catch((error) => {
