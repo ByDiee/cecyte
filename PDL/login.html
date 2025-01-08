@@ -49,15 +49,6 @@
         .form-container p {
             color: #fff;
         }
-        .form-container .register-link {
-            margin-top: 15px;
-            color: #fff;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .form-container .register-link:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
@@ -66,9 +57,8 @@
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
         <button id="loginBtn">Login</button>
-        <p>O inicia sesión con:</p>
+        <p>Or sign in with:</p>
         <img src="GoogleLogo.png" alt="Google Sign-In" id="googleSignInBtn">
-        <a href="registro.html" class="register-link">¿Aún no tienes cuenta? Regístrate aquí</a>
     </div>
 
     <!-- Firebase scripts -->
@@ -94,17 +84,6 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // Clear all sessions and storage
-        auth.signOut().then(() => {
-            console.log('All Firebase sessions closed.');
-        }).catch((error) => {
-            console.error('Error signing out:', error);
-        });
-
-        localStorage.clear();
-        sessionStorage.clear();
-        console.log('Local storage and session storage cleared.');
-
         // Login with Email and Password
         document.getElementById('loginBtn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
@@ -113,23 +92,22 @@
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
-                    const userId = user.uid;
-
                     // Check user role
-                    database.ref('users/' + userId).once('value')
+                    database.ref('users/' + user.uid).once('value')
                         .then((snapshot) => {
                             const userData = snapshot.val();
                             if (userData) {
-                                const role = userData.role;
+                                // Redirect based on role (set role in Firebase later)
+                                const role = userData.role; // Assume 'role' will be set later
                                 if (role === 'admin') {
                                     window.location.href = 'pagina1.html';
                                 } else if (role === 'student') {
                                     window.location.href = 'pagina2.html';
                                 } else {
-                                    alert('No hay rol');
+                                    alert('Role not assigned yet');
                                 }
                             } else {
-                                alert('No se encontró usuario');
+                                alert('User not found in database');
                             }
                         })
                         .catch((error) => {
@@ -147,11 +125,13 @@
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
+                    // Check user role
                     database.ref('users/' + user.uid).once('value')
                         .then((snapshot) => {
                             const userData = snapshot.val();
                             if (userData) {
-                                const role = userData.role;
+                                // Redirect based on role (set role in Firebase later)
+                                const role = userData.role; // Assume 'role' will be set later
                                 if (role === 'admin') {
                                     window.location.href = 'pagina1.html';
                                 } else if (role === 'student') {
