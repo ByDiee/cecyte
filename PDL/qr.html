@@ -70,17 +70,19 @@
   </div>
 
   <script>
-    const USE_SIMULATED_TIME = true; // HORA SIMULADA TRUE / FALSE HORA REAL
-    const simulatedDay = "Miercoles";  // Día simulado
-    const simulatedTime = "0131";   // Hora simulada (formato HHMM)
+    // Cambiar entre hora simulada y hora real
+    const USE_SIMULATED_TIME = true; // TRUE para pruebas, FALSE para uso normal
+    const simulatedDay = "Miercoles"; // Día simulado
+    const simulatedTime = "0131"; // Hora simulada (HHMM)
     const simulatedDate = "2025-01-08"; // Fecha simulada (YYYY-MM-DD)
 
+    // Obtener la hora actual (simulada o real)
     function getCurrentTime() {
       if (USE_SIMULATED_TIME) {
         return {
           day: simulatedDay,
           time: simulatedTime,
-          date: simulatedDate
+          date: simulatedDate,
         };
       } else {
         const now = new Date();
@@ -93,10 +95,10 @@
     }
 
     // Configuración de horarios
-    const recesoInicio = "1000"; // 10:00
-    const recesoFin = "1029";    // 10:30
+    const recesoInicio = "1000"; // Inicio del receso (10:00)
+    const recesoFin = "1044"; // Fin del receso (10:44)
     const diasHabiles = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
-    const moduloDuracion = 44;   // Duración del módulo en minutos
+    const moduloDuracion = 44; // Duración del módulo en minutos
 
     // Convertir horas a minutos
     function horaATotalMinutos(hora) {
@@ -105,14 +107,16 @@
       return horas * 60 + minutos;
     }
 
-    // Validar si el día y la hora son válidos
+    // Validar día y hora
     function validarHorario(dia, hora) {
       if (!diasHabiles.includes(dia)) {
         console.error("Día no hábil. No hay clases.");
         return false;
       }
 
-      if (hora >= recesoInicio && hora < recesoFin) {
+      const horaMinutos = horaATotalMinutos(hora);
+
+      if (horaMinutos >= horaATotalMinutos(recesoInicio) && horaMinutos < horaATotalMinutos(recesoFin)) {
         console.error("Es hora de receso, no se registran clases.");
         return false;
       }
@@ -121,18 +125,32 @@
       return true;
     }
 
-    // Mostrar la hora actual
+    // Buscar materia en el horario del día
+    function encontrarMateria(horarioDia, simulatedTimeMin, moduloDuracion) {
+      for (const horaInicio in horarioDia) {
+        const materia = horarioDia[horaInicio];
+        const horaInicioMin = horaATotalMinutos(horaInicio);
+        const horaFinMin = horaInicioMin + moduloDuracion;
+
+        // Excluir el rango de receso
+        if (horaInicioMin >= horaATotalMinutos(recesoInicio) && horaInicioMin < horaATotalMinutos(recesoFin)) {
+          console.log("Rango de receso excluido:", horaInicio);
+          continue;
+        }
+
+        if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
+          return { materia, horaExacta: horaInicio };
+        }
+      }
+
+      return null;
+    }
+
+    // Mostrar hora actual
     function mostrarHoraActual() {
       const { day, time, date } = getCurrentTime();
       const formattedTime = `${time.substring(0, 2)}:${time.substring(2, 4)}`;
       document.getElementById("horaActual").innerText = `Hora Actual: ${day}, ${formattedTime} (${date})`;
-    }
-
-    // Calcular el tiempo restante hasta la caducidad del QR
-    function calcularTiempoCaducidad(minutos) {
-      const currentTime = new Date().getTime();
-      const expirationTime = currentTime + (minutos * 60000);
-      return expirationTime;
     }
 
     // Generar el QR
@@ -159,104 +177,43 @@
             const horarioDia = userData.horario[day];
             const simulatedTimeMin = horaATotalMinutos(time);
 
-            // Buscar la materia según la hora simulada
-            let materiaEncontrada = null;
-            let horaExacta = null;
-            for (const horaInicio in horarioDia) {
-              const materia = horarioDia[horaInicio];
-              const horaInicioMin = horaATotalMinutos(horaInicio);
-              const horaFinMin = horaInicioMin + moduloDuracion;
+            const resultado = encontrarMateria(horarioDia, simulatedTimeMin, moduloDuracion);
 
-              if (simulatedTimeMin >= horaInicioMin && simulatedTimeMin < horaFinMin) {
-                materiaEncontrada = materia;
-                horaExacta = horaInicio; // Obtener la hora exacta de la base de datos
-                break;
-              }
-            }
-
-            if (!materiaEncontrada) {
-              console.error("No se encontró la materia en el horario del maestro.");
+            if (!resultado) {
+              console.error("No se encontró ninguna materia en el horario del maestro.");
               return;
             }
+
+            const { materia: materiaEncontrada, horaExacta } = resultado;
 
             console.log("Materia encontrada:", materiaEncontrada, "Hora exacta:", horaExacta);
 
-            // Buscar el grupo y grado
-            const classSchedulesRef = firebase.database().ref("classSchedules");
-            const classSchedulesSnapshot = await classSchedulesRef.once("value");
-            const classSchedules = classSchedulesSnapshot.val();
-
-            let grado = null;
-            let grupo = null;
-
-            outerLoop:
-            for (const nivel in classSchedules) {
-              for (const grupoKey in classSchedules[nivel]) {
-                const diaHorario = classSchedules[nivel][grupoKey][day];
-                if (diaHorario) {
-                  for (const horaInicio in diaHorario) {
-                    const horaInicioMin = horaATotalMinutos(horaInicio);
-                    const horaFinMin = horaInicioMin + moduloDuracion;
-
-                    if (
-                      diaHorario[horaInicio] === materiaEncontrada &&
-                      simulatedTimeMin >= horaInicioMin &&
-                      simulatedTimeMin < horaFinMin
-                    ) {
-                      grado = nivel;
-                      grupo = grupoKey;
-                      break outerLoop;
-                    }
-                  }
-                }
-              }
-            }
-
-            if (!grado || !grupo) {
-              console.error("No se encontró un grado y grupo que coincida con la materia.");
-              return;
-            }
-
-            console.log("Grado y Grupo encontrados:", grado, grupo);
-
-            // Mostrar la información
-            document.getElementById("materiaInfo").innerText = `Materia: ${materiaEncontrada}`;
-            document.getElementById("gradoInfo").innerText = `Grado: ${grado}`;
-            document.getElementById("grupoInfo").innerText = `Grupo: ${grupo}`;
-            document.getElementById("caducidadInfo").innerText = caducidadTime
-              ? `Tiempo de caducidad: ${caducidadMinutos} minutos`
-              : "Sin caducidad";
-
-            // Generar contenido para el QR
+            // Generar contenido del QR
             const qrContent = JSON.stringify({
               materia: materiaEncontrada,
-              grado,
-              grupo,
               hora: horaExacta,
               fecha: date,
               caducidad: caducidadTime || null,
             });
 
-// Generar el QR
-const qrContainer = document.getElementById("qr-container");
-qrContainer.innerHTML = ""; // Limpiar cualquier QR previo
+            // Mostrar QR
+            const qrContainer = document.getElementById("qr-container");
+            qrContainer.innerHTML = ""; // Limpiar QR previo
 
-// Crear un elemento canvas dentro del contenedor
-const canvas = document.createElement("canvas");
-qrContainer.appendChild(canvas);
+            const canvas = document.createElement("canvas");
+            qrContainer.appendChild(canvas);
 
-// Generar el QR en el canvas
-QRCode.toCanvas(canvas, qrContent, { width: 256 }, (error) => {
-  if (error) {
-    console.error("Error al generar el QR:", error);
-  } else {
-    console.log("QR generado exitosamente:", qrContent);
-  }
-});
-}
-});
-}
-});
+            QRCode.toCanvas(canvas, qrContent, { width: 256 }, (error) => {
+              if (error) {
+                console.error("Error al generar el QR:", error);
+              } else {
+                console.log("QR generado exitosamente:", qrContent);
+              }
+            });
+          }
+        });
+      }
+    });
 
     mostrarHoraActual(); // Mostrar la hora actual al cargar la página
   </script>
